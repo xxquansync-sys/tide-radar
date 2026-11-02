@@ -11,7 +11,7 @@
 <section class="page" id="watch"><div class="panel"><div class="head"><h2>自选观察池</h2><span class="tag">保存在当前浏览器</span></div><div class="controls"><input id="watchInput" placeholder="输入币种，如 ETH"><button class="btn primary" id="addWatch">添加标的</button></div><div id="watchList" class="muted">暂无自选标的。</div></div></section>
 <section class="page" id="method"><div class="panel"><div class="head"><h2>潮汐研究框架</h2><span class="tag">从发现到验证</span></div><div class="method"><div class="step"><b>01 / 市场全景</b>观察市场广度、主流币方向与整体成交活跃度。</div><div class="step"><b>02 / 板块轮动</b>识别相对强势板块，观察热点扩散或退潮。</div><div class="step"><b>03 / 异动发现</b>筛选涨跌、振幅、成交额异常的合约。</div><div class="step"><b>04 / 多周期验证</b>日线定大势、4H定方向、15m看形态、3–5m找时机。</div></div><div class="notice"><b>数据口径与限制：</b>行情来自 OKX 公共 API；成交额不等于净流入，持仓量变化不等于多头资金流入。当前版本没有链上地址标签、机构身份识别或真实资金流归因。板块为预设样本，不代表完整市场分类。自选数据仅保存在本机浏览器。</div></div></section></main><footer>潮汐 RADAR · 加密市场情报终端原型 · 数据仅供研究参考 · 不构成投资建议</footer>
 <script>
-const API='https://www.okx.com';
+const API='https://okx-proxy.xxquansync.workers.dev';
 const groups={'主流资产':['BTC','ETH','XRP','BNB','SOL','DOGE','ADA','TRX','LTC','BCH'],'DeFi':['UNI','AAVE','LINK','MKR','CRV','LDO','SNX','COMP','DYDX'],'公链生态':['WLD','SUI','AVAX','TON','APT','NEAR','ARB','OP','ATOM','SEI'],'Meme':['PEPE','SHIB','BONK','WIF','FLOKI','ORDI','BOME'],'AI / 数据':['RENDER','FET','TAO','ARKM','GRT','OCEAN'],'交易平台':['OKB','BNB','GT','KCS','MX','CRO']};
 let markets=[];
 const $=id=>document.getElementById(id);
