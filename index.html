@@ -27,6 +27,16 @@ nav button.active,nav button:hover,.btn:hover{background:#192a3e;border-color:#3
 .hot-tag{background:#1a2d3f;border:1px solid #2a4a5e;border-radius:999px;padding:6px 12px;font-size:12px;color:var(--cyan);display:inline-flex;align-items:center;gap:6px}
 .hot-tag-up{color:var(--green)}
 .reason-badge{background:#1a2d3f;border:1px solid #2a4a5e;border-radius:6px;padding:4px 8px;font-size:11px;color:var(--muted);max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dragon-table{width:100%;border-collapse:collapse;font-size:12px}
+.dragon-table thead th{text-align:left;padding:10px;border-bottom:1px solid var(--line)}
+.dragon-table tbody tr{border-bottom:1px solid #1c2a3b;transition:background .2s}
+.dragon-table tbody tr:hover{background:#15253a}
+.dragon-table tbody td{padding:12px 10px}
+.dragon-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
+.dragon-title{display:flex;align-items:center;gap:10px}
+.dragon-badge{font-size:10px;background:#1a2d3f;border:1px solid #2a4a5e;border-radius:5px;padding:3px 8px;color:var(--cyan)}
+.dragon-reasons{display:flex;gap:5px;flex-wrap:wrap}
+.reason-tag{font-size:10px;background:#0d1621;border:1px solid #2a4a5e;border-radius:999px;padding:2px 7px;color:var(--amber)}
 main{max-width:1450px;margin:auto;padding:25px 4vw 60px}
 .top{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;margin-bottom:18px}
 .eyebrow{color:var(--cyan);font-size:11px;letter-spacing:.18em;font-weight:bold}
@@ -91,6 +101,7 @@ footer{border-top:1px solid var(--line);padding:20px;text-align:center;color:#70
 <button class="active" data-page="overview">市场全景</button>
 <button data-page="sectors">板块轮动</button>
 <button data-page="radar">异动雷达</button>
+<button data-page="dragon">龙虎榜</button>
 <button data-page="signals">多空观察</button>
 <button data-page="brief">市场简报</button>
 <button data-page="watch">自选观察</button>
@@ -212,6 +223,20 @@ footer{border-top:1px solid var(--line);padding:20px;text-align:center;color:#70
 <div id="brief-content" class="brief-box" style="margin-top:16px">等待行情数据…</div>
 </div>
 </section>
+<section class="page" id="dragon">
+<div class="panel">
+<div id="dragon-tiger-content">
+<div class="muted" style="padding:30px;text-align:center">正在加载龙虎榜数据...</div>
+</div>
+</div>
+</section>
+<section class="page" id="dragon">
+<div class="panel">
+<div id="dragon-tiger-content">
+<div class="muted" style="padding:30px;text-align:center">正在加载龙虎榜数据...</div>
+</div>
+</div>
+</section>
 <section class="page" id="signals">
 <div class="grid layout">
 <div class="panel">
@@ -257,10 +282,11 @@ var API='https://okx-proxy.xxquansync.workers.dev';
 var groups={'主流资产':['BTC','ETH','XRP','BNB','SOL','DOGE','ADA','TRX','LTC','BCH'],'DeFi':['UNI','AAVE','LINK','MKR','CRV','LDO','SNX','COMP','DYDX'],'公链生态':['WLD','SUI','AVAX','TON','APT','NEAR','ARB','OP','ATOM','SEI'],'Meme':['PEPE','SHIB','BONK','WIF','FLOKI','ORDI','BOME'],'AI / 数据':['RENDER','FET','TAO','ARKM','GRT','OCEAN'],'交易平台':['OKB','BNB','GT','KCS','MX','CRO']};
 var markets=[];
 var currentLang='zh';
+var dragonTigerData={todayList:[],history:{},lastUpdate:null};
 var translations={
 zh:{
 brand:'潮汐 RADAR',tagline:'CRYPTO MARKET INTELLIGENCE · V2',
-navOverview:'市场全景',navSectors:'板块轮动',navRadar:'异动雷达',navSignals:'多空观察',navBrief:'市场简报',navWatch:'自选观察',navMethod:'研究框架',
+navOverview:'市场全景',navSectors:'板块轮动',navRadar:'异动雷达',navDragon:'龙虎榜',navSignals:'多空观察',navBrief:'市场简报',navWatch:'自选观察',navMethod:'研究框架',
 eyebrow:'MARKET PULSE / LIVE MONITOR',headline:'看见市场正在发生什么',subheadline:'从市场广度、板块轮动到异常波动,寻找值得进一步研究的信号。',
 connecting:'连接行情中',connected:'行情已连接',failed:'连接失败',waitingData:'等待数据',updatedAt:'更新于',refreshBtn:'刷新 ↻',
 focusTitle:'🎯 今日关注重点',focusNote:'💡 自动生成的市场观察,仅供参考,不构成投资建议',
@@ -277,7 +303,10 @@ sectorDetailsTitle:'板块成分观察',
 radarTitle:'异常波动雷达',radarTag:'规则型观察',searchPlaceholder:'搜索币种,例如 ETH / WLD',
 filterAll:'全部标的',filterUp:'上涨标的',filterDown:'下跌标的',filterRange:'高振幅 (>8%)',
 sortByVolume:'按成交额排序',sortByChange:'按涨跌幅排序',sortByRangeOption:'按振幅排序',
-noResults:'没有匹配结果',
+reasonVolatility:'振幅异常',reasonVolume:'成交活跃',reasonOI:'持仓剧变',reasonFunding:'费率偏离',
+dragonTitle:'🐉 今日龙虎榜',dragonToday:'今日上榜',dragonLoading:'正在加载龙虎榜数据...',dragonCriteria:'上榜条件(满足任一):',
+criteriaChange:'24H 涨跌幅 > 8%',criteriaVolume:'成交额 Top 20',criteriaOI:'OI 变化 > 30%',criteriaFunding:'资金费率偏离 > 0.1%',
+dragonOI:'持仓量(万U)',dragonFunding:'资金费率',detailsBtn:'查看详情',detailsComingSoon:'详情页开发中...',
 signalsTitle:'ETH / WLD 多周期方向观察',signalsTag:'优先关注',signalsNote:'使用已完成 K 线收盘价相对 EMA20 的位置作为简化方向代理。',
 signalsExplainTitle:'信号解释',signal1Title:'多周期偏多',signal1Desc:'日线、4小时、1小时方向一致向上',
 signal2Title:'多周期偏空',signal2Desc:'日线、4小时、1小时方向一致向下',signal3Title:'方向分歧',signal3Desc:'周期不一致,优先等待,不强行交易',
@@ -294,7 +323,7 @@ footerText:'潮汐 RADAR · 加密市场情报终端 · 数据仅供研究参考
 },
 en:{
 brand:'Tide RADAR',tagline:'CRYPTO MARKET INTELLIGENCE · V2',
-navOverview:'Overview',navSectors:'Sectors',navRadar:'Radar',navSignals:'Signals',navBrief:'Brief',navWatch:'Watchlist',navMethod:'Method',
+navOverview:'Overview',navSectors:'Sectors',navRadar:'Radar',navDragon:'Dragon Tiger',navSignals:'Signals',navBrief:'Brief',navWatch:'Watchlist',navMethod:'Method',
 eyebrow:'MARKET PULSE / LIVE MONITOR',headline:'See what\'s happening in the market',subheadline:'From breadth to rotation to anomalies, find signals worth deeper research.',
 connecting:'Connecting',connected:'Connected',failed:'Failed',waitingData:'Waiting',updatedAt:'Updated',refreshBtn:'Refresh ↻',
 focusTitle:'🎯 Focus Today',focusNote:'💡 Auto-generated. For reference only, not investment advice.',
@@ -311,7 +340,10 @@ sectorDetailsTitle:'Sector Components',
 radarTitle:'Anomaly Radar',radarTag:'Rule-based',searchPlaceholder:'Search symbol, e.g. ETH / WLD',
 filterAll:'All',filterUp:'Gainers',filterDown:'Losers',filterRange:'High Range (>8%)',
 sortByVolume:'By Volume',sortByChange:'By Change',sortByRangeOption:'By Range',
-noResults:'No results',
+reasonVolatility:'High volatility',reasonVolume:'High volume',reasonOI:'OI surge',reasonFunding:'Funding skew',
+dragonTitle:'🐉 Dragon Tiger Board',dragonToday:'Today',dragonLoading:'Loading Dragon Tiger Board...',dragonCriteria:'Criteria (any):',
+criteriaChange:'24H Change > 8%',criteriaVolume:'Volume Top 20',criteriaOI:'OI Change > 30%',criteriaFunding:'Funding Skew > 0.1%',
+dragonOI:'OI (10k$)',dragonFunding:'Funding',detailsBtn:'Details',detailsComingSoon:'Detail page coming soon...',
 signalsTitle:'ETH / WLD Multi-Timeframe Direction',signalsTag:'Priority Watch',signalsNote:'Uses completed candle close vs EMA20 as simplified directional proxy.',
 signalsExplainTitle:'Signal Explanation',signal1Title:'Multi-TF Bullish',signal1Desc:'Daily, 4H, 1H all up',
 signal2Title:'Multi-TF Bearish',signal2Desc:'Daily, 4H, 1H all down',signal3Title:'Divergence',signal3Desc:'Timeframes disagree; wait, don\'t force',
@@ -360,7 +392,7 @@ function loadFocus(){$('focus').innerHTML='<div class="muted">正在获取 K 线
 function addWatch(s){var a=JSON.parse(localStorage.getItem('tide_watch')||'["BTC","ETH","WLD"]');if(a.indexOf(s)<0)a.push(s);localStorage.setItem('tide_watch',JSON.stringify(a));document.querySelector('[data-page="watch"]').click();renderWatchList();}
 function removeWatch(s){var a=JSON.parse(localStorage.getItem('tide_watch')||'[]').filter(function(x){return x!==s;});localStorage.setItem('tide_watch',JSON.stringify(a));renderWatchList();}
 function renderWatchList(){var a=JSON.parse(localStorage.getItem('tide_watch')||'["BTC","ETH","WLD"]');$('watchList').innerHTML=a.length?a.map(function(s){var x=markets.find(function(y){return y.symbol===s;});return '<div class="watchrow"><span><b>'+s+'</b>　'+(x?('<span class="'+cls(x.change)+'">'+pct(x.change)+'</span>　$'+fmt(x.last,x.last<1?6:2)):'等待行情')+'</span><button onclick="removeWatch(\''+s+'\')">移除</button></div>';}).join(''):'暂无自选标的。';}
-document.querySelectorAll('nav button').forEach(function(b){b.onclick=function(){document.querySelectorAll('nav button').forEach(function(x){x.classList.toggle('active',x===b);});document.querySelectorAll('.page').forEach(function(x){x.classList.toggle('active',x.id===b.dataset.page);});if(b.dataset.page==='watch')renderWatchList();};});
+document.querySelectorAll('nav button').forEach(function(b){b.onclick=function(){document.querySelectorAll('nav button').forEach(function(x){x.classList.toggle('active',x===b);});document.querySelectorAll('.page').forEach(function(x){x.classList.toggle('active',x.id===b.dataset.page);});if(b.dataset.page==='watch')renderWatchList();if(b.dataset.page==='dragon'&&!dragonTigerData.lastUpdate)renderDragonTiger();};});
 $('refresh').onclick=refresh;
 if($('search'))$('search').addEventListener('input',renderRadar);
 if($('filter'))$('filter').addEventListener('input',renderRadar);
@@ -375,6 +407,7 @@ document.querySelector('.brand').innerHTML='<span class="logo">潮</span>'+t('br
 document.querySelector('[data-page="overview"]').textContent=t('navOverview');
 document.querySelector('[data-page="sectors"]').textContent=t('navSectors');
 document.querySelector('[data-page="radar"]').textContent=t('navRadar');
+document.querySelector('[data-page="dragon"]').textContent=t('navDragon');
 document.querySelector('[data-page="signals"]').textContent=t('navSignals');
 document.querySelector('[data-page="brief"]').textContent=t('navBrief');
 document.querySelector('[data-page="watch"]').textContent=t('navWatch');
@@ -453,6 +486,10 @@ if(markets.length)render();
 }
 document.querySelectorAll('.lang-switch button').forEach(function(b){b.onclick=function(){switchLang(b.dataset.lang);};});
 var savedLang=localStorage.getItem('tide_lang')||'zh';if(savedLang!=='zh')switchLang(savedLang);
+function checkDragonTigerCriteria(coin){var criteria=[];if(Math.abs(coin.change)>8){criteria.push(t('reasonVolatility'));}var rank=markets.filter(function(x){return x.vol>coin.vol;}).length+1;if(rank<=20){criteria.push(t('reasonVolume'));}if(coin.oiChange&&Math.abs(coin.oiChange)>30){criteria.push(t('reasonOI'));}if(coin.fundingRate&&Math.abs(coin.fundingRate)>0.0010){criteria.push(t('reasonFunding'));}return criteria;}
+async function fetchDragonTigerData(){var promises=markets.slice(0,50).map(async function(coin){try{var oiRes=await api('/api/v5/public/open-interest?instId='+coin.id);if(oiRes.length){coin.oi=+oiRes[0].oi||0;coin.oiUsd=+oiRes[0].oiUsd||0;}var frRes=await api('/api/v5/public/funding-rate?instId='+coin.id);if(frRes.length){coin.fundingRate=+frRes[0].fundingRate||0;coin.nextFundingTime=frRes[0].nextFundingTime;}coin.dragonTigerReasons=checkDragonTigerCriteria(coin);return coin.dragonTigerReasons.length>0?coin:null;}catch(e){return null;}});var results=await Promise.all(promises);dragonTigerData.todayList=results.filter(Boolean);dragonTigerData.lastUpdate=new Date();return dragonTigerData.todayList;}
+function renderDragonTiger(){var html='';if(!dragonTigerData.todayList.length){html='<div class="muted" style="padding:30px;text-align:center">'+t('dragonLoading')+'</div>';$('dragon-tiger-content').innerHTML=html;fetchDragonTigerData().then(renderDragonTiger);return;}var todayCount=dragonTigerData.todayList.length;var updateTime=dragonTigerData.lastUpdate?dragonTigerData.lastUpdate.toLocaleTimeString(currentLang==='zh'?'zh-CN':'en-US',{hour12:false}):'--:--:--';html+='<div class="dragon-header">';html+='<div class="dragon-title">';html+='<h2>'+t('dragonTitle')+'</h2>';html+='<span class="tag">'+t('dragonToday')+': '+todayCount+'</span>';html+='</div>';html+='<div class="muted" style="font-size:11px">'+t('updatedAt')+' '+updateTime+'</div>';html+='</div>';html+='<div class="dragon-criteria" style="margin:15px 0;padding:12px;background:#0f1621;border-radius:8px">';html+='<div style="font-size:11px;color:var(--muted);margin-bottom:6px">'+t('dragonCriteria')+'</div>';html+='<div style="display:flex;gap:10px;flex-wrap:wrap">';html+='<span class="dragon-badge">'+t('criteriaChange')+'</span>';html+='<span class="dragon-badge">'+t('criteriaVolume')+'</span>';html+='<span class="dragon-badge">'+t('criteriaOI')+'</span>';html+='<span class="dragon-badge">'+t('criteriaFunding')+'</span>';html+='</div></div>';html+='<table class="dragon-table card-table">';html+='<thead><tr>';html+='<th>'+t('thContract')+'</th>';html+='<th>'+t('thPrice')+'</th>';html+='<th>'+t('thChange')+'</th>';html+='<th>'+t('dragonOI')+'</th>';html+='<th>'+t('dragonFunding')+'</th>';html+='<th>'+t('thReason')+'</th>';html+='<th>'+t('thAction')+'</th>';html+='</tr></thead><tbody>';dragonTigerData.todayList.forEach(function(coin){html+='<tr class="dragon-row" data-symbol="'+coin.symbol+'">';html+='<td class="coin" data-label="">'+coin.symbol+'<small>'+t('perpContract')+'</small></td>';html+='<td data-label="'+t('thPrice')+'">$'+fmt(coin.last,coin.last<1?6:2)+'</td>';html+='<td data-label="'+t('thChange')+'" class="'+cls(coin.change)+'">'+pct(coin.change)+'</td>';html+='<td data-label="'+t('dragonOI')+'">'+(coin.oiUsd?fmt(coin.oiUsd/10000,0):'—')+'</td>';html+='<td data-label="'+t('dragonFunding')+'" class="'+(coin.fundingRate>0.0005?'pos':coin.fundingRate<-0.0005?'neg':'')+'">'+((coin.fundingRate?(coin.fundingRate*100).toFixed(4)+'%':'—'))+'</td>';html+='<td data-label="'+t('thReason')+'" class="dragon-reasons">'+coin.dragonTigerReasons.map(function(r){return '<span class="reason-tag">'+r+'</span>';}).join('')+'</td>';html+='<td data-label="'+t('thAction')+'"><button class="btn" onclick="showDragonDetail(\''+coin.symbol+'\')">'+t('detailsBtn')+'</button></td>';html+='</tr>';});html+='</tbody></table>';$('dragon-tiger-content').innerHTML=html;}
+function showDragonDetail(symbol){var coin=dragonTigerData.todayList.find(function(x){return x.symbol===symbol;});if(!coin)return;alert(t('detailsComingSoon')+'\n\n'+symbol+'\n'+t('dragonOI')+': '+(coin.oiUsd?'$'+compact(coin.oiUsd):'N/A')+'\n'+t('dragonFunding')+': '+(coin.fundingRate?(coin.fundingRate*100).toFixed(4)+'%':'N/A'));}
 renderWatchList();
 refresh();
 setInterval(refresh,60000);
