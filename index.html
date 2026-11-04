@@ -370,7 +370,87 @@ $('addWatch').onclick=function(){var s=$('watchInput').value.trim().toUpperCase(
 $('copy-brief').onclick=function(){var txt=$('brief-content').textContent;if(navigator.clipboard){navigator.clipboard.writeText(txt).then(function(){$('copy-brief').textContent='已复制 ✓';setTimeout(function(){$('copy-brief').textContent='复制简报';},1800);}).catch(function(){$('copy-brief').textContent='请手动选取复制';});}else{$('copy-brief').textContent='请手动选取复制';}};
 function t(key){return translations[currentLang][key]||key;}
 function switchLang(lang){currentLang=lang;localStorage.setItem('tide_lang',lang);document.querySelectorAll('.lang-switch button').forEach(function(b){b.classList.toggle('active',b.dataset.lang===lang);});updateUI();}
-function updateUI(){document.querySelector('.brand').innerHTML='<span class="logo">潮</span>'+t('brand')+'<small>'+t('tagline')+'</small>';document.querySelector('[data-page="overview"]').textContent=t('navOverview');document.querySelector('[data-page="sectors"]').textContent=t('navSectors');document.querySelector('[data-page="radar"]').textContent=t('navRadar');document.querySelector('[data-page="signals"]').textContent=t('navSignals');document.querySelector('[data-page="brief"]').textContent=t('navBrief');document.querySelector('[data-page="watch"]').textContent=t('navWatch');document.querySelector('[data-page="method"]').textContent=t('navMethod');document.querySelector('.eyebrow').textContent=t('eyebrow');document.querySelector('.headline').textContent=t('headline');document.querySelector('.sub').textContent=t('subheadline');if($('refresh'))$('refresh').textContent=t('refreshBtn');if(markets.length)render();}
+function updateUI(){
+document.querySelector('.brand').innerHTML='<span class="logo">潮</span>'+t('brand')+'<small>'+t('tagline')+'</small>';
+document.querySelector('[data-page="overview"]').textContent=t('navOverview');
+document.querySelector('[data-page="sectors"]').textContent=t('navSectors');
+document.querySelector('[data-page="radar"]').textContent=t('navRadar');
+document.querySelector('[data-page="signals"]').textContent=t('navSignals');
+document.querySelector('[data-page="brief"]').textContent=t('navBrief');
+document.querySelector('[data-page="watch"]').textContent=t('navWatch');
+document.querySelector('[data-page="method"]').textContent=t('navMethod');
+document.querySelector('.eyebrow').textContent=t('eyebrow');
+document.querySelector('.headline').textContent=t('headline');
+document.querySelector('.sub').textContent=t('subheadline');
+if($('focusTitle'))$('focusTitle').textContent=t('focusTitle');
+if($('focusNote'))$('focusNote').textContent=t('focusNote');
+if($('kpiCoins'))$('kpiCoins').textContent=t('kpiCoins');
+if($('kpiBreadth'))$('kpiBreadth').textContent=t('kpiBreadth');
+if($('kpiVolume'))$('kpiVolume').textContent=t('kpiVolume');
+if($('kpiAlerts'))$('kpiAlerts').textContent=t('kpiAlerts');
+if($('kpiBtc'))$('kpiBtc').textContent=t('kpiBtc');
+if($('kpiNote1'))$('kpiNote1').textContent=t('kpiNote1');
+if($('kpiNote2'))$('kpiNote2').textContent=t('kpiNote2');
+if($('kpiNote3'))$('kpiNote3').textContent=t('kpiNote3');
+if($('kpiNote4'))$('kpiNote4').textContent=t('kpiNote4');
+if($('hotSectorsTitle'))$('hotSectorsTitle').textContent=t('hotSectorsTitle');
+if($('hotSectorsTag'))$('hotSectorsTag').textContent=t('hotSectorsTag');
+if($('sectorTilesTitle'))$('sectorTilesTitle').textContent=t('sectorTilesTitle');
+if($('sectorTilesTag'))$('sectorTilesTag').textContent=t('sectorTilesTag');
+if($('summaryTitle'))$('summaryTitle').textContent=t('summaryTitle');
+if($('summaryTag'))$('summaryTag').textContent=t('summaryTag');
+if($('marketTitle'))$('marketTitle').textContent=t('marketTitle');
+if($('marketSortLabel'))$('marketSortLabel').textContent=t('marketSort');
+if($('marketSort')){
+var mso=$('marketSort');
+mso.options[0].textContent=t('sortVolume');
+mso.options[1].textContent=t('sortChangeDesc');
+mso.options[2].textContent=t('sortChangeAsc');
+mso.options[3].textContent=t('sortRange');
+}
+if($('thContract'))$('thContract').textContent=t('thContract');
+if($('thPrice'))$('thPrice').textContent=t('thPrice');
+if($('thChange'))$('thChange').textContent=t('thChange');
+if($('thVolume'))$('thVolume').textContent=t('thVolume');
+if($('thRange'))$('thRange').textContent=t('thRange');
+if($('thReason'))$('thReason').textContent=t('thReason');
+if($('thAction'))$('thAction').textContent=t('thAction');
+if($('sectorTableTitle'))$('sectorTableTitle').textContent=t('sectorTableTitle');
+if($('sectorTableTag'))$('sectorTableTag').textContent=t('sectorTableTag');
+if($('sectorTableNote'))$('sectorTableNote').textContent=t('sectorTableNote');
+if($('thSector'))$('thSector').textContent=t('thSector');
+if($('thCount'))$('thCount').textContent=t('thCount');
+if($('thAvgChange'))$('thAvgChange').textContent=t('thAvgChange');
+if($('thUpDown'))$('thUpDown').textContent=t('thUpDown');
+if($('thSectorVol'))$('thSectorVol').textContent=t('thSectorVol');
+if($('thRepresentative'))$('thRepresentative').textContent=t('thRepresentative');
+if($('sectorDetailsTitle'))$('sectorDetailsTitle').textContent=t('sectorDetailsTitle');
+if($('radarTitle'))$('radarTitle').textContent=t('radarTitle');
+if($('radarTag'))$('radarTag').textContent=t('radarTag');
+if($('search'))$('search').placeholder=t('searchPlaceholder');
+if($('filter')){
+var fso=$('filter');
+fso.options[0].textContent=t('filterAll');
+fso.options[1].textContent=t('filterUp');
+fso.options[2].textContent=t('filterDown');
+fso.options[3].textContent=t('filterRange');
+}
+if($('sort')){
+var sso=$('sort');
+sso.options[0].textContent=t('sortByVolume');
+sso.options[1].textContent=t('sortByChange');
+sso.options[2].textContent=t('sortByRangeOption');
+}
+if($('briefTitle'))$('briefTitle').textContent=t('briefTitle');
+if($('briefNote'))$('briefNote').textContent=t('briefNote');
+if($('copy-brief'))$('copy-brief').textContent=t('copyBtn');
+if($('watchTitle'))$('watchTitle').textContent=t('watchTitle');
+if($('watchTag'))$('watchTag').textContent=t('watchTag');
+if($('watchInput'))$('watchInput').placeholder=t('watchInputPlaceholder');
+if($('addWatch'))$('addWatch').textContent=t('watchAddBtn');
+if($('refresh'))$('refresh').textContent=t('refreshBtn');
+if(markets.length)render();
+}
 document.querySelectorAll('.lang-switch button').forEach(function(b){b.onclick=function(){switchLang(b.dataset.lang);};});
 var savedLang=localStorage.getItem('tide_lang')||'zh';if(savedLang!=='zh')switchLang(savedLang);
 renderWatchList();
