@@ -76,6 +76,9 @@ input{min-width:180px}
 .notice{background:#252015;border:1px solid #5b4b2a;color:#d0bd91;border-radius:8px;padding:12px;margin-top:14px;font-size:11px}
 footer{border-top:1px solid var(--line);padding:20px;text-align:center;color:#708198;font-size:11px}
 .brief-box{background:#091421;border-radius:10px;padding:16px;white-space:pre-wrap;font-size:13px;line-height:2;border:1px solid var(--line)}
+.lang-switch{display:flex;gap:5px;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.lang-switch button{background:transparent;color:var(--muted);border:0;padding:6px 10px;font-size:11px;cursor:pointer}
+.lang-switch button.active{background:var(--cyan);color:#07131d;font-weight:700}
 @media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}.method{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.headline{font-size:22px}.tiles{grid-template-columns:repeat(2,1fr)}.method{grid-template-columns:1fr}main{padding:18px 4vw}.scroll{overflow:visible}.card-table thead{display:none}.card-table tbody,.card-table tr,.card-table td{display:block}.card-table tr{background:#0b1521;border:1px solid var(--line);border-radius:10px;margin-bottom:10px;padding:12px}.card-table td{border:0;padding:6px 0;display:flex;justify-content:space-between;align-items:center;gap:12px;white-space:normal}.card-table td::before{content:attr(data-label);color:var(--muted);font-size:11px;flex-shrink:0}.card-table td.coin{font-size:15px;padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:4px}.card-table td.coin::before{display:none}}
 </style>
@@ -83,6 +86,7 @@ footer{border-top:1px solid var(--line);padding:20px;text-align:center;color:#70
 <body>
 <header>
 <div class="brand"><span class="logo">潮</span>潮汐 RADAR<small>CRYPTO MARKET INTELLIGENCE · V2</small></div>
+<div style="display:flex;align-items:center;gap:15px;flex-wrap:wrap;flex:1">
 <nav>
 <button class="active" data-page="overview">市场全景</button>
 <button data-page="sectors">板块轮动</button>
@@ -92,6 +96,11 @@ footer{border-top:1px solid var(--line);padding:20px;text-align:center;color:#70
 <button data-page="watch">自选观察</button>
 <button data-page="method">研究框架</button>
 </nav>
+<div class="lang-switch">
+<button class="active" data-lang="zh">中文</button>
+<button data-lang="en">EN</button>
+</div>
+</div>
 </header>
 <main>
 <div class="top">
@@ -248,6 +257,77 @@ footer{border-top:1px solid var(--line);padding:20px;text-align:center;color:#70
 var API='https://okx-proxy.xxquansync.workers.dev';
 var groups={'主流资产':['BTC','ETH','XRP','BNB','SOL','DOGE','ADA','TRX','LTC','BCH'],'DeFi':['UNI','AAVE','LINK','MKR','CRV','LDO','SNX','COMP','DYDX'],'公链生态':['WLD','SUI','AVAX','TON','APT','NEAR','ARB','OP','ATOM','SEI'],'Meme':['PEPE','SHIB','BONK','WIF','FLOKI','ORDI','BOME'],'AI / 数据':['RENDER','FET','TAO','ARKM','GRT','OCEAN'],'交易平台':['OKB','BNB','GT','KCS','MX','CRO']};
 var markets=[];
+var currentLang='zh';
+var translations={
+zh:{
+brand:'潮汐 RADAR',tagline:'CRYPTO MARKET INTELLIGENCE · V2',
+navOverview:'市场全景',navSectors:'板块轮动',navRadar:'异动雷达',navSignals:'多空观察',navBrief:'市场简报',navWatch:'自选观察',navMethod:'研究框架',
+eyebrow:'MARKET PULSE / LIVE MONITOR',headline:'看见市场正在发生什么',subheadline:'从市场广度、板块轮动到异常波动,寻找值得进一步研究的信号。',
+connecting:'连接行情中',connected:'行情已连接',failed:'连接失败',waitingData:'等待数据',updatedAt:'更新于',refreshBtn:'刷新 ↻',
+focusTitle:'🎯 今日关注重点',focusNote:'💡 自动生成的市场观察,仅供参考,不构成投资建议',
+kpiCoins:'USDT 永续覆盖标的',kpiBreadth:'市场上涨占比',kpiVolume:'24H 总成交额',kpiAlerts:'大幅波动标的',kpiBtc:'BTC 24H 涨跌',
+kpiNote1:'OKX SWAP 合约',kpiNote2:'24H 涨跌家数',kpiNote3:'ticker 报价币成交额合计',kpiNote4:'涨跌幅或振幅阈值筛选',kpiNote5:'等待报价',
+hotSectorsTitle:'本周热点板块',hotSectorsTag:'动态追踪',
+sectorTilesTitle:'板块热度概览',sectorTilesTag:'固定样本追踪',summaryTitle:'市场异动摘要',summaryTag:'实时扫描',
+marketTitle:'市场合约排行',marketSort:'排序:',sortVolume:'成交额 (默认)',sortChangeDesc:'涨跌幅 ↓',sortChangeAsc:'涨跌幅 ↑',sortRange:'振幅',
+thContract:'合约',thPrice:'最新价',thChange:'24H 涨跌',thVolume:'成交额',thRange:'高低振幅',thReason:'可能原因',thAction:'操作',
+addBtn:'+ 自选',copyBtn:'复制简报',copiedBtn:'已复制 ✓',copyFailBtn:'请手动选取复制',
+sectorTableTitle:'板块强弱与轮动',sectorTableTag:'样本简单均值',sectorTableNote:'板块涨跌幅为预设样本币种 24H 涨跌幅的简单平均,并非交易所官方分类。',
+thSector:'板块',thCount:'样本数',thAvgChange:'平均涨跌',thUpDown:'上涨 / 下跌',thSectorVol:'成交额合计',thRepresentative:'代表标的',
+sectorDetailsTitle:'板块成分观察',
+radarTitle:'异常波动雷达',radarTag:'规则型观察',searchPlaceholder:'搜索币种,例如 ETH / WLD',
+filterAll:'全部标的',filterUp:'上涨标的',filterDown:'下跌标的',filterRange:'高振幅 (>8%)',
+sortByVolume:'按成交额排序',sortByChange:'按涨跌幅排序',sortByRangeOption:'按振幅排序',
+noResults:'没有匹配结果',
+signalsTitle:'ETH / WLD 多周期方向观察',signalsTag:'优先关注',signalsNote:'使用已完成 K 线收盘价相对 EMA20 的位置作为简化方向代理。',
+signalsExplainTitle:'信号解释',signal1Title:'多周期偏多',signal1Desc:'日线、4小时、1小时方向一致向上',
+signal2Title:'多周期偏空',signal2Desc:'日线、4小时、1小时方向一致向下',signal3Title:'方向分歧',signal3Desc:'周期不一致,优先等待,不强行交易',
+signalsDisclaimer:'EMA 方向不等于完整交易信号。本页不提供未经验证的入场价、止损价或收益承诺。',
+briefTitle:'今日市场简报',briefNote:'根据当前行情快照自动生成,可复制到社群或社交平台。',briefWaiting:'等待行情数据…',
+watchTitle:'自选观察池',watchTag:'保存在当前浏览器',watchInputPlaceholder:'输入币种,如 ETH',watchAddBtn:'添加标的',watchEmpty:'暂无自选标的。',watchRemoveBtn:'移除',
+methodTitle:'潮汐研究框架',methodTag:'从发现到验证',
+step1:'01 / 市场全景',step1Desc:'观察市场广度、主流币方向与整体成交活跃度。',
+step2:'02 / 板块轮动',step2Desc:'识别相对强势板块,观察热点扩散或退潮。',
+step3:'03 / 异动发现',step3Desc:'筛选涨跌、振幅、成交额异常的合约。',
+step4:'04 / 多周期验证',step4Desc:'日线定大势、4H定方向、15m看形态、3–5m找时机。',
+methodDisclaimer:'数据口径与限制:',methodDisclaimerText:'行情来自 OKX 公共 API;成交额不等于净流入,持仓量变化不等于多头资金流入。板块为预设样本,不代表完整市场分类。自选数据仅保存在本机浏览器。',
+footerText:'潮汐 RADAR · 加密市场情报终端 · 数据仅供研究参考 · 不构成投资建议'
+},
+en:{
+brand:'Tide RADAR',tagline:'CRYPTO MARKET INTELLIGENCE · V2',
+navOverview:'Overview',navSectors:'Sectors',navRadar:'Radar',navSignals:'Signals',navBrief:'Brief',navWatch:'Watchlist',navMethod:'Method',
+eyebrow:'MARKET PULSE / LIVE MONITOR',headline:'See what\'s happening in the market',subheadline:'From breadth to rotation to anomalies, find signals worth deeper research.',
+connecting:'Connecting',connected:'Connected',failed:'Failed',waitingData:'Waiting',updatedAt:'Updated',refreshBtn:'Refresh ↻',
+focusTitle:'🎯 Focus Today',focusNote:'💡 Auto-generated. For reference only, not investment advice.',
+kpiCoins:'USDT Perpetual Coverage',kpiBreadth:'Market Breadth',kpiVolume:'24H Volume',kpiAlerts:'High Volatility',kpiBtc:'BTC 24H Change',
+kpiNote1:'OKX SWAP contracts',kpiNote2:'24H Gainers / Losers',kpiNote3:'Sum of ticker volumes',kpiNote4:'Threshold-based screening',kpiNote5:'Waiting',
+hotSectorsTitle:'Hot Sectors This Week',hotSectorsTag:'Live Tracking',
+sectorTilesTitle:'Sector Heatmap',sectorTilesTag:'Fixed Sample',summaryTitle:'Market Anomalies',summaryTag:'Real-time Scan',
+marketTitle:'Market Rankings',marketSort:'Sort:',sortVolume:'Volume (default)',sortChangeDesc:'Change ↓',sortChangeAsc:'Change ↑',sortRange:'Range',
+thContract:'Symbol',thPrice:'Price',thChange:'24H Change',thVolume:'Volume',thRange:'Range',thReason:'Reason',thAction:'Action',
+addBtn:'+ Watch',copyBtn:'Copy',copiedBtn:'Copied ✓',copyFailBtn:'Manual copy',
+sectorTableTitle:'Sector Strength',sectorTableTag:'Simple Average',sectorTableNote:'Sector changes are simple averages of preset samples, not official exchange categories.',
+thSector:'Sector',thCount:'Samples',thAvgChange:'Avg Change',thUpDown:'Up / Down',thSectorVol:'Total Volume',thRepresentative:'Representative',
+sectorDetailsTitle:'Sector Components',
+radarTitle:'Anomaly Radar',radarTag:'Rule-based',searchPlaceholder:'Search symbol, e.g. ETH / WLD',
+filterAll:'All',filterUp:'Gainers',filterDown:'Losers',filterRange:'High Range (>8%)',
+sortByVolume:'By Volume',sortByChange:'By Change',sortByRangeOption:'By Range',
+noResults:'No results',
+signalsTitle:'ETH / WLD Multi-Timeframe Direction',signalsTag:'Priority Watch',signalsNote:'Uses completed candle close vs EMA20 as simplified directional proxy.',
+signalsExplainTitle:'Signal Explanation',signal1Title:'Multi-TF Bullish',signal1Desc:'Daily, 4H, 1H all up',
+signal2Title:'Multi-TF Bearish',signal2Desc:'Daily, 4H, 1H all down',signal3Title:'Divergence',signal3Desc:'Timeframes disagree; wait, don\'t force',
+signalsDisclaimer:'EMA direction is not a complete trading signal. No entry, stop-loss, or profit promises are made.',
+briefTitle:'Market Brief',briefNote:'Auto-generated from current snapshot. Copy to share on social platforms.',briefWaiting:'Waiting for data…',
+watchTitle:'Watchlist',watchTag:'Saved in browser',watchInputPlaceholder:'Enter symbol, e.g. ETH',watchAddBtn:'Add',watchEmpty:'No symbols in watchlist.',watchRemoveBtn:'Remove',
+methodTitle:'Tide Research Framework',methodTag:'Discovery to Verification',
+step1:'01 / Overview',step1Desc:'Observe breadth, major coin direction, and overall activity.',
+step2:'02 / Rotation',step2Desc:'Identify strong sectors, watch hotspot expansion or fading.',
+step3:'03 / Anomaly',step3Desc:'Screen for unusual changes, ranges, or volumes.',
+step4:'04 / Multi-TF',step4Desc:'Daily for trend, 4H for direction, 15m for pattern, 3–5m for entry.',
+methodDisclaimer:'Data Scope & Limits:',methodDisclaimerText:'Data from OKX public API. Volume ≠ net inflow. OI change ≠ long capital inflow. Sectors are preset samples, not complete market taxonomy. Watchlist saved locally.',
+footerText:'Tide RADAR · Crypto Market Intelligence · For research only · Not investment advice'
+}
+};
 function $(id){return document.getElementById(id)}
 function fmt(n,d){d=d||2;return Number.isFinite(n)?n.toLocaleString('en-US',{maximumFractionDigits:d}):'—';}
 function pct(n){return (n>0?'+':'')+fmt(n,2)+'%';}
@@ -289,6 +369,11 @@ if($('sort'))$('sort').addEventListener('input',renderRadar);
 if($('marketSort'))$('marketSort').addEventListener('change',renderMarketTable);
 $('addWatch').onclick=function(){var s=$('watchInput').value.trim().toUpperCase().replace(/USDT$/,'');if(s)addWatch(s);$('watchInput').value='';};
 $('copy-brief').onclick=function(){var txt=$('brief-content').textContent;if(navigator.clipboard){navigator.clipboard.writeText(txt).then(function(){$('copy-brief').textContent='已复制 ✓';setTimeout(function(){$('copy-brief').textContent='复制简报';},1800);}).catch(function(){$('copy-brief').textContent='请手动选取复制';});}else{$('copy-brief').textContent='请手动选取复制';}};
+function t(key){return translations[currentLang][key]||key;}
+function switchLang(lang){currentLang=lang;localStorage.setItem('tide_lang',lang);document.querySelectorAll('.lang-switch button').forEach(function(b){b.classList.toggle('active',b.dataset.lang===lang);});updateUI();}
+function updateUI(){document.querySelector('.brand').innerHTML='<span class="logo">潮</span>'+t('brand')+'<small>'+t('tagline')+'</small>';document.querySelector('[data-page="overview"]').textContent=t('navOverview');document.querySelector('[data-page="sectors"]').textContent=t('navSectors');document.querySelector('[data-page="radar"]').textContent=t('navRadar');document.querySelector('[data-page="signals"]').textContent=t('navSignals');document.querySelector('[data-page="brief"]').textContent=t('navBrief');document.querySelector('[data-page="watch"]').textContent=t('navWatch');document.querySelector('[data-page="method"]').textContent=t('navMethod');document.querySelector('.eyebrow').textContent=t('eyebrow');document.querySelector('.headline').textContent=t('headline');document.querySelector('.sub').textContent=t('subheadline');if($('refresh'))$('refresh').textContent=t('refreshBtn');if(markets.length)render();}
+document.querySelectorAll('.lang-switch button').forEach(function(b){b.onclick=function(){switchLang(b.dataset.lang);};});
+var savedLang=localStorage.getItem('tide_lang')||'zh';if(savedLang!=='zh')switchLang(savedLang);
 renderWatchList();
 refresh();
 setInterval(refresh,60000);
