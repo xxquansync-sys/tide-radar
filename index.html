@@ -115,40 +115,39 @@ footer{border-top:1px solid var(--line);padding:20px;text-align:center;color:#70
 </div>
 </div>
 <div class="highlight" id="daily-focus">
-<div class="highlight-title">🎯 今日关注重点</div>
+<div class="highlight-title" id="focusTitle">🎯 今日关注重点</div>
 <div id="focus-content">
 <div class="insight">
 <span class="insight-num">①</span>
 <span class="insight-text">等待市场数据加载...</span>
 </div>
 </div>
-<div style="margin-top:12px;font-size:11px;color:var(--muted)">
-💡 自动生成的市场观察,仅供参考,不构成投资建议
+<div class="focus-note" id="focusNote">💡 自动生成的市场观察,仅供参考,不构成投资建议
 </div>
 </div>
 <section class="page active" id="overview">
 <div class="grid kpis">
-<div class="panel"><div class="klabel">USDT 永续覆盖标的</div><div class="kvalue" id="count">—</div><div class="muted">OKX SWAP 合约</div></div>
-<div class="panel"><div class="klabel">市场上涨占比</div><div class="kvalue" id="breadth">—</div><div class="muted">24H 涨跌家数</div></div>
-<div class="panel"><div class="klabel">24H 总成交额</div><div class="kvalue" id="volume">—</div><div class="muted">ticker 报价币成交额合计</div></div>
-<div class="panel"><div class="klabel">大幅波动标的</div><div class="kvalue" id="alerts">—</div><div class="muted">涨跌幅或振幅阈值筛选</div></div>
-<div class="panel"><div class="klabel">BTC 24H 涨跌</div><div class="kvalue" id="btc">—</div><div class="muted" id="btcprice">等待报价</div></div>
+<div class="panel"><div class="klabel" id="kpiCoins">USDT 永续覆盖标的</div><div class="kvalue" id="count">—</div><div class="muted" id="kpiNote1">OKX SWAP 合约</div></div>
+<div class="panel"><div class="klabel" id="kpiBreadth">市场上涨占比</div><div class="kvalue" id="breadth">—</div><div class="muted" id="kpiNote2">24H 涨跌家数</div></div>
+<div class="panel"><div class="klabel" id="kpiVolume">24H 总成交额</div><div class="kvalue" id="volume">—</div><div class="muted" id="kpiNote3">ticker 报价币成交额合计</div></div>
+<div class="panel"><div class="klabel" id="kpiAlerts">大幅波动标的</div><div class="kvalue" id="alerts">—</div><div class="muted" id="kpiNote4">涨跌幅或振幅阈值筛选</div></div>
+<div class="panel"><div class="klabel" id="kpiBtc">BTC 24H 涨跌</div><div class="kvalue" id="btc">—</div><div class="muted" id="btcprice">等待报价</div></div>
 </div>
 <div class="panel">
-<div class="head"><h2>本周热点板块</h2><span class="tag">动态追踪</span></div>
+<div class="head"><h2 id="hotSectorsTitle">本周热点板块</h2><span class="tag" id="hotSectorsTag">动态追踪</span></div>
 <div class="hot-tags" id="hot-sectors">
 <div class="hot-tag">加载中...</div>
 </div>
 </div>
 <div class="grid layout">
-<div class="panel"><div class="head"><h2>板块热度概览</h2><span class="tag">固定样本追踪</span></div><div class="tiles" id="tiles">加载中…</div></div>
-<div class="panel"><div class="head"><h2>市场异动摘要</h2><span class="tag">实时扫描</span></div><div id="summary" class="muted">等待行情…</div></div>
+<div class="panel"><div class="head"><h2 id="sectorTilesTitle">板块热度概览</h2><span class="tag" id="sectorTilesTag">固定样本追踪</span></div><div class="tiles" id="tiles">加载中…</div></div>
+<div class="panel"><div class="head"><h2 id="summaryTitle">市场异动摘要</h2><span class="tag" id="summaryTag">实时扫描</span></div><div id="summary" class="muted">等待行情…</div></div>
 </div>
 <div class="panel">
 <div class="head">
-<h2>市场合约排行</h2>
+<h2 id="marketTitle">市场合约排行</h2>
 <div style="display:flex;gap:8px;align-items:center">
-<span class="muted" style="font-size:11px">排序:</span>
+<span class="muted" style="font-size:11px" id="marketSortLabel">排序:</span>
 <select id="marketSort" style="padding:5px 8px;font-size:11px;min-width:120px">
 <option value="volume">成交额 (默认)</option>
 <option value="change-desc">涨跌幅 ↓</option>
@@ -159,7 +158,7 @@ footer{border-top:1px solid var(--line);padding:20px;text-align:center;color:#70
 </div>
 <div class="scroll">
 <table class="card-table">
-<thead><tr><th>合约</th><th>最新价</th><th>24H 涨跌</th><th>成交额</th><th>高低振幅</th><th>可能原因</th><th>操作</th></tr></thead>
+<thead><tr><th id="thContract">合约</th><th id="thPrice">最新价</th><th id="thChange">24H 涨跌</th><th id="thVolume">成交额</th><th id="thRange">高低振幅</th><th id="thReason">可能原因</th><th id="thAction">操作</th></tr></thead>
 <tbody id="market"><tr><td colspan="7">正在连接…</td></tr></tbody>
 </table>
 </div>
@@ -167,23 +166,23 @@ footer{border-top:1px solid var(--line);padding:20px;text-align:center;color:#70
 </section>
 <section class="page" id="sectors">
 <div class="panel">
-<div class="head"><h2>板块强弱与轮动</h2><span class="tag">样本简单均值</span></div>
-<p class="sub">板块涨跌幅为预设样本币种 24H 涨跌幅的简单平均,并非交易所官方分类。</p>
+<div class="head"><h2 id="sectorTableTitle">板块强弱与轮动</h2><span class="tag" id="sectorTableTag">样本简单均值</span></div>
+<p class="sub" id="sectorTableNote">板块涨跌幅为预设样本币种 24H 涨跌幅的简单平均,并非交易所官方分类。</p>
 <div class="scroll">
 <table>
-<thead><tr><th>板块</th><th>样本数</th><th>平均涨跌</th><th>上涨 / 下跌</th><th>成交额合计</th><th>代表标的</th></tr></thead>
+<thead><tr><th id="thSector">板块</th><th id="thCount">样本数</th><th id="thAvgChange">平均涨跌</th><th id="thUpDown">上涨 / 下跌</th><th id="thSectorVol">成交额合计</th><th id="thRepresentative">代表标的</th></tr></thead>
 <tbody id="sectorTable"></tbody>
 </table>
 </div>
 </div>
 <div class="panel" style="margin-top:13px">
-<div class="head"><h2>板块成分观察</h2></div>
+<div class="head"><h2 id="sectorDetailsTitle">板块成分观察</h2></div>
 <div id="sectorDetails" class="muted"></div>
 </div>
 </section>
 <section class="page" id="radar">
 <div class="panel">
-<div class="head"><h2>异常波动雷达</h2><span class="tag">规则型观察</span></div>
+<div class="head"><h2 id="radarTitle">异常波动雷达</h2><span class="tag" id="radarTag">规则型观察</span></div>
 <div class="controls">
 <input id="search" placeholder="搜索币种,例如 ETH / WLD">
 <select id="filter">
@@ -200,7 +199,7 @@ footer{border-top:1px solid var(--line);padding:20px;text-align:center;color:#70
 </div>
 <div class="scroll">
 <table class="card-table">
-<thead><tr><th>标的</th><th>最新价</th><th>24H 涨跌</th><th>高低振幅</th><th>成交额</th><th>可能原因</th><th>操作</th></tr></thead>
+<thead><tr><th id="thSymbol">标的</th><th id="thPrice2">最新价</th><th id="thChange2">24H 涨跌</th><th id="thRange2">高低振幅</th><th id="thVolume2">成交额</th><th id="thReason2">可能原因</th><th id="thAction2">操作</th></tr></thead>
 <tbody id="radarTable"></tbody>
 </table>
 </div>
@@ -208,8 +207,8 @@ footer{border-top:1px solid var(--line);padding:20px;text-align:center;color:#70
 </section>
 <section class="page" id="brief">
 <div class="panel">
-<div class="head"><h2>今日市场简报</h2><button class="btn primary" id="copy-brief">复制简报</button></div>
-<div class="sub">根据当前行情快照自动生成,可复制到社群或社交平台。</div>
+<div class="head"><h2 id="briefTitle">今日市场简报</h2><button class="btn primary" id="copy-brief">复制简报</button></div>
+<div class="sub" id="briefNote">根据当前行情快照自动生成,可复制到社群或社交平台。</div>
 <div id="brief-content" class="brief-box" style="margin-top:16px">等待行情数据…</div>
 </div>
 </section>
