@@ -813,9 +813,12 @@ function openKlineChart(symbol){
 }
 function changeKlinePeriod(p){if(tideKlinePeriods.indexOf(p)<0)return;tideKline.period=p;klineRenderControls();klineLoad();}
 function klineToggleIndicator(name){
- if(name==='EMA'&&!tideKline.indicators.EMA)tideKline.indicators.EMA=true;
- else tideKline.indicators[name]=!tideKline.indicators[name];
- if(tideKline.chart){try{var panes=tideKline.chart.getIndicators();(panes||[]).forEach(function(i){if(i.name===name)tideKline.chart.removeIndicator({id:i.id});});}catch(e){}klineApplyIndicators();}
+ tideKline.indicators[name]=!tideKline.indicators[name];
+ if(tideKline.chart&&window.klinecharts){
+  try{window.klinecharts.dispose(tideKline.chart);}catch(e){}
+  tideKline.chart=window.klinecharts.init('tide-kline-canvas',{locale:currentLang==='zh'?'zh-CN':'en-US',timezone:'Asia/Singapore',styles:{grid:{horizontal:{color:'#1d2b3d'},vertical:{color:'#1d2b3d'}},candle:{bar:{upColor:'#39ca91',downColor:'#ff6c80',noChangeColor:'#9aa8b8',upBorderColor:'#39ca91',downBorderColor:'#ff6c80',upWickColor:'#39ca91',downWickColor:'#ff6c80'}},xAxis:{axisLine:{color:'#304258'},tickText:{color:'#8496ad'}},yAxis:{axisLine:{color:'#304258'},tickText:{color:'#8496ad'}}}});
+  klineApplyIndicators();klineLoad();
+ }
  klineRenderControls();
 }
 function klineDrawSegment(){if(!tideKline.chart)return;try{tideKline.chart.createOverlay('segment');}catch(e){klineSetStatus('Drawing tool unavailable in this chart build.');}}
