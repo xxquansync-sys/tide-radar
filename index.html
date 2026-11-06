@@ -825,18 +825,24 @@ function klineCreateIndicator(name){
  var params=tideKline.indicatorParams[name]||tideIndicatorDefaults[name];
  try{
   if(name==='MA'||name==='EMA'){
-   // Exact v9.8.12 documented overlay signature: paneId in config + isStack=true.
+   // KLineChart 9.8.12: paneOptions is the 3rd argument; candle_pane is the reserved main-pane id.
    tideIndicatorPanes[name]='candle_pane';
-   tideKline.chart.createIndicator({name:name,paneId:'candle_pane',calcParams:params},true);
+   var created=tideKline.chart.createIndicator({name:name,calcParams:params},true,{id:'candle_pane'});
+   if(!created)throw new Error('主图指标创建返回空值');
   }else{
    var pane='tide_'+name+'_pane';
    tideIndicatorPanes[name]=pane;
-   tideKline.chart.createIndicator({name:name,calcParams:params},false,{id:pane,height:name==='VOL'?90:105,minHeight:55,dragEnabled:true});
+   var createdSub=tideKline.chart.createIndicator({name:name,calcParams:params},false,{id:pane,height:name==='VOL'?90:105,minHeight:55,dragEnabled:true});
+   if(!createdSub)throw new Error('副图指标创建返回空值');
   }
  }catch(e){klineSetStatus(name+' 指标创建失败：'+e.message);}
 }
 function klineRebuildMainIndicators(){
  if(!tideKline.chart)return;
+ // Remove legacy MA/EMA sub-panes left by earlier builds as well as main-pane copies.
+ ['tide_MA_pane','tide_EMA_pane'].forEach(function(pane){
+  try{tideKline.chart.removeIndicator(pane);}catch(e){}
+ });
  try{tideKline.chart.removeIndicator('candle_pane');}catch(e){}
  delete tideIndicatorPanes.MA;delete tideIndicatorPanes.EMA;
  ['MA','EMA'].forEach(function(name){if(tideKline.indicators[name])klineCreateIndicator(name);});
