@@ -791,7 +791,7 @@ function klineApplyIndicators(){
 }
 function klineCreateChart(lib){
  if(tideKline.chart)return;
- tideKline.chart=lib.init('tide-kline-canvas',{locale:currentLang==='zh'?'zh-CN':'en-US',timezone:'Asia/Singapore',styles:{grid:{horizontal:{color:'#1d2b3d'},vertical:{color:'#1d2b3d'}},candle:{bar:{upColor:'#39ca91',downColor:'#ff6c80,noChangeColor:'#9aa8b8',upBorderColor:'#39ca91',downBorderColor:'#ff6c80',upWickColor:'#39ca91',downWickColor:'#ff6c80'}},xAxis:{axisLine:{color:'#304258'},tickText:{color:'#8496ad'}},yAxis:{axisLine:{color:'#304258'},tickText:{color:'#8496ad'}}}});
+ tideKline.chart=lib.init('tide-kline-canvas',{locale:currentLang==='zh'?'zh-CN':'en-US',timezone:'Asia/Singapore',styles:{grid:{horizontal:{color:'#1d2b3d'},vertical:{color:'#1d2b3d'}},candle:{bar:{upColor:'#39ca91',downColor:'#ff6c80',noChangeColor:'#9aa8b8',upBorderColor:'#39ca91',downBorderColor:'#ff6c80',upWickColor:'#39ca91',downWickColor:'#ff6c80'}},xAxis:{axisLine:{color:'#304258'},tickText:{color:'#8496ad'}},yAxis:{axisLine:{color:'#304258'},tickText:{color:'#8496ad'}}}});
  klineApplyIndicators();if(tideKline.data.length)tideKline.chart.applyNewData(tideKline.data);
 }
 function klineMergeData(incoming){
