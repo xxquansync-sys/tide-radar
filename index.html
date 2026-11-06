@@ -809,9 +809,8 @@ function klineApplyTheme(){
 }
 function klineToggleTheme(){tideKlineTheme=tideKlineTheme==='dark'?'light':'dark';try{localStorage.setItem('tide_kline_theme',tideKlineTheme);}catch(e){}klineApplyTheme();}
 function klineRemoveIndicator(name){
- var pane=tideIndicatorPanes[name]||(name==='MA'||name==='EMA'?'candle_pane':null);
- if(tideKline.chart&&pane){try{tideKline.chart.removeIndicator(pane,name);}catch(e){}}
- if(tideKline.chart&&!pane){try{tideKline.chart.removeIndicator('candle_pane',name);}catch(e){}}
+ var pane=((name==='MA'||name==='EMA')&&tideKline.indicatorLocations[name]==='main')?'candle_pane':(tideIndicatorPanes[name]||('tide_'+name+'_pane'));
+ if(tideKline.chart){try{tideKline.chart.removeIndicator(pane,name);}catch(e){}}
  delete tideIndicatorPanes[name];
 }
 function klineCreateIndicator(name){
@@ -819,7 +818,7 @@ function klineCreateIndicator(name){
  var params=tideKline.indicatorParams[name]||tideIndicatorDefaults[name];
  var overlay=(name==='MA'||name==='EMA')&&tideKline.indicatorLocations[name]==='main';
  try{
-  if(overlay)tideIndicatorPanes[name]=tideKline.chart.createIndicator({name:name,calcParams:params,paneId:'candle_pane'},true);
+  if(overlay)tideIndicatorPanes[name]=tideKline.chart.createIndicator({name:name,calcParams:params},true);
   else tideIndicatorPanes[name]=tideKline.chart.createIndicator({name:name,calcParams:params},false,{id:'tide_'+name+'_pane',height:name==='VOL'?90:105,minHeight:55,dragEnabled:true});
  }catch(e){klineSetStatus(name+' 指标创建失败：'+e.message);}
 }
@@ -904,15 +903,16 @@ function klineSetDrawMode(mode){
  tideKline.drawMode=mode;var buttons=document.querySelectorAll('.kline-drawbar button');buttons.forEach(function(b){b.classList.remove('active');});
  var map={cursor:0,segment:1,rayLine:2,straightLine:3,horizontalStraightLine:4,horizontalRayLine:5,verticalStraightLine:6,rect:7,parallelStraightLine:8,fibonacciLine:9,brush:10};
  if(map[mode]!==undefined&&buttons[map[mode]])buttons[map[mode]].classList.add('active');
- if(mode==='cursor'){klineSetStatus('选择模式：可选中、拖动已有绘图');return;}
+ if(mode==='cursor'){klineSetStatus('选择模式：点击选中图形，拖动调整；右键删除单条');return;}
  if(!tideKline.chart)return;
- try{tideKline.chart.createOverlay(mode);klineSetStatus('绘图工具：'+mode+' · 可继续绘制多条，右键删除单条');}
+ try{var id=tideKline.chart.createOverlay({name:mode,mode:'weak_magnet',modeSensitivity:8});if(id)tideKline.lastOverlayId=id;klineSetStatus('绘图工具已启用：每次点击工具可新增一条，已绘制图形可分别选中、拖动或右键删除');}
  catch(e){klineSetStatus('绘图工具不可用：'+e.message);}
 }
 function klineDeleteSelected(){
  if(!tideKline.chart)return;
- try{var selected=tideKline.chart.getOverlays().filter(function(o){return o.isSelected;});if(selected.length)selected.forEach(function(o){tideKline.chart.removeOverlay({id:o.id});});else klineSetStatus('请先点击选中要删除的线');}
- catch(e){klineSetStatus('删除选中绘图失败：'+e.message);}
+ if(!tideKline.lastOverlayId){klineSetStatus('请先绘制一条图形；也可在图形上右键删除单条');return;}
+ try{tideKline.chart.removeOverlay({id:tideKline.lastOverlayId});tideKline.lastOverlayId=null;klineSetStatus('已删除最近创建的绘图');}
+ catch(e){klineSetStatus('删除绘图失败：'+e.message);}
 }
 function klineClearDrawings(){if(!tideKline.chart)return;try{tideKline.chart.removeOverlay();klineSetStatus('已清除全部绘图');}catch(e){klineSetStatus('清除绘图失败：'+e.message);}}
 function closeKlineChart(){
