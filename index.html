@@ -111,6 +111,41 @@ footer{border-top:1px solid var(--line);padding:20px;text-align:center;color:#70
 .lang-switch button.active{background:var(--cyan);color:#07131d;font-weight:700}
 @media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}.method{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.headline{font-size:22px}.tiles{grid-template-columns:repeat(2,1fr)}.method{grid-template-columns:1fr}main{padding:18px 4vw}.scroll{overflow:visible}.card-table thead{display:none}.card-table tbody,.card-table tr,.card-table td{display:block}.card-table tr{background:#0b1521;border:1px solid var(--line);border-radius:10px;margin-bottom:10px;padding:12px}.card-table td{border:0;padding:6px 0;display:flex;justify-content:space-between;align-items:center;gap:12px;white-space:normal}.card-table td::before{content:attr(data-label);color:var(--muted);font-size:11px;flex-shrink:0}.card-table td.coin{font-size:15px;padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:4px}.card-table td.coin::before{display:none}}
+
+/* KLineChart workspace: compact terminal layout */
+.kline-modal{position:fixed;inset:0;z-index:50;background:#03070de8;display:none;align-items:center;justify-content:center;padding:12px}
+.kline-shell{width:min(1680px,100%);height:min(96vh,1120px);background:#0b1521;border:1px solid #2a4058;border-radius:10px;display:flex;flex-direction:column;overflow:hidden}
+.kline-top{display:flex;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap;min-height:48px}
+.kline-symbol{font-size:15px;font-weight:800;white-space:nowrap}.kline-meta{font-size:11px;color:var(--muted);margin-left:8px}
+.kline-controls{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.kline-controls button,.kline-drawbar button{background:transparent;border:1px solid transparent;color:#aebed0;padding:6px 9px;border-radius:5px;font-size:12px}
+.kline-controls button:hover,.kline-drawbar button:hover{background:#192a3e;border-color:#304963;color:#fff}
+.kline-controls button.active{background:#164653;border-color:#287985;color:#d8fffb}
+.kline-close{font-size:18px!important;padding:3px 10px!important;margin-left:auto!important}
+.kline-workspace{display:grid;grid-template-columns:38px minmax(0,1fr);flex:1;min-height:0}
+.kline-drawbar{display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 3px;border-right:1px solid #213146;background:#0a1420}
+.kline-drawbar button{width:30px;height:30px;padding:0;font-size:17px;display:grid;place-items:center}
+.kline-drawbar button.active{color:#5bd8d0;background:#193247;border-color:#2a6170}
+.kline-chart-area{min-width:0;min-height:0;padding:0}
+#tide-kline-canvas{height:100%;min-height:320px;width:100%}
+.kline-status{font-size:11px;color:var(--muted);padding:5px 12px 7px;border-top:1px solid #17283a}
+.kline-drawbar{overflow-y:auto}.kline-drawbar button{flex-shrink:0}
+.kline-settings{display:none;position:absolute;z-index:5;top:58px;right:14px;width:min(340px,calc(100vw - 28px));padding:14px;background:#101e2d;border:1px solid #344b63;border-radius:9px;box-shadow:0 12px 36px #0007;color:#dce7f3}
+.kline-settings.open{display:block}.kline-settings label{display:block;font-size:11px;color:#9eb0c4;margin:8px 0 4px}
+.kline-settings select,.kline-settings input{width:100%;box-sizing:border-box;background:#081421;color:#e6eef8;border:1px solid #344b63;border-radius:5px;padding:8px;font-size:12px}
+.kline-settings .kline-setting-actions{display:flex;gap:8px;margin-top:12px}.kline-settings button{background:#164653;color:#d8fffb;border:1px solid #287985;border-radius:5px;padding:7px 12px}
+.kline-shell{position:relative}
+.kline-shell[data-theme="light"]{background:#fff;color:#172333;border-color:#d5dce5}
+.kline-shell[data-theme="light"] .kline-top,.kline-shell[data-theme="light"] .kline-status{border-color:#dce2e9}
+.kline-shell[data-theme="light"] .kline-drawbar{background:#f4f6f9;border-color:#dce2e9}
+.kline-shell[data-theme="light"] .kline-controls button,.kline-shell[data-theme="light"] .kline-drawbar button{color:#344255}
+.kline-shell[data-theme="light"] .kline-controls button.active,.kline-shell[data-theme="light"] .kline-drawbar button.active{background:#e2f2f5;color:#075b66;border-color:#8bc5ce}
+.kline-shell[data-theme="light"] .kline-meta,.kline-shell[data-theme="light"] .kline-status{color:#64748b}
+.kline-shell[data-theme="light"] .kline-settings{background:#fff;color:#172333;border-color:#cbd5e1;box-shadow:0 12px 36px #0f172a22}
+.kline-shell[data-theme="light"] .kline-settings label{color:#526174}
+.kline-shell[data-theme="light"] .kline-settings select,.kline-shell[data-theme="light"] .kline-settings input{background:#f8fafc;color:#172333;border-color:#cbd5e1}
+@media(max-width:720px){.kline-modal{padding:0}.kline-shell{height:100dvh;border-radius:0}.kline-top{gap:5px;padding:6px}.kline-symbol{font-size:13px}.kline-controls{gap:2px}.kline-controls button{padding:5px 6px;font-size:11px}.kline-workspace{grid-template-columns:34px minmax(0,1fr)}.kline-drawbar{padding:5px 2px}.kline-drawbar button{width:28px;height:28px}.kline-status{font-size:10px}.kline-settings{top:96px;right:8px}}
+
 </style>
 </head>
 <body>
@@ -463,7 +498,7 @@ function compact(n){if(!Number.isFinite(n))return '—';if(n>=1e9)return '$'+(n/
 function apiCall(path,cb){fetch(API+path).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}).then(function(j){if(j.code!=='0')throw new Error(j.msg||'API error');cb(null,j.data||[]);}).catch(function(e){cb(e,null);});}
 function normalize(t){var p=+t.last,o=+t.open24h,h=+t.high24h,l=+t.low24h;return{symbol:t.instId.replace('-USDT-SWAP',''),id:t.instId,last:p,change:o?(p/o-1)*100:0,vol:(+t.volCcy24h||0)*p,range:l?(h/l-1)*100:0};}
 function refresh(){$('connection').textContent=t('updating');apiCall('/api/v5/market/tickers?instType=SWAP',function(err,data){if(err){$('connection').textContent=t('failed')+': '+err.message;if(!markets.length)$('market').innerHTML='<tr><td colspan="7" style="color:var(--red)">'+t('loadFail')+'</td></tr>';return;}markets=data.filter(function(t){return t.instId.endsWith('-USDT-SWAP');}).map(normalize).filter(function(x){return x.last>0;});render();$('connection').textContent=t('connected');$('updated').textContent=t('updatedAt')+' '+new Date().toLocaleTimeString(currentLang==='zh'?'zh-CN':'en-US',{hour12:false});loadFocus();});}
-function row(x){var reason=getReason(x);return '<tr><td class="coin" data-label="">'+x.symbol+'<small>'+t('perpContract')+'</small></td><td data-label="'+t('thPrice')+'">'+fmt(x.last,x.last<1?6:2)+'</td><td data-label="'+t('thChange')+'" class="'+cls(x.change)+'">'+pct(x.change)+'</td><td data-label="'+t('thVolume')+'">'+compact(x.vol)+'</td><td data-label="'+t('thRange')+'">'+fmt(x.range,2)+'%</td><td data-label="'+t('thReason')+'"><span class="reason-badge">'+reason+'</span></td><td data-label="'+t('thAction')+'"><button class="btn" onclick="addWatch(\''+x.symbol+'\')">'+t('addBtn')+'</button></td></tr>';}
+function row(x){var reason=getReason(x);return '<tr><td class="coin" data-label="">'+x.symbol+'<small>'+t('perpContract')+'</small></td><td data-label="'+t('thPrice')+'">'+fmt(x.last,x.last<1?6:2)+'</td><td data-label="'+t('thChange')+'" class="'+cls(x.change)+'">'+pct(x.change)+'</td><td data-label="'+t('thVolume')+'">'+compact(x.vol)+'</td><td data-label="'+t('thRange')+'">'+fmt(x.range,2)+'%</td><td data-label="'+t('thReason')+'"><span class="reason-badge">'+reason+'</span></td><td data-label="'+t('thAction')+'"><button class="btn" onclick="openKlineChart(\''+x.symbol+'\')">'+(currentLang==='zh'?'图表':'Chart')+'</button> <button class="btn" onclick="addWatch(\''+x.symbol+'\')">'+t('addBtn')+'</button></td></tr>';}
 var sectorNamesEn={'主流资产':'Majors','公链生态':'L1 / L2','AI / 数据':'AI / Data','交易平台':'Exchange Tokens'};
 function sectorName(n){return currentLang==='en'&&sectorNamesEn[n]?sectorNamesEn[n]:n;}
 function sectors(){return Object.keys(groups).map(function(key){var syms=groups[key];var name=sectorName(key);var rows=syms.map(function(s){return markets.find(function(x){return x.symbol===s;});}).filter(Boolean);var avg=rows.length?rows.reduce(function(a,x){return a+x.change;},0)/rows.length:0;var up=rows.filter(function(x){return x.change>0;}).length;var vol=rows.reduce(function(a,x){return a+x.vol;},0);return{name:name,rows:rows,avg:avg,up:up,vol:vol};}).sort(function(a,b){return b.avg-a.avg;});}
@@ -719,6 +754,216 @@ setInterval(function(){if(dragonTigerData.lastUpdate&&!dragonState.loading&&Date
 renderWatchList();
 refresh();
 setInterval(refresh,60000);
+
+/* ---------------- KLineChart: OKX public candles ---------------- */
+var tideKline={chart:null,symbol:'BTC',period:'15m',timer:null,scriptLoading:null,indicators:{MA:true,EMA:false,VOL:true,MACD:true,RSI:false},indicatorParams:{MA:[5,10,30,60],EMA:[6,12,20],VOL:[5,10,20],MACD:[12,26,9],RSI:[6,12,24]},indicatorLocations:{MA:'main',EMA:'main'},data:[],loading:false,requestId:0,drawMode:'cursor'};
+var tideKlinePeriods=['1m','5m','15m','1H','4H','1D'];
+var TIDE_KLINE_CACHE='tide_kline_cache_v2';
+function klineEnsureScript(){
+ if(window.klinecharts)return Promise.resolve(window.klinecharts);
+ if(tideKline.scriptLoading)return tideKline.scriptLoading;
+ tideKline.scriptLoading=new Promise(function(resolve,reject){
+  var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/klinecharts@9.8.12/dist/umd/klinecharts.min.js';s.async=true;
+  s.onload=function(){if(window.klinecharts)resolve(window.klinecharts);else reject(new Error('KLineChart library unavailable'));};
+  s.onerror=function(){tideKline.scriptLoading=null;reject(new Error('KLineChart CDN failed to load'));};
+  document.head.appendChild(s);
+ });
+ return tideKline.scriptLoading;
+}
+function klineModal(){
+ var el=$('tide-kline-modal');if(el)return el;
+ el=document.createElement('div');el.id='tide-kline-modal';el.className='kline-modal';
+ el.innerHTML='<div class="kline-shell"><div class="kline-top"><div><span class="kline-symbol" id="tide-kline-title">BTC-USDT-SWAP</span><span class="kline-meta" id="tide-kline-price"></span></div><div class="kline-controls" id="tide-kline-periods"></div><div class="kline-controls"><button onclick="klineToggleIndicator(\'MA\')" id="tide-kline-MA">MA</button><button onclick="klineToggleIndicator(\'EMA\')" id="tide-kline-EMA">EMA</button><button onclick="klineToggleIndicator(\'VOL\')" id="tide-kline-VOL">VOL</button><button onclick="klineToggleIndicator(\'MACD\')" id="tide-kline-MACD">MACD</button><button onclick="klineToggleIndicator(\'RSI\')" id="tide-kline-RSI">RSI</button><button onclick="klineOpenSettings()">参数设置</button><button onclick="klineToggleTheme()" id="tide-kline-theme">白色背景</button><button onclick="klineToggleLanguage()" id="tide-kline-lang">EN</button><button class="kline-close" onclick="closeKlineChart()">×</button></div></div><div class="kline-workspace"><div class="kline-drawbar"><button title="选择/十字光标" onclick="klineSetDrawMode(\'cursor\')">⌖</button><button title="趋势线" onclick="klineSetDrawMode(\'segment\')">／</button><button title="射线" onclick="klineSetDrawMode(\'rayLine\')">↗</button><button title="直线" onclick="klineSetDrawMode(\'straightLine\')">／̄</button><button title="水平线" onclick="klineSetDrawMode(\'horizontalStraightLine\')">—</button><button title="水平射线" onclick="klineSetDrawMode(\'horizontalRayLine\')">⇀</button><button title="垂直线" onclick="klineSetDrawMode(\'verticalStraightLine\')">│</button><button title="矩形区域" onclick="klineSetDrawMode(\'rect\')">▱</button><button title="平行通道" onclick="klineSetDrawMode(\'parallelStraightLine\')">∥</button><button title="斐波那契回撤" onclick="klineSetDrawMode(\'fibonacciLine\')">F</button><button title="自由画笔" onclick="klineSetDrawMode(\'brush\')">✎</button><button title="删除选中绘图" onclick="klineDeleteSelected()">⌫</button><button title="清空全部绘图" onclick="klineClearDrawings()">×</button></div><div class="kline-chart-area"><div id="tide-kline-canvas"></div></div></div><div class="kline-settings" id="tide-kline-settings"><strong id="tide-kline-settings-title">指标参数</strong><label id="tide-kline-setting-label">选择指标</label><select id="tide-kline-setting-name" onchange="klineLoadSettingFields()"><option>MA</option><option>EMA</option><option>VOL</option><option>MACD</option><option>RSI</option></select><label>计算参数（逗号分隔）</label><input id="tide-kline-setting-params" value="5,10,30,60" placeholder="例如 5,10,30,60"/><div class="kline-setting-note" id="tide-kline-main-note">MA / EMA 固定叠加在K线主图上</div><div class="kline-setting-actions"><button onclick="klineApplySetting()">应用参数</button><button onclick="klineCloseSettings()">关闭</button></div></div><div class="kline-status" id="tide-kline-status">准备图表…</div></div>';
+ el.addEventListener('click',function(e){if(e.target===el)closeKlineChart();});document.body.appendChild(el);return el;
+}
+function klinePeriodType(p){return p==='1D'?'1day':p;}
+function klineRenderControls(){
+ var host=$('tide-kline-periods');if(!host)return;
+ host.innerHTML=tideKlinePeriods.map(function(p){return '<button class="'+(p===tideKline.period?'active':'')+'" onclick="changeKlinePeriod(\''+p+'\')">'+p+'</button>';}).join('');
+ ['MA','EMA','VOL','MACD','RSI'].forEach(function(k){var b=$('tide-kline-'+k);if(b)b.classList.toggle('active',!!tideKline.indicators[k]);});
+}
+function klineSetStatus(s){var el=$('tide-kline-status');if(el)el.textContent=s;}
+function klineCacheKey(symbol,period){return TIDE_KLINE_CACHE+':'+symbol+':'+period;}
+function klineReadCache(symbol,period){try{var x=JSON.parse(localStorage.getItem(klineCacheKey(symbol,period))||'null');if(x&&Array.isArray(x.data))return x;}catch(e){}return null;}
+function klineWriteCache(){try{localStorage.setItem(klineCacheKey(tideKline.symbol,tideKline.period),JSON.stringify({ts:Date.now(),data:tideKline.data.slice(-300)}));}catch(e){}}
+function klineFetch(limit,symbol,period){
+ var inst=(symbol||tideKline.symbol)+'-USDT-SWAP';
+ var path='/api/v5/market/candles?instId='+encodeURIComponent(inst)+'&bar='+encodeURIComponent(klinePeriodType(period||tideKline.period))+'&limit='+limit;
+ return api(path).then(function(rows){
+  var data=(rows||[]).map(function(x){return {timestamp:+x[0],open:+x[1],high:+x[2],low:+x[3],close:+x[4],volume:+x[5]||0,turnover:+x[7]||0};}).filter(function(x){return x.timestamp>0&&x.open>0&&x.high>0&&x.low>0&&x.close>0;}).sort(function(a,b){return a.timestamp-b.timestamp;});
+  if(!data.length)throw new Error('No candle data');return data;
+ });
+}
+var tideIndicatorDefaults={MA:[5,10,30,60],EMA:[6,12,20],VOL:[5,10,20],MACD:[12,26,9],RSI:[6,12,24]};
+var tideIndicatorPanes={};
+var tideKlineTheme='dark';
+var tideKlineLang='zh';
+function klineSetLanguage(lang){tideKlineLang=lang==='en'?'en':'zh';try{localStorage.setItem('tide_kline_lang',tideKlineLang);}catch(e){}var en=tideKlineLang==='en';var dict=en?{settings:'Indicator Settings',select:'Indicator',params:'Parameters',apply:'Apply',close:'Close',main:'MA / EMA are overlaid on the main chart',themeLight:'Dark background',themeDark:'White background',cursor:'Select / Crosshair',segment:'Trend Line',ray:'Ray',straight:'Straight Line',horizontal:'Horizontal Line',hray:'Horizontal Ray',vertical:'Vertical Line',rect:'Rectangle',parallel:'Parallel Channel',fib:'Fibonacci Retracement',brush:'Brush',delete:'Delete Selected Drawing',clear:'Clear All Drawings',loading:'Preparing chart…'}:{settings:'指标参数',select:'选择指标',params:'参数',apply:'应用参数',close:'关闭',main:'MA / EMA 固定叠加在K线主图上',themeLight:'黑色背景',themeDark:'白色背景',cursor:'选择/十字光标',segment:'趋势线',ray:'射线',straight:'直线',horizontal:'水平线',hray:'水平射线',vertical:'垂直线',rect:'矩形区域',parallel:'平行通道',fib:'斐波那契回撤',brush:'自由画笔',delete:'删除选中绘图',clear:'清空全部绘图',loading:'准备图表…'};var set=function(id,v){var el=$(id);if(el)el.textContent=v;};set('tide-kline-settings-title',dict.settings);set('tide-kline-setting-label',dict.select);set('tide-kline-params-label',dict.params);set('tide-kline-main-note',dict.main);set('tide-kline-lang',en?'中文':'EN');set('tide-kline-theme',tideKlineTheme==='dark'?dict.themeDark:dict.themeLight);var b=document.querySelectorAll('.kline-drawbar button');var keys=['cursor','segment','ray','straight','horizontal','hray','vertical','rect','parallel','fib','brush','delete','clear'];keys.forEach(function(k,i){if(b[i])b[i].title=dict[k];});var a=document.querySelectorAll('.kline-setting-actions button');if(a[0])a[0].textContent=dict.apply;if(a[1])a[1].textContent=dict.close;var l=$('tide-kline-lang');if(l)l.textContent=en?'中文':'EN';}
+function klineToggleLanguage(){klineSetLanguage(tideKlineLang==='zh'?'en':'zh');}
+function klineThemeStyles(theme){
+ var light=theme==='light',bg=light?'#ffffff':'#0b1521',fg=light?'#526174':'#9aabc0',grid=light?'#ffffff':'#0b1521',axis=light?'#d7dee7':'#304258';
+ return {grid:{show:false,horizontal:{show:false},vertical:{show:false}},candle:{bar:{upColor:'#16a879',downColor:'#ed5368',noChangeColor:'#929eac',upBorderColor:'#16a879',downBorderColor:'#ed5368',upWickColor:'#16a879',downWickColor:'#ed5368'}},xAxis:{axisLine:{color:axis},tickText:{color:fg},tickLine:{show:false}},yAxis:{axisLine:{color:axis},tickText:{color:fg},tickLine:{show:false}},separator:{color:axis},crosshair:{horizontal:{line:{color:light?'#8794a5':'#718096'}},vertical:{line:{color:light?'#8794a5':'#718096'}}},indicator:{tooltip:{text:{color:fg}}}};
+}
+function klineApplyTheme(){
+ var shell=document.querySelector('.kline-shell');if(shell)shell.setAttribute('data-theme',tideKlineTheme);
+ var canvas=$('tide-kline-canvas');if(canvas)canvas.style.background=tideKlineTheme==='light'?'#ffffff':'#0b1521';
+ var btn=$('tide-kline-theme');if(btn)btn.textContent=tideKlineTheme==='light'?'切换黑色背景':'切换白色背景';
+ if(tideKline.chart)tideKline.chart.setStyles(klineThemeStyles(tideKlineTheme));
+}
+function klineToggleTheme(){tideKlineTheme=tideKlineTheme==='dark'?'light':'dark';try{localStorage.setItem('tide_kline_theme',tideKlineTheme);}catch(e){}klineApplyTheme();}
+function klineRemoveIndicator(name){
+ if(!tideKline.chart)return;
+ if(name==='MA'||name==='EMA'){
+  // Rebuild the candle pane as a unit to avoid duplicate/stranded overlays.
+  try{tideKline.chart.removeIndicator('candle_pane');}catch(e){}
+  delete tideIndicatorPanes.MA;delete tideIndicatorPanes.EMA;
+  return;
+ }
+ var pane='tide_'+name+'_pane';
+ try{tideKline.chart.removeIndicator(pane);}catch(e){}
+ delete tideIndicatorPanes[name];
+}
+function klineCreateIndicator(name){
+ if(!tideKline.chart||!tideKline.indicators[name])return;
+ var params=tideKline.indicatorParams[name]||tideIndicatorDefaults[name];
+ try{
+  if(name==='MA'||name==='EMA'){
+   // KLineChart 9.8.12: paneOptions is the 3rd argument; candle_pane is the reserved main-pane id.
+   tideIndicatorPanes[name]='candle_pane';
+   var created=tideKline.chart.createIndicator({name:name,calcParams:params},true,{id:'candle_pane'});
+   if(!created)throw new Error('主图指标创建返回空值');
+  }else{
+   var pane='tide_'+name+'_pane';
+   tideIndicatorPanes[name]=pane;
+   var createdSub=tideKline.chart.createIndicator({name:name,calcParams:params},false,{id:pane,height:name==='VOL'?90:105,minHeight:55,dragEnabled:true});
+   if(!createdSub)throw new Error('副图指标创建返回空值');
+  }
+ }catch(e){klineSetStatus(name+' 指标创建失败：'+e.message);}
+}
+function klineRebuildMainIndicators(){
+ if(!tideKline.chart)return;
+ // Remove legacy MA/EMA sub-panes left by earlier builds as well as main-pane copies.
+ ['tide_MA_pane','tide_EMA_pane'].forEach(function(pane){
+  try{tideKline.chart.removeIndicator(pane);}catch(e){}
+ });
+ try{tideKline.chart.removeIndicator('candle_pane');}catch(e){}
+ delete tideIndicatorPanes.MA;delete tideIndicatorPanes.EMA;
+ ['MA','EMA'].forEach(function(name){if(tideKline.indicators[name])klineCreateIndicator(name);});
+}
+function klineRebuildSubIndicator(name){
+ if(!tideKline.chart)return;
+ try{tideKline.chart.removeIndicator('tide_'+name+'_pane');}catch(e){}
+ delete tideIndicatorPanes[name];
+ if(tideKline.indicators[name])klineCreateIndicator(name);
+}
+function klineApplyIndicators(){
+ if(!tideKline.chart)return;
+ klineRebuildMainIndicators();
+ ['VOL','MACD','RSI'].forEach(klineRebuildSubIndicator);
+}
+function klineCreateChart(lib){
+ if(tideKline.chart)return;
+ tideKline.chart=lib.init('tide-kline-canvas',{locale:currentLang==='zh'?'zh-CN':'en-US',timezone:'Asia/Singapore',styles:klineThemeStyles(tideKlineTheme)});
+ klineApplyIndicators();if(tideKline.data.length)tideKline.chart.applyNewData(tideKline.data);
+ klineApplyTheme();
+}
+function klineOpenSettings(){
+ var p=$('tide-kline-settings');if(!p)return;
+ p.classList.add('open');klineLoadSettingFields();
+}
+function klineCloseSettings(){var p=$('tide-kline-settings');if(p)p.classList.remove('open');}
+function klineLoadSettingFields(){
+ var name=$('tide-kline-setting-name').value,params=$('tide-kline-setting-params');
+ params.value=(tideKline.indicatorParams[name]||tideIndicatorDefaults[name]).join(',');
+ var wrap=$('tide-kline-ma-location-wrap');if(wrap)wrap.style.display='none';
+}
+function klineApplySetting(){
+ var name=$('tide-kline-setting-name').value,raw=$('tide-kline-setting-params').value;
+ var params=raw.split(',').map(function(x){return Number(x.trim());});
+ if(!params.length||params.some(function(x){return !Number.isInteger(x)||x<1||x>500;})){klineSetStatus('参数无效：请输入 1–500 的整数，以逗号分隔');return;}
+ if((name==='MACD'&&params.length!==3)||(name==='MA'&&params.length>6)||(name==='EMA'&&params.length>6)||(name==='VOL'&&params.length>3)||(name==='RSI'&&params.length>3)){klineSetStatus('参数数量不符合该指标要求');return;}
+ tideKline.indicatorParams[name]=params;
+ if(tideKline.indicators[name]){
+  if(name==='MA'||name==='EMA')klineRebuildMainIndicators();
+  else klineRebuildSubIndicator(name);
+ }
+ klineRenderControls();klineSetStatus(name+' 参数已应用：'+params.join(', '));klineCloseSettings();
+}
+function klineMergeData(incoming){
+ var byTime={};tideKline.data.forEach(function(x){byTime[x.timestamp]=x;});incoming.forEach(function(x){byTime[x.timestamp]=x;});
+ tideKline.data=Object.keys(byTime).map(function(k){return byTime[k];}).sort(function(a,b){return a.timestamp-b.timestamp;}).slice(-300);
+}
+function klineUpdatePrice(){
+ if(!tideKline.data.length)return;var last=tideKline.data[tideKline.data.length-1];
+ var p=last.close<1?last.close.toFixed(6):last.close.toLocaleString('en-US',{maximumFractionDigits:2});
+ var el=$('tide-kline-price');if(el)el.textContent='Last: '+p;
+}
+function klineLoad(force){
+ if(!tideKline.chart||tideKline.loading)return;
+ var req=++tideKline.requestId,symbol=tideKline.symbol,period=tideKline.period,incremental=tideKline.data.length>0;
+ tideKline.loading=true;klineSetStatus((incremental?'更新':'加载')+' '+symbol+' '+period+' · OKX');
+ klineFetch(incremental?2:300,symbol,period).then(function(data){
+  if(req!==tideKline.requestId||!tideKline.chart||symbol!==tideKline.symbol||period!==tideKline.period)return;
+  klineMergeData(data);tideKline.chart.applyNewData(tideKline.data);klineWriteCache();klineUpdatePrice();
+  klineSetStatus('OKX 实时K线 · '+tideKline.data.length+' 根 · '+new Date().toLocaleTimeString());
+ }).catch(function(e){if(req===tideKline.requestId)klineSetStatus((tideKline.data.length?'缓存数据已显示 · 更新失败：':'K线加载失败：')+e.message);})
+ .then(function(){if(req===tideKline.requestId)tideKline.loading=false;});
+}
+function openKlineChart(symbol){
+ try{tideKlineLang=localStorage.getItem('tide_kline_lang')||'zh';}catch(e){}
+ tideKline.symbol=String(symbol||'BTC').toUpperCase().replace(/[^A-Z0-9]/g,'');
+ var modal=klineModal();modal.style.display='flex';
+ try{tideKlineTheme=localStorage.getItem('tide_kline_theme')||'dark';}catch(e){}$('tide-kline-title').textContent=tideKline.symbol+'-USDT-SWAP';klineRenderControls();klineApplyTheme();klineSetLanguage(tideKlineLang);
+ if(tideKline.timer){clearInterval(tideKline.timer);tideKline.timer=null;}
+ var cached=klineReadCache(tideKline.symbol,tideKline.period);
+ tideKline.data=cached?cached.data:[];tideKline.loading=false;tideKline.requestId++;
+ klineSetStatus(cached?'正在显示本地缓存，后台更新行情…':'正在启动图表并获取OKX行情…');
+ klineEnsureScript().then(function(lib){
+  if(modal.style.display==='none')return;klineCreateChart(lib);
+  if(tideKline.data.length){tideKline.chart.applyNewData(tideKline.data);klineUpdatePrice();}
+  klineLoad(true);tideKline.timer=setInterval(function(){klineLoad(true);},15000);
+ }).catch(function(e){klineSetStatus(e.message);});
+}
+function changeKlinePeriod(p){
+ if(tideKlinePeriods.indexOf(p)<0)return;tideKline.period=p;tideKline.data=[];tideKline.loading=false;tideKline.requestId++;
+ var cached=klineReadCache(tideKline.symbol,p);if(cached)tideKline.data=cached.data;
+ klineRenderControls();if(tideKline.chart&&tideKline.data.length)tideKline.chart.applyNewData(tideKline.data);
+ klineUpdatePrice();klineLoad(true);
+}
+function klineToggleIndicator(name){
+ tideKline.indicators[name]=!tideKline.indicators[name];
+ if(tideKline.chart){
+  if(name==='MA'||name==='EMA')klineRebuildMainIndicators();
+  else klineRebuildSubIndicator(name);
+ }
+ klineRenderControls();
+}
+function klineSetDrawMode(mode){
+ tideKline.drawMode=mode;var buttons=document.querySelectorAll('.kline-drawbar button');buttons.forEach(function(b){b.classList.remove('active');});
+ var map={cursor:0,segment:1,rayLine:2,straightLine:3,horizontalStraightLine:4,horizontalRayLine:5,verticalStraightLine:6,rect:7,parallelStraightLine:8,fibonacciLine:9,brush:10};
+ if(map[mode]!==undefined&&buttons[map[mode]])buttons[map[mode]].classList.add('active');
+ if(mode==='cursor'){klineSetStatus('选择模式：点击选中图形，拖动调整；右键删除单条');return;}
+ if(!tideKline.chart)return;
+ try{var id=tideKline.chart.createOverlay({name:mode,mode:'weak_magnet',modeSensitivity:8});if(id)tideKline.lastOverlayId=id;klineSetStatus('绘图工具已启用：每次点击工具可新增一条，已绘制图形可分别选中、拖动或右键删除');}
+ catch(e){klineSetStatus('绘图工具不可用：'+e.message);}
+}
+function klineDeleteSelected(){
+ if(!tideKline.chart)return;
+ if(!tideKline.lastOverlayId){klineSetStatus('请先绘制一条图形；也可在图形上右键删除单条');return;}
+ try{tideKline.chart.removeOverlay({id:tideKline.lastOverlayId});tideKline.lastOverlayId=null;klineSetStatus('已删除最近创建的绘图');}
+ catch(e){klineSetStatus('删除绘图失败：'+e.message);}
+}
+function klineClearDrawings(){if(!tideKline.chart)return;try{tideKline.chart.removeOverlay();klineSetStatus('已清除全部绘图');}catch(e){klineSetStatus('清除绘图失败：'+e.message);}}
+function closeKlineChart(){
+ var modal=$('tide-kline-modal');if(modal)modal.style.display='none';
+ if(tideKline.timer){clearInterval(tideKline.timer);tideKline.timer=null;}
+ tideKline.requestId++;tideKline.loading=false;
+ if(tideKline.chart&&window.klinecharts){try{window.klinecharts.dispose(tideKline.chart);}catch(e){}tideKline.chart=null;}
+}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeKlineChart();});
+window.addEventListener('resize',function(){if(tideKline.chart){try{tideKline.chart.resize();}catch(e){}}});
+if('requestIdleCallback' in window)requestIdleCallback(function(){klineEnsureScript().catch(function(){});},{timeout:2500});
+else setTimeout(function(){klineEnsureScript().catch(function(){});},1200);
 </script>
 </body>
 </html>
