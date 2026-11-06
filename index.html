@@ -810,9 +810,14 @@ function klineApplyTheme(){
 function klineToggleTheme(){tideKlineTheme=tideKlineTheme==='dark'?'light':'dark';try{localStorage.setItem('tide_kline_theme',tideKlineTheme);}catch(e){}klineApplyTheme();}
 function klineRemoveIndicator(name){
  if(!tideKline.chart)return;
- // Remove both the intended pane and legacy sub-panes created by earlier builds.
- var panes=['candle_pane','tide_'+name+'_pane'];
- panes.forEach(function(pane){try{tideKline.chart.removeIndicator(pane,name);}catch(e){}});
+ if(name==='MA'||name==='EMA'){
+  // Rebuild the candle pane as a unit to avoid duplicate/stranded overlays.
+  try{tideKline.chart.removeIndicator('candle_pane');}catch(e){}
+  delete tideIndicatorPanes.MA;delete tideIndicatorPanes.EMA;
+  return;
+ }
+ var pane='tide_'+name+'_pane';
+ try{tideKline.chart.removeIndicator(pane);}catch(e){}
  delete tideIndicatorPanes[name];
 }
 function klineCreateIndicator(name){
@@ -820,19 +825,32 @@ function klineCreateIndicator(name){
  var params=tideKline.indicatorParams[name]||tideIndicatorDefaults[name];
  try{
   if(name==='MA'||name==='EMA'){
-   // v9.8.12 uses the 3rd argument (paneOptions.id) for the target pane.
-   // paneId inside the indicator config is a v10-style option and is ignored by v9.
+   // Exact v9.8.12 documented overlay signature: paneId in config + isStack=true.
    tideIndicatorPanes[name]='candle_pane';
-   tideKline.chart.createIndicator({name:name,calcParams:params},true,{id:'candle_pane'});
+   tideKline.chart.createIndicator({name:name,paneId:'candle_pane',calcParams:params},true);
   }else{
-   tideIndicatorPanes[name]='tide_'+name+'_pane';
-   tideKline.chart.createIndicator({name:name,calcParams:params},false,{id:tideIndicatorPanes[name],height:name==='VOL'?90:105,minHeight:55,dragEnabled:true});
+   var pane='tide_'+name+'_pane';
+   tideIndicatorPanes[name]=pane;
+   tideKline.chart.createIndicator({name:name,calcParams:params},false,{id:pane,height:name==='VOL'?90:105,minHeight:55,dragEnabled:true});
   }
  }catch(e){klineSetStatus(name+' 指标创建失败：'+e.message);}
 }
+function klineRebuildMainIndicators(){
+ if(!tideKline.chart)return;
+ try{tideKline.chart.removeIndicator('candle_pane');}catch(e){}
+ delete tideIndicatorPanes.MA;delete tideIndicatorPanes.EMA;
+ ['MA','EMA'].forEach(function(name){if(tideKline.indicators[name])klineCreateIndicator(name);});
+}
+function klineRebuildSubIndicator(name){
+ if(!tideKline.chart)return;
+ try{tideKline.chart.removeIndicator('tide_'+name+'_pane');}catch(e){}
+ delete tideIndicatorPanes[name];
+ if(tideKline.indicators[name])klineCreateIndicator(name);
+}
 function klineApplyIndicators(){
  if(!tideKline.chart)return;
- ['MA','EMA','VOL','MACD','RSI'].forEach(function(name){if(tideKline.indicators[name])klineCreateIndicator(name);});
+ klineRebuildMainIndicators();
+ ['VOL','MACD','RSI'].forEach(klineRebuildSubIndicator);
 }
 function klineCreateChart(lib){
  if(tideKline.chart)return;
@@ -856,7 +874,10 @@ function klineApplySetting(){
  if(!params.length||params.some(function(x){return !Number.isInteger(x)||x<1||x>500;})){klineSetStatus('参数无效：请输入 1–500 的整数，以逗号分隔');return;}
  if((name==='MACD'&&params.length!==3)||(name==='MA'&&params.length>6)||(name==='EMA'&&params.length>6)||(name==='VOL'&&params.length>3)||(name==='RSI'&&params.length>3)){klineSetStatus('参数数量不符合该指标要求');return;}
  tideKline.indicatorParams[name]=params;
- if(tideKline.indicators[name]){klineRemoveIndicator(name);klineCreateIndicator(name);}
+ if(tideKline.indicators[name]){
+  if(name==='MA'||name==='EMA')klineRebuildMainIndicators();
+  else klineRebuildSubIndicator(name);
+ }
  klineRenderControls();klineSetStatus(name+' 参数已应用：'+params.join(', '));klineCloseSettings();
 }
 function klineMergeData(incoming){
@@ -901,7 +922,10 @@ function changeKlinePeriod(p){
 }
 function klineToggleIndicator(name){
  tideKline.indicators[name]=!tideKline.indicators[name];
- if(tideKline.chart){if(tideKline.indicators[name])klineCreateIndicator(name);else klineRemoveIndicator(name);}
+ if(tideKline.chart){
+  if(name==='MA'||name==='EMA')klineRebuildMainIndicators();
+  else klineRebuildSubIndicator(name);
+ }
  klineRenderControls();
 }
 function klineSetDrawMode(mode){
