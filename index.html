@@ -810,10 +810,9 @@ function klineApplyTheme(){
 function klineToggleTheme(){tideKlineTheme=tideKlineTheme==='dark'?'light':'dark';try{localStorage.setItem('tide_kline_theme',tideKlineTheme);}catch(e){}klineApplyTheme();}
 function klineRemoveIndicator(name){
  if(!tideKline.chart)return;
- // KLineChart 9.8 removeIndicator expects a pane id, not the indicator id.
- ['candle_pane','tide_'+name+'_pane'].forEach(function(pane){
-  try{tideKline.chart.removeIndicator(pane,name);}catch(e){}
- });
+ // Remove both the intended pane and legacy sub-panes created by earlier builds.
+ var panes=['candle_pane','tide_'+name+'_pane'];
+ panes.forEach(function(pane){try{tideKline.chart.removeIndicator(pane,name);}catch(e){}});
  delete tideIndicatorPanes[name];
 }
 function klineCreateIndicator(name){
@@ -821,9 +820,10 @@ function klineCreateIndicator(name){
  var params=tideKline.indicatorParams[name]||tideIndicatorDefaults[name];
  try{
   if(name==='MA'||name==='EMA'){
-   // KLineChart 9.x requires paneId inside the indicator config to bind it to candles.
+   // v9.8.12 uses the 3rd argument (paneOptions.id) for the target pane.
+   // paneId inside the indicator config is a v10-style option and is ignored by v9.
    tideIndicatorPanes[name]='candle_pane';
-   tideKline.chart.createIndicator({name:name,paneId:'candle_pane',calcParams:params},true);
+   tideKline.chart.createIndicator({name:name,calcParams:params},true,{id:'candle_pane'});
   }else{
    tideIndicatorPanes[name]='tide_'+name+'_pane';
    tideKline.chart.createIndicator({name:name,calcParams:params},false,{id:tideIndicatorPanes[name],height:name==='VOL'?90:105,minHeight:55,dragEnabled:true});
