@@ -129,7 +129,22 @@ footer{border-top:1px solid var(--line);padding:20px;text-align:center;color:#70
 .kline-chart-area{min-width:0;min-height:0;padding:0}
 #tide-kline-canvas{height:100%;min-height:320px;width:100%}
 .kline-status{font-size:11px;color:var(--muted);padding:5px 12px 7px;border-top:1px solid #17283a}
-@media(max-width:720px){.kline-modal{padding:0}.kline-shell{height:100dvh;border-radius:0}.kline-top{gap:5px;padding:6px}.kline-symbol{font-size:13px}.kline-controls{gap:2px}.kline-controls button{padding:5px 6px;font-size:11px}.kline-workspace{grid-template-columns:34px minmax(0,1fr)}.kline-drawbar{padding:5px 2px}.kline-drawbar button{width:28px;height:28px}.kline-status{font-size:10px}}
+.kline-drawbar{overflow-y:auto}.kline-drawbar button{flex-shrink:0}
+.kline-settings{display:none;position:absolute;z-index:5;top:58px;right:14px;width:min(340px,calc(100vw - 28px));padding:14px;background:#101e2d;border:1px solid #344b63;border-radius:9px;box-shadow:0 12px 36px #0007;color:#dce7f3}
+.kline-settings.open{display:block}.kline-settings label{display:block;font-size:11px;color:#9eb0c4;margin:8px 0 4px}
+.kline-settings select,.kline-settings input{width:100%;box-sizing:border-box;background:#081421;color:#e6eef8;border:1px solid #344b63;border-radius:5px;padding:8px;font-size:12px}
+.kline-settings .kline-setting-actions{display:flex;gap:8px;margin-top:12px}.kline-settings button{background:#164653;color:#d8fffb;border:1px solid #287985;border-radius:5px;padding:7px 12px}
+.kline-shell{position:relative}
+.kline-shell[data-theme="light"]{background:#fff;color:#172333;border-color:#d5dce5}
+.kline-shell[data-theme="light"] .kline-top,.kline-shell[data-theme="light"] .kline-status{border-color:#dce2e9}
+.kline-shell[data-theme="light"] .kline-drawbar{background:#f4f6f9;border-color:#dce2e9}
+.kline-shell[data-theme="light"] .kline-controls button,.kline-shell[data-theme="light"] .kline-drawbar button{color:#344255}
+.kline-shell[data-theme="light"] .kline-controls button.active,.kline-shell[data-theme="light"] .kline-drawbar button.active{background:#e2f2f5;color:#075b66;border-color:#8bc5ce}
+.kline-shell[data-theme="light"] .kline-meta,.kline-shell[data-theme="light"] .kline-status{color:#64748b}
+.kline-shell[data-theme="light"] .kline-settings{background:#fff;color:#172333;border-color:#cbd5e1;box-shadow:0 12px 36px #0f172a22}
+.kline-shell[data-theme="light"] .kline-settings label{color:#526174}
+.kline-shell[data-theme="light"] .kline-settings select,.kline-shell[data-theme="light"] .kline-settings input{background:#f8fafc;color:#172333;border-color:#cbd5e1}
+@media(max-width:720px){.kline-modal{padding:0}.kline-shell{height:100dvh;border-radius:0}.kline-top{gap:5px;padding:6px}.kline-symbol{font-size:13px}.kline-controls{gap:2px}.kline-controls button{padding:5px 6px;font-size:11px}.kline-workspace{grid-template-columns:34px minmax(0,1fr)}.kline-drawbar{padding:5px 2px}.kline-drawbar button{width:28px;height:28px}.kline-status{font-size:10px}.kline-settings{top:96px;right:8px}}
 
 </style>
 </head>
@@ -741,7 +756,7 @@ refresh();
 setInterval(refresh,60000);
 
 /* ---------------- KLineChart: OKX public candles ---------------- */
-var tideKline={chart:null,symbol:'BTC',period:'15m',timer:null,scriptLoading:null,indicators:{MA:true,EMA:false,VOL:true,MACD:true,RSI:false},data:[],loading:false,requestId:0,drawMode:'cursor'};
+var tideKline={chart:null,symbol:'BTC',period:'15m',timer:null,scriptLoading:null,indicators:{MA:true,EMA:false,VOL:true,MACD:true,RSI:false},indicatorParams:{MA:[5,10,30,60],EMA:[6,12,20],VOL:[5,10,20],MACD:[12,26,9],RSI:[6,12,24]},indicatorLocations:{MA:'main',EMA:'main'},data:[],loading:false,requestId:0,drawMode:'cursor'};
 var tideKlinePeriods=['1m','5m','15m','1H','4H','1D'];
 var TIDE_KLINE_CACHE='tide_kline_cache_v2';
 function klineEnsureScript(){
@@ -758,7 +773,7 @@ function klineEnsureScript(){
 function klineModal(){
  var el=$('tide-kline-modal');if(el)return el;
  el=document.createElement('div');el.id='tide-kline-modal';el.className='kline-modal';
- el.innerHTML='<div class="kline-shell"><div class="kline-top"><div><span class="kline-symbol" id="tide-kline-title">BTC-USDT-SWAP</span><span class="kline-meta" id="tide-kline-price"></span></div><div class="kline-controls" id="tide-kline-periods"></div><div class="kline-controls"><button onclick="klineToggleIndicator(\'MA\')" id="tide-kline-MA">MA</button><button onclick="klineToggleIndicator(\'EMA\')" id="tide-kline-EMA">EMA</button><button onclick="klineToggleIndicator(\'VOL\')" id="tide-kline-VOL">VOL</button><button onclick="klineToggleIndicator(\'MACD\')" id="tide-kline-MACD">MACD</button><button onclick="klineToggleIndicator(\'RSI\')" id="tide-kline-RSI">RSI</button><button class="kline-close" onclick="closeKlineChart()">×</button></div></div><div class="kline-workspace"><div class="kline-drawbar"><button title="十字光标" onclick="klineSetDrawMode(\'cursor\')">⌖</button><button title="趋势线" onclick="klineSetDrawMode(\'segment\')">／</button><button title="水平线" onclick="klineSetDrawMode(\'priceLine\')">—</button><button title="矩形区域" onclick="klineSetDrawMode(\'rect\')">▱</button><button title="删除绘图" onclick="klineClearDrawings()">⌫</button></div><div class="kline-chart-area"><div id="tide-kline-canvas"></div></div></div><div class="kline-status" id="tide-kline-status">准备图表…</div></div>';
+ el.innerHTML='<div class="kline-shell"><div class="kline-top"><div><span class="kline-symbol" id="tide-kline-title">BTC-USDT-SWAP</span><span class="kline-meta" id="tide-kline-price"></span></div><div class="kline-controls" id="tide-kline-periods"></div><div class="kline-controls"><button onclick="klineToggleIndicator(\'MA\')" id="tide-kline-MA">MA</button><button onclick="klineToggleIndicator(\'EMA\')" id="tide-kline-EMA">EMA</button><button onclick="klineToggleIndicator(\'VOL\')" id="tide-kline-VOL">VOL</button><button onclick="klineToggleIndicator(\'MACD\')" id="tide-kline-MACD">MACD</button><button onclick="klineToggleIndicator(\'RSI\')" id="tide-kline-RSI">RSI</button><button onclick="klineOpenSettings()">参数设置</button><button onclick="klineToggleTheme()" id="tide-kline-theme">白色背景</button><button class="kline-close" onclick="closeKlineChart()">×</button></div></div><div class="kline-workspace"><div class="kline-drawbar"><button title="选择/十字光标" onclick="klineSetDrawMode(\'cursor\')">⌖</button><button title="趋势线" onclick="klineSetDrawMode(\'segment\')">／</button><button title="射线" onclick="klineSetDrawMode(\'rayLine\')">↗</button><button title="直线" onclick="klineSetDrawMode(\'straightLine\')">／̄</button><button title="水平线" onclick="klineSetDrawMode(\'horizontalStraightLine\')">—</button><button title="水平射线" onclick="klineSetDrawMode(\'horizontalRayLine\')">⇀</button><button title="垂直线" onclick="klineSetDrawMode(\'verticalStraightLine\')">│</button><button title="矩形区域" onclick="klineSetDrawMode(\'rect\')">▱</button><button title="平行通道" onclick="klineSetDrawMode(\'parallelStraightLine\')">∥</button><button title="斐波那契回撤" onclick="klineSetDrawMode(\'fibonacciLine\')">F</button><button title="自由画笔" onclick="klineSetDrawMode(\'brush\')">✎</button><button title="删除选中绘图" onclick="klineDeleteSelected()">⌫</button><button title="清空全部绘图" onclick="klineClearDrawings()">×</button></div><div class="kline-chart-area"><div id="tide-kline-canvas"></div></div></div><div class="kline-settings" id="tide-kline-settings"><strong>指标参数</strong><label>选择指标</label><select id="tide-kline-setting-name" onchange="klineLoadSettingFields()"><option>MA</option><option>EMA</option><option>VOL</option><option>MACD</option><option>RSI</option></select><label>计算参数（逗号分隔）</label><input id="tide-kline-setting-params" value="5,10,30,60" placeholder="例如 5,10,30,60"/><div id="tide-kline-ma-location-wrap"><label>MA / EMA 显示位置</label><select id="tide-kline-setting-location"><option value="main">主图叠加</option><option value="sub">独立副图</option></select></div><div class="kline-setting-actions"><button onclick="klineApplySetting()">应用参数</button><button onclick="klineCloseSettings()">关闭</button></div></div><div class="kline-status" id="tide-kline-status">准备图表…</div></div>';
  el.addEventListener('click',function(e){if(e.target===el)closeKlineChart();});document.body.appendChild(el);return el;
 }
 function klinePeriodType(p){return p==='1D'?'1day':p;}
@@ -779,20 +794,66 @@ function klineFetch(limit,symbol,period){
   if(!data.length)throw new Error('No candle data');return data;
  });
 }
+var tideIndicatorDefaults={MA:[5,10,30,60],EMA:[6,12,20],VOL:[5,10,20],MACD:[12,26,9],RSI:[6,12,24]};
+var tideIndicatorPanes={};
+var tideKlineTheme='dark';
+function klineThemeStyles(theme){
+ var light=theme==='light',bg=light?'#ffffff':'#0b1521',fg=light?'#526174':'#9aabc0',grid=light?'#ffffff':'#0b1521',axis=light?'#d7dee7':'#304258';
+ return {grid:{show:false,horizontal:{show:false},vertical:{show:false}},candle:{bar:{upColor:'#16a879',downColor:'#ed5368',noChangeColor:'#929eac',upBorderColor:'#16a879',downBorderColor:'#ed5368',upWickColor:'#16a879',downWickColor:'#ed5368'}},xAxis:{axisLine:{color:axis},tickText:{color:fg},tickLine:{show:false}},yAxis:{axisLine:{color:axis},tickText:{color:fg},tickLine:{show:false}},separator:{color:axis},crosshair:{horizontal:{line:{color:light?'#8794a5':'#718096'}},vertical:{line:{color:light?'#8794a5':'#718096'}}},indicator:{tooltip:{text:{color:fg}}}};
+}
+function klineApplyTheme(){
+ var shell=document.querySelector('.kline-shell');if(shell)shell.setAttribute('data-theme',tideKlineTheme);
+ var canvas=$('tide-kline-canvas');if(canvas)canvas.style.background=tideKlineTheme==='light'?'#ffffff':'#0b1521';
+ var btn=$('tide-kline-theme');if(btn)btn.textContent=tideKlineTheme==='light'?'切换黑色背景':'切换白色背景';
+ if(tideKline.chart)tideKline.chart.setStyles(klineThemeStyles(tideKlineTheme));
+}
+function klineToggleTheme(){tideKlineTheme=tideKlineTheme==='dark'?'light':'dark';try{localStorage.setItem('tide_kline_theme',tideKlineTheme);}catch(e){}klineApplyTheme();}
+function klineRemoveIndicator(name){
+ var pane=tideIndicatorPanes[name]||(name==='MA'||name==='EMA'?'candle_pane':null);
+ if(tideKline.chart&&pane){try{tideKline.chart.removeIndicator(pane,name);}catch(e){}}
+ if(tideKline.chart&&!pane){try{tideKline.chart.removeIndicator('candle_pane',name);}catch(e){}}
+ delete tideIndicatorPanes[name];
+}
+function klineCreateIndicator(name){
+ if(!tideKline.chart||!tideKline.indicators[name])return;
+ var params=tideKline.indicatorParams[name]||tideIndicatorDefaults[name];
+ var overlay=(name==='MA'||name==='EMA')&&tideKline.indicatorLocations[name]==='main';
+ try{
+  if(overlay)tideIndicatorPanes[name]=tideKline.chart.createIndicator({name:name,calcParams:params,paneId:'candle_pane'},true);
+  else tideIndicatorPanes[name]=tideKline.chart.createIndicator({name:name,calcParams:params},false,{id:'tide_'+name+'_pane',height:name==='VOL'?90:105,minHeight:55,dragEnabled:true});
+ }catch(e){klineSetStatus(name+' 指标创建失败：'+e.message);}
+}
 function klineApplyIndicators(){
  if(!tideKline.chart)return;
- try{
-  if(tideKline.indicators.MA)tideKline.chart.createIndicator('MA',true);
-  if(tideKline.indicators.EMA)tideKline.chart.createIndicator('EMA',true);
-  if(tideKline.indicators.VOL)tideKline.chart.createIndicator('VOL');
-  if(tideKline.indicators.MACD)tideKline.chart.createIndicator('MACD');
-  if(tideKline.indicators.RSI)tideKline.chart.createIndicator('RSI');
- }catch(e){klineSetStatus('指标加载异常：'+e.message);}
+ ['MA','EMA','VOL','MACD','RSI'].forEach(function(name){if(tideKline.indicators[name])klineCreateIndicator(name);});
 }
 function klineCreateChart(lib){
  if(tideKline.chart)return;
- tideKline.chart=lib.init('tide-kline-canvas',{locale:currentLang==='zh'?'zh-CN':'en-US',timezone:'Asia/Singapore',styles:{grid:{horizontal:{color:'#1d2b3d'},vertical:{color:'#1d2b3d'}},candle:{bar:{upColor:'#39ca91',downColor:'#ff6c80',noChangeColor:'#9aa8b8',upBorderColor:'#39ca91',downBorderColor:'#ff6c80',upWickColor:'#39ca91',downWickColor:'#ff6c80'}},xAxis:{axisLine:{color:'#304258'},tickText:{color:'#8496ad'}},yAxis:{axisLine:{color:'#304258'},tickText:{color:'#8496ad'}}}});
+ tideKline.chart=lib.init('tide-kline-canvas',{locale:currentLang==='zh'?'zh-CN':'en-US',timezone:'Asia/Singapore',styles:klineThemeStyles(tideKlineTheme)});
  klineApplyIndicators();if(tideKline.data.length)tideKline.chart.applyNewData(tideKline.data);
+ klineApplyTheme();
+}
+function klineOpenSettings(){
+ var p=$('tide-kline-settings');if(!p)return;
+ p.classList.add('open');klineLoadSettingFields();
+}
+function klineCloseSettings(){var p=$('tide-kline-settings');if(p)p.classList.remove('open');}
+function klineLoadSettingFields(){
+ var name=$('tide-kline-setting-name').value,params=$('tide-kline-setting-params'),loc=$('tide-kline-setting-location'),wrap=$('tide-kline-ma-location-wrap');
+ params.value=(tideKline.indicatorParams[name]||tideIndicatorDefaults[name]).join(',');
+ wrap.style.display=(name==='MA'||name==='EMA')?'block':'none';
+ loc.value=tideKline.indicatorLocations[name]||'main';
+}
+function klineApplySetting(){
+ var name=$('tide-kline-setting-name').value,raw=$('tide-kline-setting-params').value;
+ var params=raw.split(',').map(function(x){return Number(x.trim());});
+ if(!params.length||params.some(function(x){return !Number.isInteger(x)||x<1||x>500;})){klineSetStatus('参数无效：请输入 1–500 的整数，以逗号分隔');return;}
+ var expected=name==='MACD'?3:(name==='MA'||name==='EMA'||name==='VOL'||name==='RSI'?params.length:0);
+ if((name==='MACD'&&params.length!==3)||(name==='MA'&&params.length>6)||(name==='EMA'&&params.length>6)||(name==='VOL'&&params.length>3)||(name==='RSI'&&params.length>3)){klineSetStatus('参数数量不符合该指标要求');return;}
+ tideKline.indicatorParams[name]=params;
+ if(name==='MA'||name==='EMA')tideKline.indicatorLocations[name]=$('tide-kline-setting-location').value;
+ if(tideKline.indicators[name]){klineRemoveIndicator(name);klineCreateIndicator(name);}
+ klineRenderControls();klineSetStatus(name+' 参数已应用：'+params.join(', '));klineCloseSettings();
 }
 function klineMergeData(incoming){
  var byTime={};tideKline.data.forEach(function(x){byTime[x.timestamp]=x;});incoming.forEach(function(x){byTime[x.timestamp]=x;});
@@ -817,7 +878,7 @@ function klineLoad(force){
 function openKlineChart(symbol){
  tideKline.symbol=String(symbol||'BTC').toUpperCase().replace(/[^A-Z0-9]/g,'');
  var modal=klineModal();modal.style.display='flex';
- $('tide-kline-title').textContent=tideKline.symbol+'-USDT-SWAP';klineRenderControls();
+ try{tideKlineTheme=localStorage.getItem('tide_kline_theme')||'dark';}catch(e){}$('tide-kline-title').textContent=tideKline.symbol+'-USDT-SWAP';klineRenderControls();klineApplyTheme();
  if(tideKline.timer){clearInterval(tideKline.timer);tideKline.timer=null;}
  var cached=klineReadCache(tideKline.symbol,tideKline.period);
  tideKline.data=cached?cached.data:[];tideKline.loading=false;tideKline.requestId++;
@@ -836,18 +897,24 @@ function changeKlinePeriod(p){
 }
 function klineToggleIndicator(name){
  tideKline.indicators[name]=!tideKline.indicators[name];
- if(tideKline.chart&&window.klinecharts){try{window.klinecharts.dispose(tideKline.chart);}catch(e){}tideKline.chart=null;klineCreateChart(window.klinecharts);}
+ if(tideKline.chart){if(tideKline.indicators[name])klineCreateIndicator(name);else klineRemoveIndicator(name);}
  klineRenderControls();
 }
 function klineSetDrawMode(mode){
  tideKline.drawMode=mode;var buttons=document.querySelectorAll('.kline-drawbar button');buttons.forEach(function(b){b.classList.remove('active');});
- var map={cursor:0,segment:1,priceLine:2,rect:3};if(map[mode]!==undefined&&buttons[map[mode]])buttons[map[mode]].classList.add('active');
- if(mode==='cursor')return;
+ var map={cursor:0,segment:1,rayLine:2,straightLine:3,horizontalStraightLine:4,horizontalRayLine:5,verticalStraightLine:6,rect:7,parallelStraightLine:8,fibonacciLine:9,brush:10};
+ if(map[mode]!==undefined&&buttons[map[mode]])buttons[map[mode]].classList.add('active');
+ if(mode==='cursor'){klineSetStatus('选择模式：可选中、拖动已有绘图');return;}
  if(!tideKline.chart)return;
- try{tideKline.chart.createOverlay(mode);klineSetStatus('绘图工具已启用：在K线区域点击并拖动完成绘制');}
- catch(e){klineSetStatus('当前图表暂不支持该绘图工具：'+e.message);}
+ try{tideKline.chart.createOverlay(mode);klineSetStatus('绘图工具：'+mode+' · 可继续绘制多条，右键删除单条');}
+ catch(e){klineSetStatus('绘图工具不可用：'+e.message);}
 }
-function klineClearDrawings(){if(!tideKline.chart)return;try{tideKline.chart.removeOverlay();klineSetStatus('已清除绘图');}catch(e){klineSetStatus('清除绘图失败：'+e.message);}}
+function klineDeleteSelected(){
+ if(!tideKline.chart)return;
+ try{var selected=tideKline.chart.getOverlays().filter(function(o){return o.isSelected;});if(selected.length)selected.forEach(function(o){tideKline.chart.removeOverlay({id:o.id});});else klineSetStatus('请先点击选中要删除的线');}
+ catch(e){klineSetStatus('删除选中绘图失败：'+e.message);}
+}
+function klineClearDrawings(){if(!tideKline.chart)return;try{tideKline.chart.removeOverlay();klineSetStatus('已清除全部绘图');}catch(e){klineSetStatus('清除绘图失败：'+e.message);}}
 function closeKlineChart(){
  var modal=$('tide-kline-modal');if(modal)modal.style.display='none';
  if(tideKline.timer){clearInterval(tideKline.timer);tideKline.timer=null;}
