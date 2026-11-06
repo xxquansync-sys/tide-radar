@@ -773,7 +773,7 @@ function klineEnsureScript(){
 function klineModal(){
  var el=$('tide-kline-modal');if(el)return el;
  el=document.createElement('div');el.id='tide-kline-modal';el.className='kline-modal';
- el.innerHTML='<div class="kline-shell"><div class="kline-top"><div><span class="kline-symbol" id="tide-kline-title">BTC-USDT-SWAP</span><span class="kline-meta" id="tide-kline-price"></span></div><div class="kline-controls" id="tide-kline-periods"></div><div class="kline-controls"><button onclick="klineToggleIndicator(\'MA\')" id="tide-kline-MA">MA</button><button onclick="klineToggleIndicator(\'EMA\')" id="tide-kline-EMA">EMA</button><button onclick="klineToggleIndicator(\'VOL\')" id="tide-kline-VOL">VOL</button><button onclick="klineToggleIndicator(\'MACD\')" id="tide-kline-MACD">MACD</button><button onclick="klineToggleIndicator(\'RSI\')" id="tide-kline-RSI">RSI</button><button onclick="klineOpenSettings()">参数设置</button><button onclick="klineToggleTheme()" id="tide-kline-theme">白色背景</button><button class="kline-close" onclick="closeKlineChart()">×</button></div></div><div class="kline-workspace"><div class="kline-drawbar"><button title="选择/十字光标" onclick="klineSetDrawMode(\'cursor\')">⌖</button><button title="趋势线" onclick="klineSetDrawMode(\'segment\')">／</button><button title="射线" onclick="klineSetDrawMode(\'rayLine\')">↗</button><button title="直线" onclick="klineSetDrawMode(\'straightLine\')">／̄</button><button title="水平线" onclick="klineSetDrawMode(\'horizontalStraightLine\')">—</button><button title="水平射线" onclick="klineSetDrawMode(\'horizontalRayLine\')">⇀</button><button title="垂直线" onclick="klineSetDrawMode(\'verticalStraightLine\')">│</button><button title="矩形区域" onclick="klineSetDrawMode(\'rect\')">▱</button><button title="平行通道" onclick="klineSetDrawMode(\'parallelStraightLine\')">∥</button><button title="斐波那契回撤" onclick="klineSetDrawMode(\'fibonacciLine\')">F</button><button title="自由画笔" onclick="klineSetDrawMode(\'brush\')">✎</button><button title="删除选中绘图" onclick="klineDeleteSelected()">⌫</button><button title="清空全部绘图" onclick="klineClearDrawings()">×</button></div><div class="kline-chart-area"><div id="tide-kline-canvas"></div></div></div><div class="kline-settings" id="tide-kline-settings"><strong>指标参数</strong><label>选择指标</label><select id="tide-kline-setting-name" onchange="klineLoadSettingFields()"><option>MA</option><option>EMA</option><option>VOL</option><option>MACD</option><option>RSI</option></select><label>计算参数（逗号分隔）</label><input id="tide-kline-setting-params" value="5,10,30,60" placeholder="例如 5,10,30,60"/><div id="tide-kline-ma-location-wrap"><label>MA / EMA 显示位置</label><select id="tide-kline-setting-location"><option value="main">主图叠加</option><option value="sub">独立副图</option></select></div><div class="kline-setting-actions"><button onclick="klineApplySetting()">应用参数</button><button onclick="klineCloseSettings()">关闭</button></div></div><div class="kline-status" id="tide-kline-status">准备图表…</div></div>';
+ el.innerHTML='<div class="kline-shell"><div class="kline-top"><div><span class="kline-symbol" id="tide-kline-title">BTC-USDT-SWAP</span><span class="kline-meta" id="tide-kline-price"></span></div><div class="kline-controls" id="tide-kline-periods"></div><div class="kline-controls"><button onclick="klineToggleIndicator(\'MA\')" id="tide-kline-MA">MA</button><button onclick="klineToggleIndicator(\'EMA\')" id="tide-kline-EMA">EMA</button><button onclick="klineToggleIndicator(\'VOL\')" id="tide-kline-VOL">VOL</button><button onclick="klineToggleIndicator(\'MACD\')" id="tide-kline-MACD">MACD</button><button onclick="klineToggleIndicator(\'RSI\')" id="tide-kline-RSI">RSI</button><button onclick="klineOpenSettings()">参数设置</button><button onclick="klineToggleTheme()" id="tide-kline-theme">白色背景</button><button class="kline-close" onclick="closeKlineChart()">×</button></div></div><div class="kline-workspace"><div class="kline-drawbar"><button title="选择/十字光标" onclick="klineSetDrawMode(\'cursor\')">⌖</button><button title="趋势线" onclick="klineSetDrawMode(\'segment\')">／</button><button title="射线" onclick="klineSetDrawMode(\'rayLine\')">↗</button><button title="直线" onclick="klineSetDrawMode(\'straightLine\')">／̄</button><button title="水平线" onclick="klineSetDrawMode(\'horizontalStraightLine\')">—</button><button title="水平射线" onclick="klineSetDrawMode(\'horizontalRayLine\')">⇀</button><button title="垂直线" onclick="klineSetDrawMode(\'verticalStraightLine\')">│</button><button title="矩形区域" onclick="klineSetDrawMode(\'rect\')">▱</button><button title="平行通道" onclick="klineSetDrawMode(\'parallelStraightLine\')">∥</button><button title="斐波那契回撤" onclick="klineSetDrawMode(\'fibonacciLine\')">F</button><button title="自由画笔" onclick="klineSetDrawMode(\'brush\')">✎</button><button title="删除选中绘图" onclick="klineDeleteSelected()">⌫</button><button title="清空全部绘图" onclick="klineClearDrawings()">×</button></div><div class="kline-chart-area"><div id="tide-kline-canvas"></div></div></div><div class="kline-settings" id="tide-kline-settings"><strong>指标参数</strong><label>选择指标</label><select id="tide-kline-setting-name" onchange="klineLoadSettingFields()"><option>MA</option><option>EMA</option><option>VOL</option><option>MACD</option><option>RSI</option></select><label>计算参数（逗号分隔）</label><input id="tide-kline-setting-params" value="5,10,30,60" placeholder="例如 5,10,30,60"/><div class="kline-setting-note">MA / EMA 固定叠加在K线主图上</div><div class="kline-setting-actions"><button onclick="klineApplySetting()">应用参数</button><button onclick="klineCloseSettings()">关闭</button></div></div><div class="kline-status" id="tide-kline-status">准备图表…</div></div>';
  el.addEventListener('click',function(e){if(e.target===el)closeKlineChart();});document.body.appendChild(el);return el;
 }
 function klinePeriodType(p){return p==='1D'?'1day':p;}
@@ -809,17 +809,24 @@ function klineApplyTheme(){
 }
 function klineToggleTheme(){tideKlineTheme=tideKlineTheme==='dark'?'light':'dark';try{localStorage.setItem('tide_kline_theme',tideKlineTheme);}catch(e){}klineApplyTheme();}
 function klineRemoveIndicator(name){
- var pane=((name==='MA'||name==='EMA')&&tideKline.indicatorLocations[name]==='main')?'candle_pane':(tideIndicatorPanes[name]||('tide_'+name+'_pane'));
- if(tideKline.chart){try{tideKline.chart.removeIndicator(pane,name);}catch(e){}}
+ if(!tideKline.chart)return;
+ // Clean both the main pane and the legacy sub-pane used by the previous build.
+ ['candle_pane','tide_'+name+'_pane',tideIndicatorPanes[name]].filter(Boolean).forEach(function(pane,i,all){
+  if(all.indexOf(pane)!==i)return;
+  try{tideKline.chart.removeIndicator(pane,name);}catch(e){}
+ });
  delete tideIndicatorPanes[name];
 }
 function klineCreateIndicator(name){
  if(!tideKline.chart||!tideKline.indicators[name])return;
  var params=tideKline.indicatorParams[name]||tideIndicatorDefaults[name];
- var overlay=(name==='MA'||name==='EMA')&&tideKline.indicatorLocations[name]==='main';
  try{
-  if(overlay)tideIndicatorPanes[name]=tideKline.chart.createIndicator({name:name,calcParams:params},true);
-  else tideIndicatorPanes[name]=tideKline.chart.createIndicator({name:name,calcParams:params},false,{id:'tide_'+name+'_pane',height:name==='VOL'?90:105,minHeight:55,dragEnabled:true});
+  if(name==='MA'||name==='EMA'){
+   // MA/EMA are always attached to the candle pane, never rendered as a separate panel.
+   tideIndicatorPanes[name]=tideKline.chart.createIndicator({name:name,calcParams:params},true,{id:'candle_pane'});
+  }else{
+   tideIndicatorPanes[name]=tideKline.chart.createIndicator({name:name,calcParams:params},false,{id:'tide_'+name+'_pane',height:name==='VOL'?90:105,minHeight:55,dragEnabled:true});
+  }
  }catch(e){klineSetStatus(name+' 指标创建失败：'+e.message);}
 }
 function klineApplyIndicators(){
@@ -838,19 +845,16 @@ function klineOpenSettings(){
 }
 function klineCloseSettings(){var p=$('tide-kline-settings');if(p)p.classList.remove('open');}
 function klineLoadSettingFields(){
- var name=$('tide-kline-setting-name').value,params=$('tide-kline-setting-params'),loc=$('tide-kline-setting-location'),wrap=$('tide-kline-ma-location-wrap');
+ var name=$('tide-kline-setting-name').value,params=$('tide-kline-setting-params');
  params.value=(tideKline.indicatorParams[name]||tideIndicatorDefaults[name]).join(',');
- wrap.style.display=(name==='MA'||name==='EMA')?'block':'none';
- loc.value=tideKline.indicatorLocations[name]||'main';
+ var wrap=$('tide-kline-ma-location-wrap');if(wrap)wrap.style.display='none';
 }
 function klineApplySetting(){
  var name=$('tide-kline-setting-name').value,raw=$('tide-kline-setting-params').value;
  var params=raw.split(',').map(function(x){return Number(x.trim());});
  if(!params.length||params.some(function(x){return !Number.isInteger(x)||x<1||x>500;})){klineSetStatus('参数无效：请输入 1–500 的整数，以逗号分隔');return;}
- var expected=name==='MACD'?3:(name==='MA'||name==='EMA'||name==='VOL'||name==='RSI'?params.length:0);
  if((name==='MACD'&&params.length!==3)||(name==='MA'&&params.length>6)||(name==='EMA'&&params.length>6)||(name==='VOL'&&params.length>3)||(name==='RSI'&&params.length>3)){klineSetStatus('参数数量不符合该指标要求');return;}
  tideKline.indicatorParams[name]=params;
- if(name==='MA'||name==='EMA')tideKline.indicatorLocations[name]=$('tide-kline-setting-location').value;
  if(tideKline.indicators[name]){klineRemoveIndicator(name);klineCreateIndicator(name);}
  klineRenderControls();klineSetStatus(name+' 参数已应用：'+params.join(', '));klineCloseSettings();
 }
