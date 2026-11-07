@@ -175,7 +175,29 @@
         stats.forEach((s,i)=>s.change=vals[i]);
       }
     }
-    return {params:p,pivots:pen,labels,signals,levels,cycle,stats,barCount:n};
+    // Crypto adaptation: there is no exchange-wide daily price ceiling/floor.
+    // Replace A-share limit-up/down tags with volatility/volume outlier tags.
+    const extremes=[];
+    const tr=make(n,0),atr=make(n,NaN),volAvg=make(n,NaN);
+    for(let i=0;i<n;i++){
+      const prev=i>0?C[i-1]:C[i];
+      tr[i]=Math.max(H[i]-L[i],Math.abs(H[i]-prev),Math.abs(L[i]-prev));
+      const from=Math.max(0,i-13);let sum=0,cnt=0;
+      for(let j=from;j<=i;j++){sum+=tr[j];cnt++;}
+      atr[i]=cnt?sum/cnt:NaN;
+      const vf=Math.max(0,i-19);let vs=0,vc=0;
+      for(let j=vf;j<=i;j++){const v=Number(data[j].volume);if(finite(v)){vs+=v;vc++;}}
+      volAvg[i]=vc?vs/vc:NaN;
+      const range=H[i]-L[i],body=Math.abs(C[i]-O[i]),vol=Number(data[i].volume);
+      const volatilityOutlier=finite(atr[i])&&atr[i]>0&&range>=2.2*atr[i]&&body>=0.9*atr[i];
+      const volumeConfirm=!finite(volAvg[i])||volAvg[i]<=0||!finite(vol)||vol>=1.35*volAvg[i];
+      if(i>=14&&volatilityOutlier&&volumeConfirm){
+        extremes.push({index:i,price:C[i],text:C[i]>=O[i]?'急涨':'急跌',type:C[i]>=O[i]?'up':'down',color:C[i]>=O[i]?'#f0b52d':'#27b9c8'});
+      }
+    }
+    // Keep the source's ABC/123 phase logic; show candle counts rather than assuming each bar is a day.
+    stats.forEach(s=>{s.bars=Math.max(0,Math.round(Number(s.bars)||0));});
+    return {params:p,pivots:pen,labels,signals,extremes,levels,cycle,stats,barCount:n};
   }
 
   function render(chart, data, result, lang) {
@@ -207,12 +229,22 @@
     });
     result.pivots.slice(-24).forEach(p=>addText(p.index,p.price,p.type==='high'?'H':'L',p.type==='high'?'#d84b54':'#239c56',10));
     result.labels.slice(-36).forEach(x=>addText(x.index,x.price,x.text,x.color,12));
-    result.signals.slice(-24).forEach(x=>addText(x.index,x.price,x.text,x.color,11));
-    // Compact cycle and leg statistics at the upper-left edge of the price pane.
     const en=lang==='en';
+    const signalText={ '一阳定势':'Bullish impulse', '收敛':'Convergence', '强势':'Strong', '三买':'3rd Buy', '急涨':'Surge', '急跌':'Drop' };
+    result.signals.slice(-24).forEach(x=>addText(x.index,x.price,en?(signalText[x.text]||x.text):x.text,x.color,11));
+    (result.extremes||[]).slice(-30).forEach(x=>addText(x.index,x.price,en?(signalText[x.text]||x.text):x.text,x.color,11));
+    // Cycle statistics use bar counts plus actual elapsed time for the active timeframe.
+    const elapsed=(bars)=>{
+      if(!bars||last<1)return '—';
+      const first=Math.max(0,last-bars+1),ms=Math.max(0,data[last].timestamp-data[first].timestamp);
+      const mins=Math.round(ms/60000);
+      if(mins<60)return mins+'m';
+      if(mins<1440)return (mins/60).toFixed(1)+'h';
+      return (mins/1440).toFixed(1)+'d';
+    };
     result.stats.forEach((s,i)=>{
-      const text=(en?s.name:s.name)+'  '+Math.max(0,s.bars)+' '+(en?'bars':'天')+'  '+(finite(s.change)?(s.change>0?'+':'')+s.change.toFixed(2)+'%':'');
-      addText(Math.max(0,last- Math.min(8,data.length-1)),data[last].high*(1.008+i*0.006),text,i===0?'#289c57':i===1?'#df5555':i===2?'#289c57':'#278bd0',10);
+      const text=s.name+'  '+s.bars+(en?' bars':'根K')+' / '+elapsed(s.bars)+'  '+(finite(s.change)?(s.change>0?'+':'')+s.change.toFixed(2)+'%':'—');
+      addText(Math.max(0,last-Math.min(8,data.length-1)),data[last].high*(1.008+i*0.006),text,i===0?'#289c57':i===1?'#df5555':i===2?'#289c57':'#278bd0',10);
     });
   }
   global.TideTdxStructure={defaults:DEFAULTS,compute,render};
