@@ -4,7 +4,7 @@ const ok=Number.isFinite,clamp=(x,a,b)=>Math.max(a,Math.min(b,x)),arr=n=>Array(n
 function ema(a,p){let o=arr(a.length),k=2/(p+1),v=NaN;a.forEach((x,i)=>{if(ok(x)){v=ok(v)?v+k*(x-v):x;o[i]=v;}});return o;}
 function compute(data,opts,tf){
  const p=Object.assign({},D,opts||{}),n=data.length,closed=data.map((x,i)=>({x,i})).filter(z=>z.x.confirmed===true||(!('confirmed'in z.x)&&z.i<n-1));
- const rows=closed.map(z=>z.x),idx=closed.map(z=>z.i),m=rows.length,H=rows.map(x=>+x.high),L=rows.map(x=>+x.low),C=rows.map(x=>+x.close),V=rows.map(x=>+x.volume||0),tr=arr(m),atr=arr(m),hist=arr(m);
+ const rows=closed.map(z=>z.x),idx=closed.map(z=>z.i),m=rows.length,H=rows.map(x=>+x.high),L=rows.map(x=>+x.low),C=rows.map(x=>+x.close),V=rows.map(x=>+x.volume||0),tr=arr(m),atr=arr(m);
  for(let i=0;i<m;i++){tr[i]=Math.max(H[i]-L[i],i?Math.abs(H[i]-C[i-1]):0,i?Math.abs(L[i]-C[i-1]):0);let s=0,c=0;for(let j=Math.max(0,i-p.atrPeriod+1);j<=i;j++){s+=tr[j];c++;}atr[i]=s/c;}
  const mh=ema(C,12),ml=ema(C,26),diff=mh.map((x,i)=>x-ml[i]),sig=ema(diff,9);hist=diff.map((x,i)=>2*(x-sig[i]));
  const pivots=[],labels=[],signals=[],lastByType={high:null,low:null};let last=null;
