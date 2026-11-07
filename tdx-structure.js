@@ -1,6 +1,6 @@
 (function (global) {
   'use strict';
-  const DEFAULTS = { penPeriod: 5, halfPercent: 50, limitPercent: 0, cycleBars: 1 };
+  const DEFAULTS = { penPeriod: 7, halfPercent: 50, limitPercent: 50, timePeriod: 1 };
   const finite = Number.isFinite;
   function make(n, v) { return Array.from({ length: n }, () => v); }
   function backset(src, lengths) {
@@ -182,14 +182,17 @@
     for(let i=0;i<n;i++){
       const prev=i>0?C[i-1]:C[i];
       tr[i]=Math.max(H[i]-L[i],Math.abs(H[i]-prev),Math.abs(L[i]-prev));
-      const from=Math.max(0,i-13);let sum=0,cnt=0;
+      const atrWindow=Math.max(2,14*(Number(p.timePeriod)||1));
+      const from=Math.max(0,i-atrWindow+1);let sum=0,cnt=0;
       for(let j=from;j<=i;j++){sum+=tr[j];cnt++;}
       atr[i]=cnt?sum/cnt:NaN;
-      const vf=Math.max(0,i-19);let vs=0,vc=0;
+      const volWindow=Math.max(2,20*(Number(p.timePeriod)||1));
+      const vf=Math.max(0,i-volWindow+1);let vs=0,vc=0;
       for(let j=vf;j<=i;j++){const v=Number(data[j].volume);if(finite(v)){vs+=v;vc++;}}
       volAvg[i]=vc?vs/vc:NaN;
       const range=H[i]-L[i],body=Math.abs(C[i]-O[i]),vol=Number(data[i].volume);
-      const volatilityOutlier=finite(atr[i])&&atr[i]>0&&range>=2.2*atr[i]&&body>=0.9*atr[i];
+      const bodyRatio=range>0?body/range:0;
+      const volatilityOutlier=finite(atr[i])&&atr[i]>0&&range>=2.2*atr[i]&&bodyRatio>=Math.max(0,Math.min(100,Number(p.limitPercent)||50))/100;
       const volumeConfirm=!finite(volAvg[i])||volAvg[i]<=0||!finite(vol)||vol>=1.35*volAvg[i];
       if(i>=14&&volatilityOutlier&&volumeConfirm){
         extremes.push({index:i,price:C[i],text:C[i]>=O[i]?'急涨':'急跌',type:C[i]>=O[i]?'up':'down',color:C[i]>=O[i]?'#f0b52d':'#27b9c8'});
@@ -218,16 +221,27 @@
     const point=(i,v)=>({timestamp:data[i].timestamp,value:v});
     const addLine=(a,b,color,style,size)=>{if(a&&b&&finite(a.value)&&finite(b.value))chart.createOverlay({name:'tideTdxLine',groupId:group,points:[a,b],lock:true,extendData:{color,style,size}});};
     const addText=(i,v,text,color,size)=>{if(i>=0&&i<data.length&&finite(v)&&text)chart.createOverlay({name:'tideTdxText',groupId:group,points:[point(i,v)],lock:true,extendData:{text,color,size}});};
-    // Orange swing-pen polyline
-    for(let i=1;i<result.pivots.length;i++)addLine(point(result.pivots[i-1].index,result.pivots[i-1].price),point(result.pivots[i].index,result.pivots[i].price),'#e1ae54','solid',1.2);
-    // Current structural levels, extended from their originating pivot to the latest candle.
-    const specs=[['low1','#21a34a','solid',2],['high1','#e34d55','solid',2],['low2','#55b96b','dashed',1],['high2','#e34d55','dashed',1],['low3','#159b58','dashed',1],['high3','#e34d55','dashed',1],['high4','#e34d55','dashed',1],['mid','#e34d55','solid',1]];
-    specs.forEach(([key,color,style,size])=>{
-      const v=result.levels[key][last];if(!finite(v))return;
-      let start=0;for(let i=last;i>=0;i--)if(Math.abs((result.levels[key][i]||NaN)-v)<1e-10){start=i;}else if(start!==0)break;
-      addLine(point(start,v),point(last,v),color,style,size);
+    // Orange swing-pen polyline between confirmed structural highs/lows.
+    for(let i=1;i<result.pivots.length;i++){
+      const a=result.pivots[i-1],b=result.pivots[i];
+      addLine(point(a.index,a.price),point(b.index,b.price),'#e1ae54','solid',1.6);
+    }
+    // Explicit horizontal high/low pivot levels, each held until the next confirmed pivot.
+    result.pivots.slice(-40).forEach((p,i,arr)=>{
+      const next=arr[i+1],end=next?next.index:last;
+      if(end>p.index)addLine(point(p.index,p.price),point(end,p.price),p.type==='high'?'#df535b':'#22a45a','solid',1.5);
+      const tag=en? (p.type==='high'?'HIGH':'LOW') : (p.type==='high'?'高点':'低点');
+      addText(p.index,p.price,tag,p.type==='high'?'#df535b':'#22a45a',10);
     });
-    result.pivots.slice(-24).forEach(p=>addText(p.index,p.price,p.type==='high'?'H':'L',p.type==='high'?'#d84b54':'#239c56',10));
+    // Current structural levels and the 50% midpoint, extended to the latest candle.
+    const specs=[['low1','#159b58','solid',2],['high1','#df535b','solid',2],['low2','#55b96b','dashed',1],['high2','#e34d55','dashed',1],['low3','#159b58','dashed',1],['high3','#e34d55','dashed',1],['high4','#e34d55','dashed',1],['mid','#e6a23c','dashed',2]];
+    specs.forEach(([key,color,style,size])=>{
+      const arr=result.levels[key],v=arr[last];if(!finite(v))return;
+      let start=last;
+      while(start>0&&finite(arr[start-1])&&Math.abs(arr[start-1]-v)<1e-8)start--;
+      addLine(point(start,v),point(last,v),color,style,size);
+      if(key==='mid')addText(last,v,(en?'50% MID':'半分位 50%')+' · '+v.toFixed(v<1?6:2),'#e6a23c',11);
+    });
     result.labels.slice(-36).forEach(x=>addText(x.index,x.price,x.text,x.color,12));
     const en=lang==='en';
     const signalText={ '一阳定势':'Bullish impulse', '收敛':'Convergence', '强势':'Strong', '三买':'3rd Buy', '急涨':'Surge', '急跌':'Drop' };
