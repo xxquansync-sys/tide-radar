@@ -756,7 +756,7 @@ refresh();
 setInterval(refresh,60000);
 
 /* ---------------- KLineChart: OKX public candles ---------------- */
-var tideKline={chart:null,symbol:'BTC',period:'15m',timer:null,scriptLoading:null,indicators:{MA:true,EMA:false,VOL:true,MACD:true,RSI:false},indicatorParams:{MA:[5,10,30,60],EMA:[6,12,20],VOL:[5,10,20],MACD:[12,26,9],RSI:[6,12,24]},indicatorLocations:{MA:'main',EMA:'main'},data:[],loading:false,requestId:0,drawMode:'cursor'};
+var tideKline={chart:null,symbol:'BTC',period:'15m',timer:null,scriptLoading:null,controller:null,indicators:{MA:true,EMA:false,VOL:true,MACD:true,RSI:false},indicatorParams:{MA:[5,10,30,60],EMA:[6,12,20],VOL:[5,10,20],MACD:[12,26,9],RSI:[6,12,24]},indicatorLocations:{MA:'main',EMA:'main'},data:[],loading:false,requestId:0,drawMode:'cursor'};
 var tideKlinePeriods=['1m','5m','15m','1H','4H','1D'];
 var TIDE_KLINE_CACHE='tide_kline_cache_v2';
 function klineEnsureScript(){
@@ -786,11 +786,18 @@ function klineSetStatus(s){var el=$('tide-kline-status');if(el)el.textContent=s;
 function klineCacheKey(symbol,period){return TIDE_KLINE_CACHE+':'+symbol+':'+period;}
 function klineReadCache(symbol,period){try{var x=JSON.parse(localStorage.getItem(klineCacheKey(symbol,period))||'null');if(x&&Array.isArray(x.data))return x;}catch(e){}return null;}
 function klineWriteCache(){try{localStorage.setItem(klineCacheKey(tideKline.symbol,tideKline.period),JSON.stringify({ts:Date.now(),data:tideKline.data.slice(-300)}));}catch(e){}}
-function klineFetch(limit,symbol,period){
+function klineFetch(limit,symbol,period,signal){
  var inst=(symbol||tideKline.symbol)+'-USDT-SWAP';
  var path='/api/v5/market/candles?instId='+encodeURIComponent(inst)+'&bar='+encodeURIComponent(klinePeriodType(period||tideKline.period))+'&limit='+limit;
- return api(path).then(function(rows){
-  var data=(rows||[]).map(function(x){return {timestamp:+x[0],open:+x[1],high:+x[2],low:+x[3],close:+x[4],volume:+x[5]||0,turnover:+x[7]||0};}).filter(function(x){return x.timestamp>0&&x.open>0&&x.high>0&&x.low>0&&x.close>0;}).sort(function(a,b){return a.timestamp-b.timestamp;});
+ // Chart requests bypass the dashboard's serialized API queue so a slow old
+ // timeframe cannot hold up the newly selected timeframe.
+ return fetch(API+path,{signal:signal}).then(function(r){
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  return r.json();
+ }).then(function(j){
+  if(j.code!=='0')throw new Error(j.msg||('API '+j.code));
+  var rows=j.data||[];
+  var data=rows.map(function(x){return {timestamp:+x[0],open:+x[1],high:+x[2],low:+x[3],close:+x[4],volume:+x[5]||0,turnover:+x[7]||0};}).filter(function(x){return x.timestamp>0&&x.open>0&&x.high>0&&x.low>0&&x.close>0;}).sort(function(a,b){return a.timestamp-b.timestamp;});
   if(!data.length)throw new Error('No candle data');return data;
  });
 }
@@ -899,15 +906,22 @@ function klineUpdatePrice(){
  var el=$('tide-kline-price');if(el)el.textContent='Last: '+p;
 }
 function klineLoad(force){
- if(!tideKline.chart||tideKline.loading)return;
+ if(!tideKline.chart)return;
+ if(tideKline.loading&&!force)return;
+ if(tideKline.controller){try{tideKline.controller.abort();}catch(e){}}
+ var controller=new AbortController();tideKline.controller=controller;
  var req=++tideKline.requestId,symbol=tideKline.symbol,period=tideKline.period,incremental=tideKline.data.length>0;
  tideKline.loading=true;klineSetStatus((incremental?'更新':'加载')+' '+symbol+' '+period+' · OKX');
- klineFetch(incremental?2:300,symbol,period).then(function(data){
+ klineFetch(incremental?2:300,symbol,period,controller.signal).then(function(data){
   if(req!==tideKline.requestId||!tideKline.chart||symbol!==tideKline.symbol||period!==tideKline.period)return;
   klineMergeData(data);tideKline.chart.applyNewData(tideKline.data);klineWriteCache();klineUpdatePrice();
   klineSetStatus('OKX 实时K线 · '+tideKline.data.length+' 根 · '+new Date().toLocaleTimeString());
- }).catch(function(e){if(req===tideKline.requestId)klineSetStatus((tideKline.data.length?'缓存数据已显示 · 更新失败：':'K线加载失败：')+e.message);})
- .then(function(){if(req===tideKline.requestId)tideKline.loading=false;});
+ }).catch(function(e){
+  if(req!==tideKline.requestId||e.name==='AbortError')return;
+  klineSetStatus((tideKline.data.length?'缓存数据已显示 · 更新失败：':'K线加载失败：')+e.message);
+ }).then(function(){
+  if(req===tideKline.requestId){tideKline.loading=false;tideKline.controller=null;}
+ });
 }
 function openKlineChart(symbol){
  try{tideKlineLang=localStorage.getItem('tide_kline_lang')||'zh';}catch(e){}
@@ -925,10 +939,18 @@ function openKlineChart(symbol){
  }).catch(function(e){klineSetStatus(e.message);});
 }
 function changeKlinePeriod(p){
- if(tideKlinePeriods.indexOf(p)<0)return;tideKline.period=p;tideKline.data=[];tideKline.loading=false;tideKline.requestId++;
- var cached=klineReadCache(tideKline.symbol,p);if(cached)tideKline.data=cached.data;
- klineRenderControls();if(tideKline.chart&&tideKline.data.length)tideKline.chart.applyNewData(tideKline.data);
- klineUpdatePrice();klineLoad(true);
+ if(tideKlinePeriods.indexOf(p)<0||p===tideKline.period)return;
+ tideKline.period=p;
+ // Cancel the previous timeframe immediately; its finally handler is no
+ // longer allowed to keep the new timeframe in a permanent loading state.
+ if(tideKline.controller){try{tideKline.controller.abort();}catch(e){}}
+ tideKline.controller=null;tideKline.loading=false;tideKline.requestId++;
+ var cached=klineReadCache(tideKline.symbol,p);tideKline.data=cached?cached.data:[];
+ klineRenderControls();
+ if(tideKline.chart)tideKline.chart.applyNewData(tideKline.data);
+ klineUpdatePrice();
+ klineSetStatus(cached?'已切换 '+p+' · 正在后台更新 OKX 行情…':'正在加载 '+p+' OKX K线…');
+ klineLoad(true);
 }
 function klineToggleIndicator(name){
  tideKline.indicators[name]=!tideKline.indicators[name];
@@ -958,6 +980,7 @@ function closeKlineChart(){
  var modal=$('tide-kline-modal');if(modal)modal.style.display='none';
  if(tideKline.timer){clearInterval(tideKline.timer);tideKline.timer=null;}
  tideKline.requestId++;tideKline.loading=false;
+ if(tideKline.controller){try{tideKline.controller.abort();}catch(e){}tideKline.controller=null;}
  if(tideKline.chart&&window.klinecharts){try{window.klinecharts.dispose(tideKline.chart);}catch(e){}tideKline.chart=null;}
 }
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeKlineChart();});
