@@ -6,7 +6,7 @@ function compute(data,opts,tf){
  const p=Object.assign({},D,opts||{}),n=data.length,closed=data.map((x,i)=>({x,i})).filter(z=>z.x.confirmed===true||(!('confirmed'in z.x)&&z.i<n-1));
  const rows=closed.map(z=>z.x),idx=closed.map(z=>z.i),m=rows.length,H=rows.map(x=>+x.high),L=rows.map(x=>+x.low),C=rows.map(x=>+x.close),V=rows.map(x=>+x.volume||0),tr=arr(m),atr=arr(m);
  for(let i=0;i<m;i++){tr[i]=Math.max(H[i]-L[i],i?Math.abs(H[i]-C[i-1]):0,i?Math.abs(L[i]-C[i-1]):0);let s=0,c=0;for(let j=Math.max(0,i-p.atrPeriod+1);j<=i;j++){s+=tr[j];c++;}atr[i]=s/c;}
- const mh=ema(C,12),ml=ema(C,26),diff=mh.map((x,i)=>x-ml[i]),sig=ema(diff,9);hist=diff.map((x,i)=>2*(x-sig[i]));
+ let hist;const mh=ema(C,12),ml=ema(C,26),diff=mh.map((x,i)=>x-ml[i]),sig=ema(diff,9);hist=diff.map((x,i)=>2*(x-sig[i]));
  const pivots=[],labels=[],signals=[],lastByType={high:null,low:null};let last=null;
  const span=Math.max(4,Math.round(p.penPeriod*2)),confirm=Math.max(1,Math.floor(p.confirmBars));
  for(let i=0;i<m;i++){let j=i-confirm;if(j<1)continue;let a=Math.max(0,j-span+1),hi=-Infinity,lo=Infinity,hiAt=-1,loAt=-1;
