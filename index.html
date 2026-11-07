@@ -846,8 +846,22 @@ function klineSetLanguage(lang){
 function klineToggleLanguage(){klineSetLanguage(tideKlineLang==='zh'?'en':'zh');}
 function klineThemeStyles(theme){
  var light=theme==='light',fg=light?'#526174':'#9aabc0',axis=light?'#d7dee7':'#304258',en=tideKlineLang==='en';
- var candleLabels=en?['Time','Open','High','Low','Close','Volume']:['时间','开','高','低','收','成交量'];
- return {grid:{show:false,horizontal:{show:false},vertical:{show:false}},candle:{bar:{upColor:'#16a879',downColor:'#ed5368',noChangeColor:'#929eac',upBorderColor:'#16a879',downBorderColor:'#ed5368',upWickColor:'#16a879',downWickColor:'#ed5368'},tooltip:{labels:candleLabels}},xAxis:{axisLine:{color:axis},tickText:{color:fg},tickLine:{show:false}},yAxis:{axisLine:{color:axis},tickText:{color:fg},tickLine:{show:false}},separator:{color:axis},crosshair:{horizontal:{line:{color:light?'#8794a5':'#718096'}},vertical:{line:{color:light?'#8794a5':'#718096'}}},indicator:{tooltip:{text:{color:fg}}}};
+ var candleTooltip=en?[
+  {title:'Time',value:'{time}'},
+  {title:'Open',value:'{open}'},
+  {title:'High',value:'{high}'},
+  {title:'Low',value:'{low}'},
+  {title:'Close',value:'{close}'},
+  {title:'Volume',value:'{volume}'}
+ ]:[
+  {title:'时间',value:'{time}'},
+  {title:'开',value:'{open}'},
+  {title:'高',value:'{high}'},
+  {title:'低',value:'{low}'},
+  {title:'收',value:'{close}'},
+  {title:'成交量',value:'{volume}'}
+ ];
+ return {grid:{show:false,horizontal:{show:false},vertical:{show:false}},candle:{bar:{upColor:'#16a879',downColor:'#ed5368',noChangeColor:'#929eac',upBorderColor:'#16a879',downBorderColor:'#ed5368',upWickColor:'#16a879',downWickColor:'#ed5368'},tooltip:{custom:candleTooltip}},xAxis:{axisLine:{color:axis},tickText:{color:fg},tickLine:{show:false}},yAxis:{axisLine:{color:axis},tickText:{color:fg},tickLine:{show:false}},separator:{color:axis},crosshair:{horizontal:{line:{color:light?'#8794a5':'#718096'}},vertical:{line:{color:light?'#8794a5':'#718096'}}},indicator:{tooltip:{text:{color:fg}}}};
 }
 function klineApplyTheme(){
  var shell=document.querySelector('.kline-shell');if(shell)shell.setAttribute('data-theme',tideKlineTheme);
