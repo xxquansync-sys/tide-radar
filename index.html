@@ -969,7 +969,7 @@ function klineRenderTdx(){
  set('tdx-label-regime',en?'Structure':'结构状态');set('tdx-label-htf',en?'4H bias':'4H方向');set('tdx-label-signal',en?'Latest signal':'最新信号');set('tdx-label-entry',en?'Entry / Stop':'入场 / 止损');set('tdx-label-target',en?'Target / R:R':'目标 / R:R');
  set('tdx-value-regime',result.regime.toUpperCase()+' · ADX '+(result.adx||0).toFixed(0));
  set('tdx-value-htf',result.htf?result.htf.trend.toUpperCase():(en?'Local TF':'本周期'));
- set('tdx-value-signal',last?(last.text+' '+last.direction.toUpperCase()+' · '+last.score+'/100'+(last.aligned===false?' · 4H ×':'')):(en?'No confirmed signal':'暂无已确认信号'));
+ set('tdx-value-signal',last?(last.text+' '+last.direction.toUpperCase()+' · '+(en?'Quality ':'质量 ')+last.score+'/100'+(last.aligned===false?' · 4H ×':'')):(en?'No confirmed signal':'暂无已确认信号'));
  set('tdx-value-entry',last?fmt(last.entry)+' / '+fmt(last.stop):'—');
  set('tdx-value-target',last?fmt(last.target)+' / '+(last.rr?last.rr.toFixed(2):'—'):'—');
  }catch(e){klineSetStatus('结构指标计算失败：'+e.message);}
