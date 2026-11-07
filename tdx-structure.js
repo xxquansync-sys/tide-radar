@@ -27,12 +27,12 @@ function compute(data,opts,tf){
  const lastAdx=adx.at(-1)||0,regime=trend==='range'||(overlap>.55&&lastAdx<22)?'range':trend==='bull'?(lastAdx>=25?'strong-up':'weak-up'):trend==='bear'?(lastAdx>=25?'strong-down':'weak-down'):'unconfirmed';
  const levels={low1:lastL?.price,low2:prevL?.price,high1:lastH?.price,high2:prevH?.price,mid:lastH&&lastL?lastL.price+(lastH.price-lastL.price)*clamp(p.halfPercent,0,100)/100:NaN};
  const recentPivots=pivots.slice(-4),centerTop=recentPivots.length===4?Math.min(...[0,1,2].map(i=>Math.max(recentPivots[i].price,recentPivots[i+1].price))):NaN,centerBottom=recentPivots.length===4?Math.max(...[0,1,2].map(i=>Math.min(recentPivots[i].price,recentPivots[i+1].price))):NaN;levels.centerHigh=centerBottom<centerTop?centerTop:NaN;levels.centerLow=centerBottom<centerTop?centerBottom:NaN;levels.centerMid=centerBottom<centerTop?(centerTop+centerBottom)/2:NaN;
- const seen=[];
+ const seen=[],trendSeries=[];
  for(let i=1;i<m;i++){
   const orig=idx[i];pivots.filter(z=>z.confirmedAt<=orig&&!seen.includes(z)).forEach(z=>seen.push(z));
   const hh=seen.filter(z=>z.type==='high'),ll=seen.filter(z=>z.type==='low'),h=hh.at(-1),l=ll.at(-1),ph=hh.at(-2),pl=ll.at(-2);
-  if(!h||!l||!ph||!pl)continue;
-  const localTrend=structureTrend(h,ph,l,pl);if(localTrend==='range'||(adx[i]||0)<12)continue;
+  const localTrend=structureTrend(h,ph,l,pl);trendSeries[orig]=localTrend;
+  if(!h||!l||!ph||!pl||localTrend==='range'||(adx[i]||0)<12)continue;
   const prev=C[i-1],close=C[i],up=close>O[i],down=close<O[i],bodyRatio=Math.abs(close-O[i])/Math.max(H[i]-L[i],1e-12);
   const volN=Math.max(3,p.volumePeriod*p.timePeriod),vbase=V.slice(Math.max(0,i-volN),i),vavg=vbase.reduce((s,v)=>s+v,0)/Math.max(1,vbase.length),rvol=vavg?V[i]/vavg:1;
   const make=(name,dir,invalid)=>{const entry=close,buffer=(atr[i]||tr[i])*p.stopAtr,stop=dir==='long'?invalid-buffer:invalid+buffer,risk=Math.abs(entry-stop),structTarget=dir==='long'?(h.price>entry?h.price:NaN):(l.price<entry?l.price:NaN),target=finite(structTarget)&&Math.abs(structTarget-entry)>=risk?structTarget:entry+(dir==='long'?1:-1)*risk*p.targetR;const rr=risk>0?Math.abs(target-entry)/risk:0;const structureScore=(dir==='long'&&localTrend==='bull')||(dir==='short'&&localTrend==='bear')?30:15;const score=Math.round(clamp(structureScore+(rvol>=1.3?10:rvol>=1?6:0)+((adx[i]||0)>=25?15:(adx[i]||0)>=18?10:4)+(Math.min(1,Math.abs(close-h.price)/Math.max(atr[i]||1,1e-12))>=.5?10:5),0,100));signals.push({index:orig,price:entry,text:name,direction:dir,entry,stop,target,rr,rvol,atr:atr[i],score,confirmedAt:orig});};
@@ -45,12 +45,13 @@ function compute(data,opts,tf){
  // Divergence is emitted once, at the confirmation bar of a new structural extreme.
  for(const z of pivots){const same=pivots.filter(x=>x.type===z.type&&x.confirmedAt<z.confirmedAt);if(!same.length)continue;const prev=same.at(-1),nowHist=hist[z.localIndex],oldHist=hist[prev.localIndex];if(z.type==='low'&&z.price<prev.price&&nowHist>oldHist&&divSeen.low!==z.confirmedAt){const entry=rows[z.confirmLocal].close,stop=z.price-(atr[z.localIndex]||tr[z.localIndex])*p.stopAtr,risk=entry-stop;signals.push({index:z.confirmedAt,price:entry,text:'Bull div',direction:'long',entry,stop,target:entry+risk*p.targetR,rr:p.targetR,confirmedAt:z.confirmedAt,score:55});divSeen.low=z.confirmedAt;}if(z.type==='high'&&z.price>prev.price&&nowHist<oldHist&&divSeen.high!==z.confirmedAt){const entry=rows[z.confirmLocal].close,stop=z.price+(atr[z.localIndex]||tr[z.localIndex])*p.stopAtr,risk=stop-entry;signals.push({index:z.confirmedAt,price:entry,text:'Bear div',direction:'short',entry,stop,target:entry-risk*p.targetR,rr:p.targetR,confirmedAt:z.confirmedAt,score:55});divSeen.high=z.confirmedAt;}}
  const stats=pivots.slice(-4).slice(1).map((z,i)=>{const a=pivots.slice(-4)[i];return {bars:z.index-a.index,change:(z.price-a.price)/a.price*100};});
- return {params:p,pivots,labels,signals:signals.sort((a,b)=>a.index-b.index),levels,trend,regime,adx:lastAdx,overlap,stats,barCount:m,confirmedOnly:true};
+ return {params:p,pivots,labels,signals:signals.sort((a,b)=>a.index-b.index),levels,trend,trendSeries,regime,adx:lastAdx,overlap,stats,barCount:m,confirmedOnly:true};
 }
 function computeMultiTimeframe(data,htf,opts,tf){
  const out=compute(data,opts,tf);if(tf!=='15m'||!htf?.length){out.htf=null;return out;}
- const dur=14400000,localDur=900000,bias=data.map(b=>{const end=+b.timestamp+localDur;const usable=htf.filter((x,i)=>+x.timestamp+dur<=end&&(x.confirmed===true||(!('confirmed'in x)&&i<htf.length-1)));if(!usable.length)return 'neutral';return compute(usable,opts,'4H').trend;});
- const current=bias.at(-1)||'neutral';out.htf={trend:current,aligned:bias};out.signals=out.signals.map(s=>{const h=bias[s.index]||'neutral',aligned=s.direction==='long'?h==='bull':h==='bear';return Object.assign({},s,{htfTrend:h,aligned,score:clamp(s.score+(aligned?15:h==='neutral'?0:-15),0,100)});});return out;
+ const higher=compute(htf,opts,'4H'),dur=14400000,localDur=900000;
+ const bias=data.map(b=>{const end=+b.timestamp+localDur;let picked=-1;for(let i=0;i<htf.length;i++){const x=htf[i],closed=x.confirmed===true||(!('confirmed'in x)&&i<htf.length-1);if(closed&&+x.timestamp+dur<=end)picked=i;}return picked>=0?(higher.trendSeries[picked]||'neutral'):'neutral';});
+ out.htf={trend:bias.at(-1)||'neutral',aligned:bias};out.signals=out.signals.map(s=>{const h=bias[s.index]||'neutral',aligned=s.direction==='long'?h==='bull':h==='bear';return Object.assign({},s,{htfTrend:h,aligned,score:clamp(s.score+(aligned?15:h==='neutral'?0:-15),0,100)});});return out;
 }
 function render(chart,data,r,lang){
  if(!chart||!data.length||!r)return;try{chart.removeOverlay({groupId:'tide-tdx-structure'});}catch(e){}const lib=g.klinecharts;if(!lib?.registerOverlay)return;
