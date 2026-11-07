@@ -62,13 +62,13 @@
     const blH1=barslast(H1),blL1=barslast(L1),X1=make(n,1),X2=make(n,1);
     for(let i=0;i<n;i++){X1[i]=i>0?blH1[i-1]+1:1;}
     const f1src=L.map((v,i)=>L1[i]?v:100000),f1len=make(n,1),f1cond=truth();
-    for(let i=0;i<n;i++){f1len[i]=extremeBars(f1src,i,X1[i],'min')+1;f1cond[i]=H1[i]&&count(L1,i,X1[i])>0;}
+    for(let i=0;i<n;i++){f1len[i]=Math.max(1,extremeBars(f1src,i,X1[i],'min'));f1cond[i]=H1[i]&&count(L1,i,X1[i])>0;}
     const F1=backset(f1cond,f1len),G1=truth();for(let i=0;i<n;i++)G1[i]=F1[i]&&(i===0||!F1[i-1]);
     const I1=backset(G1,make(n,2)),LD=truth();for(let i=0;i<n;i++)LD[i]=I1[i]&&(i===0||!I1[i-1]);
     const L2=truth();for(let i=0;i<n;i++)L2[i]=LD[i]||last[i]||first[i];
     const blL2=barslast(L2);for(let i=0;i<n;i++)X2[i]=i>0?blL2[i-1]+1:1;
     const f2src=H.map((v,i)=>H2[i]?v:0),f2len=make(n,1),f2cond=truth();
-    for(let i=0;i<n;i++){f2len[i]=extremeBars(f2src,i,X2[i],'max')+1;f2cond[i]=L2[i]&&count(H2,i,X2[i])>0;}
+    for(let i=0;i<n;i++){f2len[i]=Math.max(1,extremeBars(f2src,i,X2[i],'max'));f2cond[i]=L2[i]&&count(H2,i,X2[i])>0;}
     const F2=backset(f2cond,f2len),G2=truth();for(let i=0;i<n;i++)G2[i]=F2[i]&&(i===0||!F2[i-1]);
     const I2=backset(G2,make(n,2)),HD=truth();for(let i=0;i<n;i++)HD[i]=I2[i]&&(i===0||!I2[i-1]);
     const blHD=barslast(HD),blLD=barslast(LD),J1len=make(n,1),J1cond=last.slice();
@@ -88,12 +88,12 @@
     const H3=truth(),X3=make(n,1);for(let i=0;i<n;i++){H3[i]=HH[i]||last[i]||first[i];}
     const blH3=barslast(H3),blLL=barslast(LL);
     const f3src=L.map((v,i)=>LL[i]?v:Math.pow(10,20)),f3len=make(n,1),f3cond=truth();
-    for(let i=0;i<n;i++){X3[i]=i>0?blH3[i-1]+1:1;f3len[i]=extremeBars(f3src,i,X3[i],'min')+1;f3cond[i]=H3[i]&&count(LL,i,X3[i])>0;}
+    for(let i=0;i<n;i++){X3[i]=i>0?blH3[i-1]+1:1;f3len[i]=Math.max(1,extremeBars(f3src,i,X3[i],'min'));f3cond[i]=H3[i]&&count(LL,i,X3[i])>0;}
     const F3=backset(f3cond,f3len),G3=truth();for(let i=0;i<n;i++)G3[i]=F3[i]&&(i===0||!F3[i-1]);
     const I3=backset(G3,make(n,2)),LZ=truth();for(let i=0;i<n;i++)LZ[i]=I3[i]&&(i===0||!I3[i-1]);
     const L4=truth(),X4=make(n,1);for(let i=0;i<n;i++)L4[i]=LZ[i]||last[i]||first[i];
     const blL4=barslast(L4),f4src=H.map((v,i)=>HH[i]?v:-Math.pow(10,20)),f4len=make(n,1),f4cond=truth();
-    for(let i=0;i<n;i++){X4[i]=i>0?blL4[i-1]+1:1;f4len[i]=extremeBars(f4src,i,X4[i],'max')+1;f4cond[i]=L4[i]&&count(HH,i,X4[i])>0;}
+    for(let i=0;i<n;i++){X4[i]=i>0?blL4[i-1]+1:1;f4len[i]=Math.max(1,extremeBars(f4src,i,X4[i],'max'));f4cond[i]=L4[i]&&count(HH,i,X4[i])>0;}
     const F4=backset(f4cond,f4len),G4=truth();for(let i=0;i<n;i++)G4[i]=F4[i]&&(i===0||!F4[i-1]);
     const I4=backset(G4,make(n,2)),HZ=truth();for(let i=0;i<n;i++)HZ[i]=I4[i]&&(i===0||!I4[i-1]);
     const K1=backset(last,make(n,1).map((_,i)=>Math.min(blHD[i],barslast(LZ)[i])+1)),K2=truth();for(let i=0;i<n;i++)K2[i]=K1[i]&&(i===0||!K1[i-1]);
@@ -182,20 +182,23 @@
     for(let i=0;i<n;i++){
       const prev=i>0?C[i-1]:C[i];
       tr[i]=Math.max(H[i]-L[i],Math.abs(H[i]-prev),Math.abs(L[i]-prev));
-      const atrWindow=Math.max(2,14*(Number(p.timePeriod)||1));
+      const atrWindow=14;
       const from=Math.max(0,i-atrWindow+1);let sum=0,cnt=0;
       for(let j=from;j<=i;j++){sum+=tr[j];cnt++;}
       atr[i]=cnt?sum/cnt:NaN;
-      const volWindow=Math.max(2,20*(Number(p.timePeriod)||1));
+      const volWindow=20;
       const vf=Math.max(0,i-volWindow+1);let vs=0,vc=0;
       for(let j=vf;j<=i;j++){const v=Number(data[j].volume);if(finite(v)){vs+=v;vc++;}}
       volAvg[i]=vc?vs/vc:NaN;
       const range=H[i]-L[i],body=Math.abs(C[i]-O[i]),vol=Number(data[i].volume);
       const bodyRatio=range>0?body/range:0;
-      const volatilityOutlier=finite(atr[i])&&atr[i]>0&&range>=2.2*atr[i]&&bodyRatio>=Math.max(0,Math.min(100,Number(p.limitPercent)||50))/100;
-      const volumeConfirm=!finite(volAvg[i])||volAvg[i]<=0||!finite(vol)||vol>=1.35*volAvg[i];
-      if(i>=14&&volatilityOutlier&&volumeConfirm){
-        extremes.push({index:i,price:C[i],text:C[i]>=O[i]?'急涨':'急跌',type:C[i]>=O[i]?'up':'down',color:C[i]>=O[i]?'#f0b52d':'#27b9c8'});
+      // Source formula: limit-up/down trigger is a >9% move versus the previous close.
+      // limitPercent is NOT a trigger threshold; it locates the horizontal level inside that candle's range.
+      const change=prev>0?(C[i]/prev-1)*100:0;
+      const dailyLimitUp=change>9, dailyLimitDown=change< -9;
+      if(dailyLimitUp||dailyLimitDown){
+        const level=L[i]+(H[i]-L[i])*(Math.max(0,Math.min(100,Number(p.limitPercent)||50))/100);
+        extremes.push({index:i,price:level,text:dailyLimitUp?'涨幅触发位':'跌幅触发',type:dailyLimitUp?'up':'down',color:dailyLimitUp?'#267ee8':'#27b9c8',levelPrice:level,high:H[i],low:L[i]});
       }
     }
     // Keep the source's ABC/123 phase logic; show candle counts rather than assuming each bar is a day.
@@ -234,20 +237,28 @@
       const tag=en? (p.type==='high'?'HIGH':'LOW') : (p.type==='high'?'高点':'低点');
       addText(p.index,p.price,tag,p.type==='high'?'#df535b':'#22a45a',10);
     });
-    // Current structural levels and the 50% midpoint, extended to the latest candle.
+    // Draw every historical level segment, not just the last value visible at the right edge.
     const specs=[['low1','#159b58','solid',2],['high1','#df535b','solid',2],['low2','#55b96b','dashed',1],['high2','#e34d55','dashed',1],['low3','#159b58','dashed',1],['high3','#e34d55','dashed',1],['high4','#e34d55','dashed',1],['mid','#e6a23c','dashed',2]];
     specs.forEach(([key,color,style,size])=>{
-      const arr=result.levels[key],v=arr[last];if(!finite(v))return;
-      let start=last;
-      while(start>0&&finite(arr[start-1])&&Math.abs(arr[start-1]-v)<1e-8)start--;
-      addLine(point(start,v),point(last,v),color,style,size);
-      if(key==='mid')addText(last,v,(en?'50% MID':'半分位 50%')+' · '+v.toFixed(v<1?6:2),'#e6a23c',11);
+      const arr=result.levels[key];let start=0;
+      while(start<=last){
+        if(!finite(arr[start])){start++;continue;}
+        const v=arr[start];let end=start;
+        while(end+1<=last&&finite(arr[end+1])&&Math.abs(arr[end+1]-v)<1e-8)end++;
+        if(end>start)addLine(point(start,v),point(end,v),color,style,size);
+        if(key==='mid'&&end===last)addText(last,v,(en?'50% MID':'半分位 50%')+' · '+v.toFixed(v<1?6:2),'#e6a23c',11);
+        start=end+1;
+      }
     });
     result.labels.slice(-36).forEach(x=>addText(x.index,x.price,x.text,x.color,12));
 
     const signalText={ '一阳定势':'Bullish impulse', '收敛':'Convergence', '强势':'Strong', '三买':'3rd Buy', '急涨':'Surge', '急跌':'Drop' };
     result.signals.slice(-24).forEach(x=>addText(x.index,x.price,en?(signalText[x.text]||x.text):x.text,x.color,11));
-    (result.extremes||[]).slice(-30).forEach(x=>addText(x.index,x.price,en?(signalText[x.text]||x.text):x.text,x.color,11));
+    (result.extremes||[]).slice(-30).forEach(x=>{
+      if(finite(x.high)&&finite(x.low))addLine(point(x.index,x.low),point(x.index,x.high),x.color,'solid',3);
+      if(finite(x.levelPrice))addLine(point(x.index,x.levelPrice),point(last,x.levelPrice),x.color,'dashed',1.4);
+      addText(x.index,x.price,en?(signalText[x.text]||x.text):x.text,x.color,11);
+    });
     // Cycle statistics use bar counts plus actual elapsed time for the active timeframe.
     const elapsed=(bars)=>{
       if(!bars||last<1)return '—';
