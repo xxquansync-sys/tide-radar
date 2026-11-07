@@ -844,6 +844,7 @@ function klineSetLanguage(lang){
  var a=document.querySelectorAll('.kline-setting-actions button');
  if(a[0])a[0].textContent=dict.apply;if(a[1])a[1].textContent=dict.close;
  if(tideKline.chart)tideKline.chart.setStyles(klineThemeStyles(tideKlineTheme));
+ if(tideKline.chart&&tideKline.data.length)klineRenderTdx();
 }
 function klineToggleLanguage(){klineSetLanguage(tideKlineLang==='zh'?'en':'zh');if(tideKline.tdxEnabled)klineRenderTdx();}
 function klineThemeStyles(theme){
