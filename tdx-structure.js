@@ -59,6 +59,7 @@ function render(chart,data,r,lang){
  [['low1','#22a45a'],['high1','#df535b'],['mid','#e4a83d']].forEach(([k,c])=>{if(finite(r.levels[k])){line(pt(0,r.levels[k]),pt(last,r.levels[k]),c);if(k==='mid')txt(last,r.levels[k],'50% MID',c);}});
  r.labels.slice(-35).forEach(x=>txt(x.index,x.price,x.text,x.color));
  r.signals.slice(-12).forEach(x=>txt(x.index,x.price,x.text+' '+x.score+(x.aligned===false?' · 4H mismatch':''),x.aligned===false?'#9299a3':x.direction==='long'?'#22b88a':'#ed6676'));
+ const trade=r.signals.at(-1);if(trade&&trade.index<=last){[['entry','#4da3ff','ENTRY'],['stop','#e05b68','STOP'],['target','#22a45a','TARGET']].forEach(([k,color,label])=>{if(finite(trade[k])){line(pt(trade.index,trade[k]),pt(last,trade[k]),color);txt(last,trade[k],label+' '+trade[k].toPrecision(6),color);}});}
  txt(last,data[last].high*1.015,(lang==='en'?'Regime: ':'结构：')+r.regime+' · ADX '+r.adx.toFixed(0),r.trend==='bull'?'#22a45a':r.trend==='bear'?'#df535b':'#a0a8b2');
  if(r.htf)txt(last,data[last].high*1.035,(lang==='en'?'4H: ':'4H方向：')+r.htf.trend,r.htf.trend==='bull'?'#22a45a':r.htf.trend==='bear'?'#df535b':'#a0a8b2');
 }
