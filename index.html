@@ -960,7 +960,8 @@ function klineMergeData(incoming){
 }
 function klineRenderTdx(){
  if(!tideKline.chart||!tideKline.data.length||!window.TideTdxStructure)return;
- if(!tideKline.tdxEnabled){try{tideKline.chart.removeOverlay({groupId:'tide-tdx-structure'});}catch(e){}return;}
+ if(!tideKline.tdxEnabled){try{tideKline.chart.removeOverlay({groupId:'tide-tdx-structure'});}catch(e){}var dash=$('tide-tdx-dashboard');if(dash)dash.style.display='none';return;}
+ var dash=$('tide-tdx-dashboard');if(dash)dash.style.display='grid';
  try{
  var result=tideKline.period==='15m'?window.TideTdxStructure.computeMultiTimeframe(tideKline.data,tideKline.htfData,tideKline.tdxParams,'15m'):window.TideTdxStructure.compute(tideKline.data,tideKline.tdxParams,tideKline.period);
  window.TideTdxStructure.render(tideKline.chart,tideKline.data,result,tideKlineLang);
