@@ -38,8 +38,8 @@ function compute(data,opts,tf){
   if(localTrend==='bull'&&up&&close>h.price&&prev<=h.price&&bodyRatio>=p.halfPercent/100)make('Breakout','long',l.price);
   if(localTrend==='bear'&&down&&close<l.price&&prev>=l.price&&bodyRatio>=p.halfPercent/100)make('Breakdown','short',h.price);
   const retest=(atr[i]||tr[i])*.45;
-  if(localTrend==='bull'&&l.price>pl.price&&prev>h.price&&L[i]<=h.price+retest&&L[i]>=h.price-retest&&close>h.price&&up)make('3rd Buy','long',l.price);
-  if(localTrend==='bear'&&h.price<ph.price&&prev<l.price&&H[i]>=l.price-retest&&H[i]<=l.price+retest&&close<l.price&&down)make('3rd Sell','short',h.price);
+  if(localTrend==='bull'&&l.price>pl.price&&i>1&&prev>h.price&&L[i-1]>h.price+retest&&L[i]<=h.price+retest&&L[i]>=h.price-retest&&close>h.price&&up)make('3rd Buy','long',l.price);
+  if(localTrend==='bear'&&h.price<ph.price&&i>1&&prev<l.price&&H[i-1]<l.price-retest&&H[i]>=l.price-retest&&H[i]<=l.price+retest&&close<l.price&&down)make('3rd Sell','short',h.price);
  }
  // Divergence is emitted once, at the confirmation bar of a new structural extreme.
  for(const z of pivots){const same=pivots.filter(x=>x.type===z.type&&x.confirmedAt<z.confirmedAt);if(!same.length)continue;const prev=same.at(-1),nowHist=hist[z.localIndex],oldHist=hist[prev.localIndex];if(z.type==='low'&&z.price<prev.price&&nowHist>oldHist&&divSeen.low!==z.confirmedAt){const entry=rows[z.confirmLocal].close,stop=z.price-(atr[z.localIndex]||tr[z.localIndex])*p.stopAtr,risk=entry-stop;signals.push({index:z.confirmedAt,price:entry,text:'Bull div',direction:'long',entry,stop,target:entry+risk*p.targetR,rr:p.targetR,confirmedAt:z.confirmedAt,score:55});divSeen.low=z.confirmedAt;}if(z.type==='high'&&z.price>prev.price&&nowHist<oldHist&&divSeen.high!==z.confirmedAt){const entry=rows[z.confirmLocal].close,stop=z.price+(atr[z.localIndex]||tr[z.localIndex])*p.stopAtr,risk=stop-entry;signals.push({index:z.confirmedAt,price:entry,text:'Bear div',direction:'short',entry,stop,target:entry-risk*p.targetR,rr:p.targetR,confirmedAt:z.confirmedAt,score:55});divSeen.high=z.confirmedAt;}}
