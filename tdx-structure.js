@@ -16,7 +16,7 @@ function compute(data,opts,tf){
   let candidates=[];if(hiAt===j)candidates.push('high');if(loAt===j)candidates.push('low');if(candidates.length===2)candidates=[C[j]>=O[j]?'low':'high'];
   for(const type of candidates){
    const price=type==='high'?H[j]:L[j],prev=pivots.at(-1),threshold=(atr[j]||tr[j])*p.atrSwing;
-   if(prev&&prev.type===type){const moreExtreme=type==='high'?price>prev.price:price<prev.price;if(moreExtreme){prev.index=idx[j];prev.localIndex=j;prev.price=price;prev.confirmedAt=idx[i];prev.confirmLocal=i;labels.push({index:idx[j],price,text:type==='high'?'H':'L',color:type==='high'?'#df535b':'#22a45a'});}continue;}
+   if(prev&&prev.type===type){const moreExtreme=type==='high'?price>prev.price:price<prev.price;if(moreExtreme){labels.splice(0,labels.length,...labels.filter(x=>!(x.index===prev.index&&x.text===(type==='high'?'H':'L'))));prev.index=idx[j];prev.localIndex=j;prev.price=price;prev.confirmedAt=idx[i];prev.confirmLocal=i;labels.push({index:idx[j],price,text:type==='high'?'H':'L',color:type==='high'?'#df535b':'#22a45a'});}continue;}
    if(prev&&Math.abs(price-prev.price)<threshold)continue;
    const z={index:idx[j],localIndex:j,price,type,confirmedAt:idx[i],confirmLocal:i};pivots.push(z);labels.push({index:z.index,price,text:type==='high'?'H':'L',color:type==='high'?'#df535b':'#22a45a'});
   }
