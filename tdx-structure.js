@@ -23,15 +23,17 @@ function compute(data,opts,tf){
  const levels={low1:lastL?.price,low2:prevL?.price,high1:lastH?.price,high2:prevH?.price,mid:lastH&&lastL?lastL.price+(lastH.price-lastL.price)*clamp(p.halfPercent,0,100)/100:NaN};
  const seen=[];for(let i=0;i<m;i++){let original=idx[i];pivots.filter(z=>z.confirmedAt<=original&&!seen.includes(z)).forEach(z=>seen.push(z));
  const hh=seen.filter(z=>z.type==='high'),ll=seen.filter(z=>z.type==='low'),h=hh.at(-1),l=ll.at(-1),ph=hh.at(-2),pl=ll.at(-2);
- if(!h||!l||!ph||!pl||regime==='range')continue;
+ if(!h||!l||!ph||!pl)continue;
+ const localTrend=h.price>ph.price&&l.price>pl.price?'bull':h.price<ph.price&&l.price<pl.price?'bear':'range';
+ if(localTrend==='range')continue;
  const prev=C[i-1],close=C[i],open=rows[i].open,body=Math.abs(close-open),bodyRatio=body/Math.max(H[i]-L[i],1e-12);
  const volumeBase=V.slice(Math.max(0,i-p.volumePeriod*p.timePeriod),i).reduce((s,x)=>s+x,0)/Math.max(1,Math.min(i,p.volumePeriod*p.timePeriod));
  const rvol=volumeBase>0?V[i]/volumeBase:1,up=close>open,down=close<open;
  const push=(text,price,dir)=>signals.push({index:original,price,text,direction:dir,rvol,atr:atr[i],confirmedAt:original});
- if(trend==='bull'&&up&&close>h.price&&prev<=h.price&&bodyRatio>=p.halfPercent/100)push('Breakout',L[i],'long');
- if(trend==='bear'&&down&&close<l.price&&prev>=l.price&&bodyRatio>=p.halfPercent/100)push('Breakdown',H[i],'short');
- if(trend==='bull'&&l.price>pl.price&&close>h.price&&up)push('3rd Buy',L[i],'long');
- if(trend==='bear'&&h.price<ph.price&&close<l.price&&down)push('3rd Sell',H[i],'short');
+ if(localTrend==='bull'&&up&&close>h.price&&prev<=h.price&&bodyRatio>=p.halfPercent/100)push('Breakout',L[i],'long');
+ if(localTrend==='bear'&&down&&close<l.price&&prev>=l.price&&bodyRatio>=p.halfPercent/100)push('Breakdown',H[i],'short');
+ if(localTrend==='bull'&&l.price>pl.price&&close>h.price&&prev<=h.price&&up)push('3rd Buy',L[i],'long');
+ if(localTrend==='bear'&&h.price<ph.price&&close<l.price&&prev>=l.price&&down)push('3rd Sell',H[i],'short');
  if(l.price<pl.price&&hist[i]>hist[Math.max(0,l.localIndex-1)])push('Bull div',L[i],'long');
  if(h.price>ph.price&&hist[i]<hist[Math.max(0,h.localIndex-1)])push('Bear div',H[i],'short');
  }
