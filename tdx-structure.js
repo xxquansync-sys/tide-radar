@@ -6,9 +6,9 @@ function compute(data,opts,tf){
  const p=Object.assign({},D,opts||{}),n=data.length,closed=data.map((x,i)=>({x,i})).filter(z=>z.x.confirmed===true||(!('confirmed'in z.x)&&z.i<n-1));
  const rows=closed.map(z=>z.x),idx=closed.map(z=>z.i),m=rows.length,H=rows.map(x=>+x.high),L=rows.map(x=>+x.low),C=rows.map(x=>+x.close),O=rows.map(x=>+x.open),V=rows.map(x=>+x.volume||0),tr=nan(m),atr=nan(m),dmP=nan(m),dmM=nan(m);
  for(let i=0;i<m;i++){const up=i?H[i]-H[i-1]:0,down=i?L[i-1]-L[i]:0;dmP[i]=up>down&&up>0?up:0;dmM[i]=down>up&&down>0?down:0;tr[i]=Math.max(H[i]-L[i],i?Math.abs(H[i]-C[i-1]):0,i?Math.abs(L[i]-C[i-1]):0);const s=Math.max(0,i-p.atrPeriod+1);atr[i]=tr.slice(s,i+1).reduce((a,b)=>a+b,0)/(i-s+1);}
- const smTR=ema(tr,p.atrPeriod),pDI=dmP.map((v,i)=>smTR[i]>0?100*ema(dmP,p.atrPeriod)[i]/smTR[i]:0),mDI=dmM.map((v,i)=>smTR[i]>0?100*ema(dmM,p.atrPeriod)[i]/smTR[i]:0),dx=pDI.map((v,i)=>v+mDI[i]>0?100*Math.abs(v-mDI[i])/(v+mDI[i]):0),adx=ema(dx,Math.max(3,p.atrPeriod));
- const macdFast=ema(C,12),macdSlow=ema(C,26),diff=macdFast.map((v,i)=>v-macdSlow[i]),hist=diff.map((v,i)=>v-ema(diff,9)[i]);
- const pivots=[],labels=[],signals=[];let last=null;
+ const smTR=ema(tr,p.atrPeriod),smDMp=ema(dmP,p.atrPeriod),smDMm=ema(dmM,p.atrPeriod),pDI=dmP.map((v,i)=>smTR[i]>0?100*smDMp[i]/smTR[i]:0),mDI=dmM.map((v,i)=>smTR[i]>0?100*smDMm[i]/smTR[i]:0),dx=pDI.map((v,i)=>v+mDI[i]>0?100*Math.abs(v-mDI[i])/(v+mDI[i]):0),adx=ema(dx,Math.max(3,p.atrPeriod));
+ const macdFast=ema(C,12),macdSlow=ema(C,26),diff=macdFast.map((v,i)=>v-macdSlow[i]),macdSignal=ema(diff,9),hist=diff.map((v,i)=>v-macdSignal[i]);
+ const pivots=[],labels=[],signals=[];
  const span=Math.max(4,Math.round(p.penPeriod*2)),confirm=Math.max(1,Math.floor(p.confirmBars)),divSeen={high:-1,low:-1};
  for(let i=confirm+1;i<m;i++){
   const j=i-confirm,a=Math.max(0,j-span+1);let hi=-Infinity,lo=Infinity,hiAt=-1,loAt=-1;
@@ -31,10 +31,10 @@ function compute(data,opts,tf){
   const orig=idx[i];pivots.filter(z=>z.confirmedAt<=orig&&!seen.includes(z)).forEach(z=>seen.push(z));
   const hh=seen.filter(z=>z.type==='high'),ll=seen.filter(z=>z.type==='low'),h=hh.at(-1),l=ll.at(-1),ph=hh.at(-2),pl=ll.at(-2);
   if(!h||!l||!ph||!pl)continue;
-  const localTrend=structureTrend(h,ph,l,pl);if(localTrend==='range')continue;
+  const localTrend=structureTrend(h,ph,l,pl);if(localTrend==='range'||(adx[i]||0)<12)continue;
   const prev=C[i-1],close=C[i],up=close>O[i],down=close<O[i],bodyRatio=Math.abs(close-O[i])/Math.max(H[i]-L[i],1e-12);
   const volN=Math.max(3,p.volumePeriod*p.timePeriod),vbase=V.slice(Math.max(0,i-volN),i),vavg=vbase.reduce((s,v)=>s+v,0)/Math.max(1,vbase.length),rvol=vavg?V[i]/vavg:1;
-  const make=(name,dir,invalid)=>{const entry=close,buffer=(atr[i]||tr[i])*p.stopAtr,stop=dir==='long'?invalid-buffer:invalid+buffer,risk=Math.abs(entry-stop),structTarget=dir==='long'?(h.price>entry?h.price:NaN):(l.price<entry?l.price:NaN),target=finite(structTarget)&&Math.abs(structTarget-entry)>=risk?structTarget:entry+(dir==='long'?1:-1)*risk*p.targetR;const rr=risk>0?Math.abs(target-entry)/risk:0;const structureScore=(dir==='long'&&localTrend==='bull')||(dir==='short'&&localTrend==='bear')?30:15;const score=Math.round(clamp(structureScore+(rvol>=1.3?10:rvol>=1?6:0)+(lastAdx>=25?15:lastAdx>=18?10:4)+(bodyRatio>=.5?10:5),0,100));signals.push({index:orig,price:entry,text:name,direction:dir,entry,stop,target,rr,rvol,atr:atr[i],score,confirmedAt:orig});};
+  const make=(name,dir,invalid)=>{const entry=close,buffer=(atr[i]||tr[i])*p.stopAtr,stop=dir==='long'?invalid-buffer:invalid+buffer,risk=Math.abs(entry-stop),structTarget=dir==='long'?(h.price>entry?h.price:NaN):(l.price<entry?l.price:NaN),target=finite(structTarget)&&Math.abs(structTarget-entry)>=risk?structTarget:entry+(dir==='long'?1:-1)*risk*p.targetR;const rr=risk>0?Math.abs(target-entry)/risk:0;const structureScore=(dir==='long'&&localTrend==='bull')||(dir==='short'&&localTrend==='bear')?30:15;const score=Math.round(clamp(structureScore+(rvol>=1.3?10:rvol>=1?6:0)+((adx[i]||0)>=25?15:(adx[i]||0)>=18?10:4)+(Math.min(1,Math.abs(close-h.price)/Math.max(atr[i]||1,1e-12))>=.5?10:5),0,100));signals.push({index:orig,price:entry,text:name,direction:dir,entry,stop,target,rr,rvol,atr:atr[i],score,confirmedAt:orig});};
   if(localTrend==='bull'&&up&&close>h.price&&prev<=h.price&&bodyRatio>=p.halfPercent/100)make('Breakout','long',l.price);
   if(localTrend==='bear'&&down&&close<l.price&&prev>=l.price&&bodyRatio>=p.halfPercent/100)make('Breakdown','short',h.price);
   const retest=(atr[i]||tr[i])*.45;
