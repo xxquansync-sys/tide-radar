@@ -756,7 +756,7 @@ refresh();
 setInterval(refresh,60000);
 
 /* ---------------- KLineChart: OKX public candles ---------------- */
-var tideKline={chart:null,symbol:'BTC',period:'15m',timer:null,scriptLoading:null,controller:null,indicators:{MA:true,EMA:false,VOL:true,MACD:true,RSI:false},indicatorParams:{MA:[5,10,30,60],EMA:[6,12,20],VOL:[5,10,20],MACD:[12,26,9],RSI:[6,12,24]},indicatorLocations:{MA:'main',EMA:'main'},data:[],loading:false,requestId:0,drawMode:'cursor',tdxEnabled:false,tdxParams:{penPeriod:5,halfPercent:50}};
+var tideKline={chart:null,symbol:'BTC',period:'15m',timer:null,scriptLoading:null,controller:null,indicators:{MA:true,EMA:false,VOL:true,MACD:true,RSI:false},indicatorParams:{MA:[5,10,30,60],EMA:[6,12,20],VOL:[5,10,20],MACD:[12,26,9],RSI:[6,12,24]},indicatorLocations:{MA:'main',EMA:'main'},data:[],loading:false,requestId:0,drawMode:'cursor',tdxEnabled:true,tdxParams:{penPeriod:5,halfPercent:50}};
 var tideKlinePeriods=['1m','5m','15m','1H','4H','1D'];
 var TIDE_KLINE_CACHE='tide_kline_cache_v2';
 function klineEnsureScript(){
@@ -780,7 +780,7 @@ function klinePeriodType(p){return p==='1D'?'1day':p;}
 function klineRenderControls(){
  var host=$('tide-kline-periods');if(!host)return;
  host.innerHTML=tideKlinePeriods.map(function(p){return '<button class="'+(p===tideKline.period?'active':'')+'" onclick="changeKlinePeriod(\''+p+'\')">'+p+'</button>';}).join('');
- ['MA','EMA','VOL','MACD','RSI'].forEach(function(k){var b=$('tide-kline-'+k);if(b)b.classList.toggle('active',!!tideKline.indicators[k]);});
+ ['MA','EMA','VOL','MACD','RSI','TDX'].forEach(function(k){var b=$('tide-kline-'+k);if(b)b.classList.toggle('active',k==='TDX'?!!tideKline.tdxEnabled:!!tideKline.indicators[k]);});
 }
 function klineSetStatus(s){
  var en=tideKlineLang==='en';
@@ -810,7 +810,7 @@ function klineFetch(limit,symbol,period,signal){
 }
 var tideIndicatorDefaults={MA:[5,10,30,60],EMA:[6,12,20],VOL:[5,10,20],MACD:[12,26,9],RSI:[6,12,24]};
 var tideIndicatorPanes={};
-var tideKlineTheme='dark';
+var tideKlineTheme='light';
 var tideKlineLang='zh';
 function klineSetLanguage(lang){
  tideKlineLang=lang==='en'?'en':'zh';
