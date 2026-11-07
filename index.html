@@ -997,6 +997,7 @@ function klineLoad(force){
 function openKlineChart(symbol){
  try{tideKlineLang=localStorage.getItem('tide_kline_lang')||'zh';}catch(e){}
  tideKline.symbol=String(symbol||'BTC').toUpperCase().replace(/[^A-Z0-9]/g,'');
+ tideKline.htfData=[];tideKline.htfFetchedAt=0;
  var modal=klineModal();modal.style.display='flex';
  try{tideKlineTheme=localStorage.getItem('tide_kline_theme')||'dark';}catch(e){}$('tide-kline-title').textContent=tideKline.symbol+'-USDT-SWAP';klineRenderControls();klineApplyTheme();klineSetLanguage(tideKlineLang);
  if(tideKline.timer){clearInterval(tideKline.timer);tideKline.timer=null;}
