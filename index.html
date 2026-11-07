@@ -821,12 +821,12 @@ function klineSetLanguage(lang){
   settings:'Indicator Settings',select:'Indicator',params:'Calculation parameters (comma-separated)',placeholder:'e.g. 5,10,30,60',apply:'Apply',close:'Close',main:'MA / EMA are overlaid on the main chart',
   themeLight:'Switch to dark background',themeDark:'Switch to white background',
   cursor:'Select / Crosshair',segment:'Trend Line',ray:'Ray',straight:'Straight Line',horizontal:'Horizontal Line',hray:'Horizontal Ray',vertical:'Vertical Line',rect:'Rectangle',parallel:'Parallel Channel',fib:'Fibonacci Retracement',brush:'Brush',delete:'Delete Selected Drawing',clear:'Clear All Drawings',loading:'Preparing chart…',
-  settingsButton:'Indicator Settings',tdx:'Structure',tdxTitle:'Tide Structure Parameters',pen:'Pen period',half:'Midpoint percentage (%)',limit:'Limit-price adaptation (%)',time:'Time parameter',tdxNote:'Defaults: pen 7, midpoint 50%, limit adaptation 50%, time 1. Crypto has no unified daily limit; 50% is used as candle-body confirmation and time scales volatility/volume lookback windows.',tdxApply:'Apply structure parameters'
+  settingsButton:'Indicator Settings',tdx:'Structure',tdxTitle:'Crypto Structure System',pen:'Pen period',half:'Midpoint (%)',atr:'ATR swing filter',confirm:'Closed-bar confirmation',time:'Time parameter',tdxNote:'Defaults: pen 7, midpoint 50%, ATR swing filter 1.2x, confirmation 2 closed bars. Crypto trades 24/7; no daily price-limit logic. The 15m chart uses closed 4H candles for directional alignment.',tdxApply:'Apply structure parameters'
  }:{
   settings:'指标参数',select:'选择指标',params:'计算参数（逗号分隔）',placeholder:'例如 5,10,30,60',apply:'应用参数',close:'关闭',main:'MA / EMA 固定叠加在K线主图上',
   themeLight:'切换黑色背景',themeDark:'切换白色背景',
   cursor:'选择/十字光标',segment:'趋势线',ray:'射线',straight:'直线',horizontal:'水平线',hray:'水平射线',vertical:'垂直线',rect:'矩形区域',parallel:'平行通道',fib:'斐波那契回撤',brush:'自由画笔',delete:'删除选中绘图',clear:'清空全部绘图',loading:'准备图表…',
-  settingsButton:'参数设置',tdx:'结构',tdxTitle:'通达信结构指标',pen:'笔周期',half:'半分位（%）',limit:'涨停位适配参数（%）',time:'时间参数',tdxNote:'默认：笔周期 7、半分位 50%、涨停位适配 50%、时间 1。加密市场无统一涨跌停；50%用于K线实体占比确认，时间参数用于波动/成交量统计窗口。',tdxApply:'应用结构参数'
+  settingsButton:'参数设置',tdx:'结构',tdxTitle:'加密市场结构系统',pen:'笔周期',half:'半分位（%）',atr:'ATR波动过滤倍数',confirm:'收盘确认K线数',time:'时间参数',tdxNote:'默认：笔周期 7、半分位 50%、ATR过滤 1.2倍、收盘确认2根。加密市场24/7交易，不使用涨跌停价逻辑。15分钟图自动使用已收盘的4小时K线过滤方向。',tdxApply:'应用结构参数'
  };
  var set=function(id,v){var el=$(id);if(el)el.textContent=v;};
  set('tide-kline-settings-title',dict.settings);
@@ -834,7 +834,7 @@ function klineSetLanguage(lang){
  set('tide-kline-params-label',dict.params);
  set('tide-kline-main-note',dict.main);
  set('tide-kline-settings-button',dict.settingsButton);
- set('tide-kline-TDX',dict.tdx);set('tide-tdx-settings-title',dict.tdxTitle);set('tide-tdx-pen-label',dict.pen);set('tide-tdx-half-label',dict.half);set('tide-tdx-limit-label',dict.limit);set('tide-tdx-time-label',dict.time);set('tide-tdx-param-note',dict.tdxNote);set('tide-tdx-apply',dict.tdxApply);
+ set('tide-kline-TDX',dict.tdx);set('tide-tdx-settings-title',dict.tdxTitle);set('tide-tdx-pen-label',dict.pen);set('tide-tdx-half-label',dict.half);set('tide-tdx-atr-label',dict.atr);set('tide-tdx-confirm-label',dict.confirm);set('tide-tdx-time-label',dict.time);set('tide-tdx-param-note',dict.tdxNote);set('tide-tdx-apply',dict.tdxApply);
  var input=$('tide-kline-setting-params');if(input)input.placeholder=dict.placeholder;
  set('tide-kline-lang',en?'中文':'EN');
  set('tide-kline-theme',tideKlineTheme==='dark'?dict.themeDark:dict.themeLight);
@@ -931,8 +931,8 @@ function klineCreateChart(lib){
 function klineOpenSettings(){
  var p=$('tide-kline-settings');if(!p)return;
  p.classList.add('open');klineLoadSettingFields();
- var q=tideKline.tdxParams||{penPeriod:7,halfPercent:50,limitPercent:50,timePeriod:1};
- $('tide-tdx-pen-period').value=q.penPeriod;$('tide-tdx-half-percent').value=q.halfPercent;$('tide-tdx-limit-percent').value=q.limitPercent;$('tide-tdx-time-period').value=q.timePeriod;
+ var q=tideKline.tdxParams||{penPeriod:7,halfPercent:50,atrSwing:1.2,confirmBars:2,timePeriod:1};
+ $('tide-tdx-pen-period').value=q.penPeriod;$('tide-tdx-half-percent').value=q.halfPercent;$('tide-tdx-atr-swing').value=q.atrSwing;$('tide-tdx-confirm-bars').value=q.confirmBars;$('tide-tdx-time-period').value=q.timePeriod;
 }
 function klineCloseSettings(){var p=$('tide-kline-settings');if(p)p.classList.remove('open');}
 function klineLoadSettingFields(){
