@@ -757,7 +757,7 @@ refresh();
 setInterval(refresh,60000);
 
 /* ---------------- KLineChart: OKX public candles ---------------- */
-var tideKline={chart:null,symbol:'BTC',period:'15m',timer:null,scriptLoading:null,controller:null,indicators:{MA:true,EMA:false,VOL:true,MACD:true,RSI:false},indicatorParams:{MA:[5,10,30,60],EMA:[6,12,20],VOL:[5,10,20],MACD:[12,26,9],RSI:[6,12,24]},indicatorLocations:{MA:'main',EMA:'main'},data:[],htfData:[],htfFetchedAt:0,loading:false,requestId:0,drawMode:'cursor',tdxEnabled:true,tdxParams:{penPeriod:7,halfPercent:50,atrSwing:1.2,confirmBars:2,timePeriod:1}};
+var tideKline={chart:null,symbol:'BTC',period:'15m',timer:null,scriptLoading:null,controller:null,indicators:{MA:true,EMA:false,VOL:true,MACD:true,RSI:false},indicatorParams:{MA:[5,10,30,60],EMA:[6,12,20],VOL:[5,10,20],MACD:[12,26,9],RSI:[6,12,24]},indicatorLocations:{MA:'main',EMA:'main'},data:[],htfData:[],htfFetchedAt:0,htfRequestedAt:0,loading:false,requestId:0,drawMode:'cursor',tdxEnabled:true,tdxParams:{penPeriod:7,halfPercent:50,atrSwing:1.2,confirmBars:2,timePeriod:1}};
 var tideKlinePeriods=['1m','5m','15m','1H','4H','1D'];
 try{var _savedTdx=JSON.parse(localStorage.getItem('tide_tdx_params')||'null');if(_savedTdx&&typeof _savedTdx==='object')tideKline.tdxParams=Object.assign({penPeriod:7,halfPercent:50,atrSwing:1.2,confirmBars:2,timePeriod:1},_savedTdx);}catch(e){}
 var TIDE_KLINE_CACHE='tide_kline_cache_v2';
@@ -998,7 +998,7 @@ function klineLoad(force){
  klineFetch(incremental?2:300,symbol,period,controller.signal).then(function(data){
   if(req!==tideKline.requestId||!tideKline.chart||symbol!==tideKline.symbol||period!==tideKline.period)return;
   klineMergeData(data);tideKline.chart.applyNewData(tideKline.data);klineWriteCache();klineUpdatePrice();
-  var htfTask=(period==='15m'&&Date.now()-tideKline.htfFetchedAt>60000)?klineFetch(300,symbol,'4H',controller.signal).then(function(higher){if(req===tideKline.requestId){tideKline.htfData=higher;tideKline.htfFetchedAt=Date.now();}}).catch(function(){ }):Promise.resolve();
+  var needHtf=period==='15m'&&Date.now()-Math.max(tideKline.htfFetchedAt,tideKline.htfRequestedAt)>60000;if(needHtf)tideKline.htfRequestedAt=Date.now();var htfTask=needHtf?klineFetch(300,symbol,'4H',controller.signal).then(function(higher){if(req===tideKline.requestId){tideKline.htfData=higher;tideKline.htfFetchedAt=Date.now();}}).catch(function(){ }):Promise.resolve();
   htfTask.then(function(){if(req===tideKline.requestId)klineRenderTdx();});
   klineSetStatus('OKX 实时K线 · '+tideKline.data.length+' 根 · '+new Date().toLocaleTimeString());
  }).catch(function(e){
@@ -1011,7 +1011,7 @@ function klineLoad(force){
 function openKlineChart(symbol){
  try{tideKlineLang=localStorage.getItem('tide_kline_lang')||'zh';}catch(e){}
  tideKline.symbol=String(symbol||'BTC').toUpperCase().replace(/[^A-Z0-9]/g,'');
- tideKline.htfData=[];tideKline.htfFetchedAt=0;
+ tideKline.htfData=[];tideKline.htfFetchedAt=0;tideKline.htfRequestedAt=0;
  var modal=klineModal();modal.style.display='flex';
  try{tideKlineTheme=localStorage.getItem('tide_kline_theme')||'dark';}catch(e){}$('tide-kline-title').textContent=tideKline.symbol+'-USDT-SWAP';klineRenderControls();klineApplyTheme();klineSetLanguage(tideKlineLang);
  if(tideKline.timer){clearInterval(tideKline.timer);tideKline.timer=null;}
