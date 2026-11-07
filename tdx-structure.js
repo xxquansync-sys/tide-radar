@@ -48,7 +48,7 @@ function compute(data,opts,tf){
 }
 function computeMultiTimeframe(data,htf,opts,tf){
  const out=compute(data,opts,tf);if(tf!=='15m'||!htf?.length){out.htf=null;return out;}
- const dur=14400000,localDur=900000,bias=data.map(b=>{const end=+b.timestamp+localDur;const usable=htf.filter((x,i)=>+x.timestamp+dur<=end&&(x.confirmed===true||i<htf.length-1));if(!usable.length)return 'neutral';return compute(usable,opts,'4H').trend;});
+ const dur=14400000,localDur=900000,bias=data.map(b=>{const end=+b.timestamp+localDur;const usable=htf.filter((x,i)=>+x.timestamp+dur<=end&&(x.confirmed===true||(!('confirmed'in x)&&i<htf.length-1)));if(!usable.length)return 'neutral';return compute(usable,opts,'4H').trend;});
  const current=bias.at(-1)||'neutral';out.htf={trend:current,aligned:bias};out.signals=out.signals.map(s=>{const h=bias[s.index]||'neutral',aligned=s.direction==='long'?h==='bull':h==='bear';return Object.assign({},s,{htfTrend:h,aligned,score:clamp(s.score+(aligned?15:h==='neutral'?0:-15),0,100)});});return out;
 }
 function render(chart,data,r,lang){
