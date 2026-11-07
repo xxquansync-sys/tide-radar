@@ -219,6 +219,7 @@
     }
     const group='tide-tdx-structure', last=data.length-1, lastTs=data[last].timestamp;
     const point=(i,v)=>({timestamp:data[i].timestamp,value:v});
+    const en=lang==='en';
     const addLine=(a,b,color,style,size)=>{if(a&&b&&finite(a.value)&&finite(b.value))chart.createOverlay({name:'tideTdxLine',groupId:group,points:[a,b],lock:true,extendData:{color,style,size}});};
     const addText=(i,v,text,color,size)=>{if(i>=0&&i<data.length&&finite(v)&&text)chart.createOverlay({name:'tideTdxText',groupId:group,points:[point(i,v)],lock:true,extendData:{text,color,size}});};
     // Orange swing-pen polyline between confirmed structural highs/lows.
@@ -243,7 +244,7 @@
       if(key==='mid')addText(last,v,(en?'50% MID':'半分位 50%')+' · '+v.toFixed(v<1?6:2),'#e6a23c',11);
     });
     result.labels.slice(-36).forEach(x=>addText(x.index,x.price,x.text,x.color,12));
-    const en=lang==='en';
+
     const signalText={ '一阳定势':'Bullish impulse', '收敛':'Convergence', '强势':'Strong', '三买':'3rd Buy', '急涨':'Surge', '急跌':'Drop' };
     result.signals.slice(-24).forEach(x=>addText(x.index,x.price,en?(signalText[x.text]||x.text):x.text,x.color,11));
     (result.extremes||[]).slice(-30).forEach(x=>addText(x.index,x.price,en?(signalText[x.text]||x.text):x.text,x.color,11));
