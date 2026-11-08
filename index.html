@@ -705,7 +705,24 @@ function loadFlowEvents(){try{return JSON.parse(localStorage.getItem(TIDE_FLOW_E
 var flowArchiveRemote={state:'checking',lastSync:0,error:''},flowArchiveSyncTimer=null;
 function saveFlowEvents(a){try{localStorage.setItem(TIDE_FLOW_EVENTS_KEY,JSON.stringify(a.slice(0,300)));}catch(e){}if(flowArchiveSyncTimer)clearTimeout(flowArchiveSyncTimer);flowArchiveSyncTimer=setTimeout(function(){pushFlowEvents(a.slice(0,100));},900);}
 async function pushFlowEvents(a){try{var r=await fetch('/api/flow-events',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({events:a})});var j=await r.json();if(!r.ok||!j.enabled)throw new Error(j.error||'Archive not configured');flowArchiveRemote={state:'synced',lastSync:Date.now(),error:''};}catch(e){flowArchiveRemote={state:'local',lastSync:flowArchiveRemote.lastSync,error:String(e.message||e)};}}
-async function syncFlowEvents(){try{var r=await fetch('/api/flow-events');var j=await r.json();if(!r.ok||!j.enabled)throw new Error(j.error||'Archive not configured');var remote=(j.events||[]).map(function(e){return{key:e.event_key,symbol:e.symbol,kind:e.kind,source:e.source,amount:Number(e.amount)||0,venues:e.venues,tradeId:e.trade_id,ts:Date.parse(e.ts),price:Number(e.price),return15:e.return15===null?null:Number(e.return15),return60:e.return60===null?null:Number(e.return60),observedAt:Date.parse(e.observed_at)};}).filter(function(e){return e.key&&Number.isFinite(e.ts);});var merged=remote.concat(loadFlowEvents()).reduce(function(a,e){if(!a.some(function(v){return v.key===e.key;}))a.push(e);return a;},[]).sort(function(a,b){return b.ts-a.ts;}).slice(0,300);try{localStorage.setItem(TIDE_FLOW_EVENTS_KEY,JSON.stringify(merged));}catch(e){}flowArchiveRemote={state:'synced',lastSync:Date.now(),error:''};}catch(e){flowArchiveRemote={state:'local',lastSync:flowArchiveRemote.lastSync,error:String(e.message||e)};}}
+async function syncFlowEvents(){
+ try{
+  var r=await fetch('/api/flow-events');
+  var j=await r.json();
+  if(!r.ok||!j.enabled)throw new Error(j.error||'Archive not configured');
+  var remote=(j.events||[]).map(function(e){return{key:e.event_key,symbol:e.symbol,kind:e.kind,source:e.source,amount:Number(e.amount)||0,venues:e.venues,tradeId:e.trade_id,ts:Date.parse(e.ts),price:Number(e.price),return15:e.return15===null?null:Number(e.return15),return60:e.return60===null?null:Number(e.return60),observedAt:Date.parse(e.observed_at)};}).filter(function(e){return e.key&&Number.isFinite(e.ts);});
+  var local=loadFlowEvents(),remoteKeys={};
+  remote.forEach(function(e){remoteKeys[e.key]=true;});
+  var localOnly=local.filter(function(e){return e&&e.key&&!remoteKeys[e.key];});
+  var merged=remote.concat(localOnly).sort(function(a,b){return b.ts-a.ts;}).slice(0,300);
+  try{localStorage.setItem(TIDE_FLOW_EVENTS_KEY,JSON.stringify(merged));}catch(e){}
+  flowArchiveRemote={state:'synced',lastSync:Date.now(),error:''};
+  if(localOnly.length)await pushFlowEvents(merged.slice(0,100));
+ }catch(e){
+  flowArchiveRemote={state:'local',lastSync:flowArchiveRemote.lastSync,error:String(e.message||e)};
+ }
+ if(typeof renderDragonTigerSoon==='function')renderDragonTigerSoon();
+}
 function recordFlowEvents(c){
  var f=c.flow||{},x=f.cross||{},events=loadFlowEvents(),now=Date.now(),bucket=Math.floor(now/900000),candidates=[];
  if(x.sync==='multiBuy'||x.sync==='multiSell')candidates.push({kind:x.sync,source:'cross',amount:Math.abs(x.net||0),venues:(x.syncExchanges||[]).join(',')});
