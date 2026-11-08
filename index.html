@@ -387,6 +387,68 @@ th{position:static!important;top:auto!important;z-index:auto!important}
  #overview .home-side-note{grid-column:1}
 }
 
+
+/* TIDELINE intelligence layer */
+.home-intelligence{margin:4px 0 24px;padding:22px 24px;background:linear-gradient(120deg,rgba(21,43,58,.88),rgba(13,27,40,.94));border:1px solid rgba(116,157,177,.22);border-radius:14px;overflow:hidden}
+.home-intel-head{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;padding-bottom:17px;border-bottom:1px solid rgba(139,174,190,.16)}
+.home-intel-kicker{font-size:9px;letter-spacing:.2em;color:#76c9c3;font-weight:800}
+.home-intel-head h2{font-size:18px;margin:5px 0 4px;letter-spacing:.01em}
+.home-intel-head p{font-size:11px;color:var(--muted);margin:0}
+.home-intel-updated{font-size:10px;color:#8da9b6;white-space:nowrap;font-variant-numeric:tabular-nums}
+.home-intel-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.home-intel-flow,.home-intel-market{padding:17px 20px 13px 0;min-width:0}
+.home-intel-market{padding:17px 0 13px 20px;border-left:1px solid rgba(139,174,190,.16)}
+.home-intel-section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:27px;margin-bottom:10px}
+.home-intel-section-head>div:first-child{display:flex;align-items:center;gap:9px}
+.home-intel-section-head b{font-size:12px}
+.home-intel-index{font-size:9px;color:#6fc9c0;font-weight:800;letter-spacing:.12em}
+.home-intel-source{font-size:9px;color:#809aa8}
+.home-flow-row,.home-move-row{width:100%;display:flex;align-items:center;gap:10px;text-align:left;border:0;border-top:1px solid rgba(139,174,190,.13);background:transparent;color:var(--txt);padding:11px 2px;cursor:pointer;transition:background .18s ease,transform .18s ease}
+.home-flow-row:hover,.home-move-row:hover{background:rgba(103,157,174,.08);transform:translateX(3px)}
+.home-flow-direction{font-size:9px;font-weight:800;letter-spacing:.06em;width:43px;flex:0 0 43px}
+.home-flow-direction.is-buy{color:#45c9a3}.home-flow-direction.is-sell{color:#ed7884}
+.home-flow-main{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}
+.home-flow-main b{font-size:11px}.home-flow-main b small{font-size:9px;color:var(--muted);font-weight:400;margin-left:5px}
+.home-flow-main>span{font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home-flow-row>strong{font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.home-flow-arrow{font-size:12px;color:#6f9da7}
+.home-intel-empty{min-height:112px;display:flex;flex-direction:column;justify-content:center;gap:7px;color:var(--muted);font-size:11px;line-height:1.6}
+.home-intel-empty b{color:var(--txt);font-size:11px}
+.home-intel-filters{display:flex;gap:3px;flex-wrap:wrap}
+.home-intel-filters button{font-size:9px;color:var(--muted);border:1px solid transparent;background:transparent;padding:4px 7px;border-radius:5px;cursor:pointer}
+.home-intel-filters button:hover,.home-intel-filters button.active{color:#8ee0d2;background:rgba(87,180,170,.1);border-color:rgba(87,180,170,.24)}
+.home-move-row{gap:9px;padding:9px 2px}
+.home-move-rank{font-size:9px;color:#7893a0;width:18px}
+.home-move-asset{display:flex;flex-direction:column;gap:3px;width:47px;flex:0 0 47px}
+.home-move-asset b{font-size:11px}.home-move-asset small{font-size:8px;color:var(--muted)}
+.home-move-track{height:4px;flex:1;min-width:20px;background:rgba(130,160,174,.15);border-radius:8px;overflow:hidden}
+.home-move-track i{display:block;height:100%;border-radius:8px;transition:width .55s ease}
+.home-move-track i.is-up{background:linear-gradient(90deg,#278f81,#5bd5b1)}
+.home-move-track i.is-down{background:linear-gradient(90deg,#a94d62,#e57c87)}
+.home-move-row>strong{font-size:10px;width:52px;text-align:right;font-variant-numeric:tabular-nums}
+.home-move-volume{font-size:9px;color:var(--muted);width:47px;text-align:right}
+.home-intel-link{border:0;background:none;padding:10px 0 0;color:#79c9c2;font-size:10px;cursor:pointer}
+.home-intel-link span{margin-left:5px}
+.home-intel-link:hover{color:#b2f0e8}
+.home-intel-foot{border-top:1px solid rgba(139,174,190,.13);padding-top:10px;font-size:9px;line-height:1.6;color:#8096a2}
+.flow-surface,.flow-alert-surface{margin:12px 0;padding:14px 16px;background:linear-gradient(135deg,rgba(48,75,91,.20),rgba(35,57,72,.12));border:1px solid rgba(112,151,168,.22);border-radius:10px}
+.flow-intro{margin-top:15px}
+.flow-surface-title{font-size:12px;font-weight:700;margin-bottom:5px;color:var(--txt)}
+.flow-alert-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:5px}
+.flow-alert-head b{font-size:12px}
+.flow-surface .dragon-table tbody tr{border-color:rgba(120,151,165,.17)}
+.flow-surface .dragon-table tbody tr:hover{background:rgba(100,154,170,.08)}
+.flow-surface .dragon-table thead th{color:#91a9b5;border-color:rgba(120,151,165,.22)}
+.flow-surface .dragon-table tbody td{color:var(--txt)}
+.flow-surface .muted,.flow-alert-surface .muted{color:#8fa5b0}
+#dragon .dragon-criteria{background:transparent!important}
+#dragon .reason-tag{background:rgba(95,141,157,.10);border-color:rgba(113,163,177,.25);color:#a8c7d0}
+#dragon .dragon-table tbody tr{border-color:rgba(120,151,165,.17)}
+#dragon .dragon-table tbody tr:hover{background:rgba(100,154,170,.08)}
+#dragon .dt-tabs .btn.active{background:rgba(88,166,166,.16);border-color:rgba(88,166,166,.42);color:#a8e5dc}
+@media(max-width:760px){.home-intelligence{padding:17px 14px;margin-bottom:18px}.home-intel-grid{grid-template-columns:1fr}.home-intel-flow{padding:14px 0;border-bottom:1px solid rgba(139,174,190,.16)}.home-intel-market{padding:14px 0 8px;border-left:0}.home-intel-head{align-items:flex-start}.home-intel-head h2{font-size:16px}.home-intel-updated{font-size:9px}.home-intel-section-head{align-items:flex-start}.home-intel-source{font-size:8px}}
+@media(prefers-reduced-motion:reduce){.home-flow-row,.home-move-row,.home-move-track i{transition:none}}
+
 </style>
 </head>
 <body>
@@ -421,6 +483,14 @@ th{position:static!important;top:auto!important;z-index:auto!important}
 <div class="home-chart-toolbar"><div class="home-timeframes" id="home-chart-periods"><button data-period="1H">1H</button><button class="active" data-period="4H">4H</button><button data-period="1D">1D</button><button data-period="15m">15m</button><button data-period="5m">5m</button></div><span class="home-chart-hint" data-i18n="homeChartHint">滚轮缩放 · 拖动浏览 · 点击查看单根K线</span></div>
 <div id="tide-home-kline-canvas"></div><div class="home-chart-foot"><span id="home-chart-status" data-i18n="homeConnecting">正在连接 OKX 行情…</span><span data-i18n="homeDataSource">数据来源：OKX 公共行情</span></div><div class="home-selected-candle" id="home-selected-candle" data-i18n="homeCandleHint">点击任意一根 K 线，查看该时段 OHLC 数据</div></div>
 <aside class="home-market-side"><div class="home-side-heading"><span data-i18n="homeMarketOverview">市场速览</span><span>24H</span></div><div class="home-side-stat"><span data-i18n="homeLatestPrice">BTC 最新价格</span><strong id="home-side-price">—</strong></div><div class="home-side-stat"><span data-i18n="home24hChange">24H 涨跌幅</span><strong id="home-side-change">—</strong></div><div class="home-side-stat"><span data-i18n="home24hVolume">24H 成交额</span><strong id="home-side-volume">—</strong></div><div class="home-side-stat"><span data-i18n="home24hRange">24H 振幅</span><strong id="home-side-range">—</strong></div><div class="home-side-divider"></div><div class="home-side-heading"><span data-i18n="homePriorityWatch">重点观察</span><span class="home-side-muted">BTC · ETH</span></div><div class="home-watch-item"><span>BTC</span><span id="home-btc-watch" class="home-watch-state" data-i18n="homeLoading">行情加载中</span><button onclick="openKlineChart('BTC')" data-i18n="homeView">查看</button></div><div class="home-watch-item"><span>ETH</span><span id="home-eth-watch" class="home-watch-state" data-i18n="homeLoading">行情加载中</span><button onclick="openKlineChart('ETH')" data-i18n="homeView">查看</button></div><div class="home-side-note" data-i18n="homeDisclaimer">方向观察仅作市场筛选，不构成交易信号。</div></aside></section>
+<section class="home-intelligence" data-reveal aria-label="Live market intelligence">
+<div class="home-intel-head"><div><div class="home-intel-kicker">LIVE INTELLIGENCE / 24H</div><h2>资金脉冲与市场异动</h2><p>把捕捉到的资金行为，与全市场价格异动放在同一观察视图。</p></div><span class="home-intel-updated" id="home-intel-updated">等待行情更新</span></div>
+<div class="home-intel-grid">
+<div class="home-intel-flow"><div class="home-intel-section-head"><div><span class="home-intel-index">01</span><b>资金行为</b></div><span class="home-intel-source">公开成交 / 跨所样本</span></div><div id="home-flow-stream" class="home-flow-stream"><div class="home-intel-empty">正在汇总已捕捉的资金行为…</div></div><button class="home-intel-link" onclick="switchPage('dragon')">查看完整资金行为档案 <span>↗</span></button></div>
+<div class="home-intel-market"><div class="home-intel-section-head"><div><span class="home-intel-index">02</span><b>市场异动队列</b></div><div class="home-intel-filters" id="home-move-filters"><button class="active" data-filter="all" onclick="setHomePulseFilter('all')">全部</button><button data-filter="up" onclick="setHomePulseFilter('up')">偏强</button><button data-filter="down" onclick="setHomePulseFilter('down')">偏弱</button><button data-filter="volume" onclick="setHomePulseFilter('volume')">放量</button></div></div><div id="home-move-stream" class="home-move-stream"><div class="home-intel-empty">等待市场数据…</div></div><button class="home-intel-link" onclick="switchPage('radar')">进入异动雷达 <span>↗</span></button></div>
+</div>
+<div class="home-intel-foot">说明：资金行为来自已采集的 OKX 大额成交与跨交易所主动成交样本；市场异动依据公开行情计算。样本不代表全市场资金流，也无法识别真实账户主体。</div>
+</section>
 <div class="reveal-label" data-reveal data-reveal-label="MARKET SNAPSHOT"></div>
 <div class="grid kpis" data-reveal>
 <div class="panel"><div class="klabel" id="kpiCoins">USDT 永续覆盖标的</div><div class="kvalue" id="count">—</div><div class="muted" id="kpiNote1">OKX SWAP 合约</div></div>
@@ -762,7 +832,18 @@ function renderBrief(){if(!markets.length){$('brief-content').textContent=t('bri
 if(ss[0].avg>5){lines.push(fill(t('briefSectorLine'),{name:ss[0].name,avg:pct(ss[0].avg)}));}
 var highVol=markets.filter(function(x){return x.vol>3e8;}).length;if(highVol>5){lines.push(fill(t('briefVolLine'),{n:highVol}));}
 lines.push('',t('briefOverviewHead'),fill(t('briefCoverage'),{n:markets.length,pct:(up/markets.length*100).toFixed(1),up:up,total:markets.length}),fill(t('briefTotalVol'),{vol:compact(tv)}),btc?('BTC  '+pct(btc.change)+'  $'+fmt(btc.last,2)):'','',t('briefSectorHead'),t('briefStrongest')+ss[0].name+' '+pct(ss[0].avg),t('briefWeakest')+ss[ss.length-1].name+' '+pct(ss[ss.length-1].avg),'',t('briefGainersHead'));topG.forEach(function(x,i){lines.push((i+1)+'. '+x.symbol+'  '+pct(x.change)+'  '+t('rangeLabel')+' '+fmt(x.range,2)+'%  '+t('volLabel')+' '+compact(x.vol));});lines.push('',t('briefLosersHead'));topL.forEach(function(x,i){lines.push((i+1)+'. '+x.symbol+'  '+pct(x.change)+'  '+t('rangeLabel')+' '+fmt(x.range,2)+'%  '+t('volLabel')+' '+compact(x.vol));});lines.push('',t('briefActiveHead'));topV.forEach(function(x,i){lines.push((i+1)+'. '+x.symbol+'  '+compact(x.vol));});lines.push('','─────────────────────',t('briefSource'),t('brand'));$('brief-content').textContent=lines.filter(function(s){return s!==undefined;}).join('\n');}
-function render(){var up=markets.filter(function(x){return x.change>0;}).length;var b=markets.find(function(x){return x.symbol==='BTC';});$('count').textContent=markets.length;$('breadth').textContent=pct(up/Math.max(1,markets.length)*100);$('volume').textContent=compact(markets.reduce(function(a,x){return a+x.vol;},0));$('alerts').textContent=markets.filter(function(x){return Math.abs(x.change)>8||x.range>18;}).length;$('btc').textContent=b?pct(b.change):'—';$('btc').className='kvalue '+(b?cls(b.change):'');$('btcprice').textContent=b?('$'+fmt(b.last,2)):t('kpiNote5');var tops=markets.slice().sort(function(a,b){return Math.abs(b.change)-Math.abs(a.change);}).slice(0,5);$('summary').innerHTML=tops.map(function(x){return '<div class="signal"><div><b>'+x.symbol+' <span class="'+cls(x.change)+'">'+pct(x.change)+'</span></b><small>'+t('rangeLabel')+' '+fmt(x.range,2)+'% · '+t('volLabel')+' '+compact(x.vol)+'</small></div><div class="score '+cls(x.change)+'">'+(Math.abs(x.change)>10?t('scoreHigh'):Math.abs(x.change)>5?t('scoreMid'):t('scoreLow'))+'</div></div>';}).join('');renderMarketTable();var ss=sectors();$('tiles').innerHTML=ss.map(function(g){return '<div class="tile"><b>'+g.name+'</b><strong class="'+cls(g.avg)+'">'+pct(g.avg)+'</strong><div class="muted">'+g.up+'/'+g.rows.length+' '+t('upText')+'</div><div class="bar"><i style="width:'+Math.min(100,Math.max(3,50+g.avg*4))+'%"></i></div></div>';}).join('');$('sectorTable').innerHTML=ss.map(function(g){var tops3=g.rows.slice(0,3).map(function(x){return '<a href="#" onclick="addWatch(\''+x.symbol+'\');return false" style="color:var(--cyan)">'+x.symbol+'</a>';}).join(' · ');return '<tr><td><b>'+g.name+'</b></td><td>'+g.rows.length+'</td><td class="'+cls(g.avg)+'">'+pct(g.avg)+'</td><td>'+g.up+' / '+(g.rows.length-g.up)+'</td><td>'+compact(g.vol)+'</td><td>'+(tops3||'—')+'</td></tr>';}).join('');$('sectorDetails').innerHTML=ss.map(function(g){return '<p><b>'+g.name+'</b>: '+(g.rows.map(function(x){return x.symbol+' '+pct(x.change);}).join('、')||t('noSample'))+'</p>';}).join('');renderHotSectors();renderRadar();renderBrief();renderWatchList();homeChartUpdateStats();}
+var homePulseFilter='all';
+function setHomePulseFilter(filter){homePulseFilter=filter;document.querySelectorAll('#home-move-filters button').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-filter')===filter);});renderHomeIntelligence();}
+function renderHomeIntelligence(){
+ var flowBox=$('home-flow-stream'),moveBox=$('home-move-stream');if(!flowBox||!moveBox)return;
+ var en=currentLang!=='zh',now=Date.now(),events=loadFlowEvents().filter(function(e){return Number.isFinite(e.ts)&&now-e.ts<=24*3600000;}).sort(function(a,b){return b.ts-a.ts;}).slice(0,5);
+ flowBox.innerHTML=events.length?events.map(function(e){var buy=e.kind==='multiBuy'||e.kind==='largeBuy',age=Math.max(0,Math.floor((now-e.ts)/60000)),time=age<1?(en?'just now':'刚刚'):age<60?(age+(en?'m ago':'分钟前')):(Math.floor(age/60)+(en?'h ago':'小时前'));return '<button class="home-flow-row" onclick="openKlineChart(\''+e.symbol+'\')" type="button"><span class="home-flow-direction '+(buy?'is-buy':'is-sell')+'">'+(buy?(en?'BUY':'买入'):(en?'SELL':'卖出'))+'</span><span class="home-flow-main"><b>'+e.symbol+' <small>'+t('event_'+e.kind)+'</small></b><span>'+escHtml(e.venues||e.source||'—')+' · '+time+'</span></span><strong>'+compact(e.amount)+'</strong><span class="home-flow-arrow">↗</span></button>';}).join(''):'<div class="home-intel-empty"><b>'+(en?'No qualifying flow events yet':'暂无已捕捉的资金行为')+'</b><span>'+(en?'Events appear here after public trade samples meet the detection rules.':'当公开成交样本达到识别条件后，会在这里出现。')+'</span></div>';
+ var rows=markets.slice();if(homePulseFilter==='up')rows=rows.filter(function(x){return x.change>0;}).sort(function(a,b){return b.change-a.change;});else if(homePulseFilter==='down')rows=rows.filter(function(x){return x.change<0;}).sort(function(a,b){return a.change-b.change;});else if(homePulseFilter==='volume')rows.sort(function(a,b){return b.vol-a.vol;});else rows.sort(function(a,b){return Math.max(Math.abs(b.change),b.range*.35)-Math.max(Math.abs(a.change),a.range*.35);});
+ rows=rows.slice(0,6);
+ moveBox.innerHTML=rows.length?rows.map(function(x,i){var strength=Math.min(100,Math.max(6,Math.abs(x.change)*7+x.range*1.5));return '<button class="home-move-row" onclick="openKlineChart(\''+x.symbol+'\')" type="button"><span class="home-move-rank">'+String(i+1).padStart(2,'0')+'</span><span class="home-move-asset"><b>'+x.symbol+'</b><small>'+(en?'24H range ':'24H 振幅 ')+fmt(x.range,2)+'%</small></span><span class="home-move-track"><i class="'+(x.change>=0?'is-up':'is-down')+'" style="width:'+strength+'%"></i></span><strong class="'+cls(x.change)+'">'+pct(x.change)+'</strong><span class="home-move-volume">'+compact(x.vol)+'</span></button>';}).join(''):'<div class="home-intel-empty">'+(en?'Waiting for market data…':'等待市场数据…')+'</div>';
+ var stamp=$('home-intel-updated');if(stamp)stamp.textContent=(en?'UPDATED ':'更新于 ')+new Date().toLocaleTimeString(en?'en-US':'zh-CN',{hour12:false});
+}
+function render(){var up=markets.filter(function(x){return x.change>0;}).length;var b=markets.find(function(x){return x.symbol==='BTC';});$('count').textContent=markets.length;$('breadth').textContent=pct(up/Math.max(1,markets.length)*100);$('volume').textContent=compact(markets.reduce(function(a,x){return a+x.vol;},0));$('alerts').textContent=markets.filter(function(x){return Math.abs(x.change)>8||x.range>18;}).length;$('btc').textContent=b?pct(b.change):'—';$('btc').className='kvalue '+(b?cls(b.change):'');$('btcprice').textContent=b?('$'+fmt(b.last,2)):t('kpiNote5');var tops=markets.slice().sort(function(a,b){return Math.abs(b.change)-Math.abs(a.change);}).slice(0,5);$('summary').innerHTML=tops.map(function(x){return '<div class="signal"><div><b>'+x.symbol+' <span class="'+cls(x.change)+'">'+pct(x.change)+'</span></b><small>'+t('rangeLabel')+' '+fmt(x.range,2)+'% · '+t('volLabel')+' '+compact(x.vol)+'</small></div><div class="score '+cls(x.change)+'">'+(Math.abs(x.change)>10?t('scoreHigh'):Math.abs(x.change)>5?t('scoreMid'):t('scoreLow'))+'</div></div>';}).join('');renderMarketTable();var ss=sectors();$('tiles').innerHTML=ss.map(function(g){return '<div class="tile"><b>'+g.name+'</b><strong class="'+cls(g.avg)+'">'+pct(g.avg)+'</strong><div class="muted">'+g.up+'/'+g.rows.length+' '+t('upText')+'</div><div class="bar"><i style="width:'+Math.min(100,Math.max(3,50+g.avg*4))+'%"></i></div></div>';}).join('');$('sectorTable').innerHTML=ss.map(function(g){var tops3=g.rows.slice(0,3).map(function(x){return '<a href="#" onclick="addWatch(\''+x.symbol+'\');return false" style="color:var(--cyan)">'+x.symbol+'</a>';}).join(' · ');return '<tr><td><b>'+g.name+'</b></td><td>'+g.rows.length+'</td><td class="'+cls(g.avg)+'">'+pct(g.avg)+'</td><td>'+g.up+' / '+(g.rows.length-g.up)+'</td><td>'+compact(g.vol)+'</td><td>'+(tops3||'—')+'</td></tr>';}).join('');$('sectorDetails').innerHTML=ss.map(function(g){return '<p><b>'+g.name+'</b>: '+(g.rows.map(function(x){return x.symbol+' '+pct(x.change);}).join('、')||t('noSample'))+'</p>';}).join('');renderHotSectors();renderRadar();renderBrief();renderWatchList();homeChartUpdateStats();renderHomeIntelligence();}
 function renderRadar(){var a=markets.slice();var q=($('search')?$('search').value||'':'').trim().toUpperCase();var f=$('filter')?$('filter').value||'all':'all';var s=$('sort')?$('sort').value||'volume':'volume';if(q)a=a.filter(function(x){return x.symbol.indexOf(q)>=0;});if(f==='up')a=a.filter(function(x){return x.change>0;});if(f==='down')a=a.filter(function(x){return x.change<0;});if(f==='range')a=a.filter(function(x){return x.range>8;});a.sort(function(x,y){return s==='change'?y.change-x.change:s==='range'?y.range-x.range:y.vol-x.vol;});$('radarTable').innerHTML=a.slice(0,120).map(row).join('')||'<tr><td colspan="7">'+t('noResults')+'</td></tr>';}
 function getDirection(id,bar,cb){api('/api/v5/market/candles?instId='+id+'&bar='+bar+'&limit=30').then(function(d){return [null,d];},function(e){return [e,null];}).then(function(res){var err=res[0],data=res[1];if(err||!data){cb('—');return;}var close=data.slice(1).map(function(x){return +x[4];}).filter(function(x){return x>0;}).reverse();if(close.length<20){cb('—');return;}var ema=close.slice(-20).reduce(function(a,b){return a+b;},0)/20;cb(close[close.length-1]>ema?'bull':'bear');});}
 var focusResults=null,focusLoading=false;
