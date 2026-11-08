@@ -67,34 +67,7 @@ function loadEngine(source) {
   return context.window.TideTdxStructure;
 }
 
-function simulate(data, signals) {
-  const sorted = [...signals].sort((a,b) => a.index-b.index);
-  const trades = [];
-  let lockedUntil = -1;
-  for (const s of sorted) {
-    if (s.index <= lockedUntil) continue;
-    const entryBar = data[s.index + 1];
-    if (!entryBar) continue;
-    const dir = s.direction === 'long' ? 1 : -1;
-    const entry = entryBar.open;
-    const stop = s.stop, target = s.target;
-    const risk = Math.abs(entry-stop);
-    if (!Number.isFinite(risk) || risk <= 0 || !Number.isFinite(target)) continue;
-    let exit = null, reason = 'time';
-    const end = Math.min(data.length-1, s.index + 1 + MAX_HOLD_BARS);
-    for (let i=s.index+1; i<=end; i++) {
-      const c=data[i], stopHit=dir===1?c.low<=stop:c.high>=stop;
-      const targetHit=dir===1?c.high>=target:c.low<=target;
-      if (stopHit) { exit = (i===s.index+1 && (dir===1?c.open<stop:c.open>stop)) ? c.open : stop; reason='stop'; lockedUntil=i; break; }
-      if (targetHit) { exit = (i===s.index+1 && (dir===1?c.open>target:c.open<target)) ? c.open : target; reason='target'; lockedUntil=i; break; }
-      if (i===end) { exit=c.close; lockedUntil=i; }
-    }
-    if (exit===null) continue;
-    const gross=(exit-entry)*dir;
-    const fees=(entry+exit)*FEE_PER_SIDE;
-    const netR=(gross-fees)/risk;
-    trades.push({index:s.index,dir,entry,exit,reason,netR,score:s.score||0,alignment:s.alignment||'legacy'});
-  }
+function summarizeTrades(trades) {
   const wins=trades.filter(t=>t.netR>0),losses=trades.filter(t=>t.netR<=0);
   const grossWin=wins.reduce((a,t)=>a+t.netR,0),grossLoss=Math.abs(losses.reduce((a,t)=>a+t.netR,0));
   let equity=0,peak=0,maxDd=0;
@@ -109,7 +82,37 @@ function simulate(data, signals) {
     timeExitRate:trades.length?trades.filter(t=>t.reason==='time').length/trades.length:0
   };
 }
-
+function publicStats(result) { const { _trades, ...stats } = result; return stats; }
+function simulate(data, signals, windowEnd=data.length-1) {
+  const sorted = [...signals].sort((a,b) => a.index-b.index);
+  const trades = [];
+  let lockedUntil = -1;
+  for (const s of sorted) {
+    if (s.index <= lockedUntil) continue;
+    const entryBar = data[s.index + 1];
+    if (!entryBar || s.index+1>windowEnd) continue;
+    const dir = s.direction === 'long' ? 1 : -1;
+    const entry = entryBar.open;
+    const stop = s.stop, target = s.target;
+    const risk = Math.abs(entry-stop);
+    if (!Number.isFinite(risk) || risk <= 0 || !Number.isFinite(target)) continue;
+    let exit = null, reason = 'time';
+    const end = Math.min(windowEnd, data.length-1, s.index + 1 + MAX_HOLD_BARS);
+    for (let i=s.index+1; i<=end; i++) {
+      const c=data[i], stopHit=dir===1?c.low<=stop:c.high>=stop;
+      const targetHit=dir===1?c.high>=target:c.low<=target;
+      if (stopHit) { exit = (i===s.index+1 && (dir===1?c.open<stop:c.open>stop)) ? c.open : stop; reason='stop'; lockedUntil=i; break; }
+      if (targetHit) { exit = (i===s.index+1 && (dir===1?c.open>target:c.open<target)) ? c.open : target; reason='target'; lockedUntil=i; break; }
+      if (i===end) { exit=c.close; lockedUntil=i; }
+    }
+    if (exit===null) continue;
+    const gross=(exit-entry)*dir;
+    const fees=(entry+exit)*FEE_PER_SIDE;
+    const netR=(gross-fees)/risk;
+    trades.push({index:s.index,dir,entry,exit,reason,netR,score:s.score||0,alignment:s.alignment||'legacy',maTrend:s.maTrend||'neutral',maCross:s.maCross||'none'});
+  }
+  return Object.assign(summarizeTrades(trades),{_trades:trades});
+}
 const current = loadEngine(readFileSync('tdx-structure.js','utf8'));
 const oldSource = execFileSync('git',['show','4fbcb85b6fd2c7c26db1402ed896541bb391b668:tdx-structure.js'],{encoding:'utf8'});
 const legacy = loadEngine(oldSource);
@@ -120,17 +123,31 @@ for (const instId of SYMBOLS) {
   ]);
   const old = legacy.computeMultiTimeframe(m15,h4,d1,{},'15m');
   const fresh = current.computeMultiTimeframe(m15,h4,d1,{},'15m');
+  const oldRun = simulate(m15,old.signals.filter(s=>s.tradable));
+  const newRun = simulate(m15,fresh.signals);
+  const new60 = simulate(m15,fresh.signals.filter(s=>s.score>=60));
+  const new70 = simulate(m15,fresh.signals.filter(s=>s.score>=70));
   const byAlignment = {};
   for (const key of ['aligned','countertrend','transition','mixed']) {
-    byAlignment[key] = simulate(m15,fresh.signals.filter(s=>s.alignment===key));
+    byAlignment[key] = summarizeTrades(newRun._trades.filter(t=>t.alignment===key));
   }
+  const byMaTrend = {};
+  for (const key of ['bull','bear','neutral']) {
+    byMaTrend[key] = summarizeTrades(newRun._trades.filter(t=>t.maTrend===key));
+  }
+  const split = m15.length - 30*96;
+  const recentSignals = fresh.signals.filter(s=>s.index>=split);
+  const priorSignals = fresh.signals.filter(s=>s.index<split);
   results.push({
     instrument:instId, bars:{m15:m15.length,h4:h4.length,d1:d1.length},
-    oldHardGate:simulate(m15,old.signals.filter(s=>s.tradable)),
-    newAllCandidates:simulate(m15,fresh.signals),
-    newScore60:simulate(m15,fresh.signals.filter(s=>s.score>=60)),
-    newScore70:simulate(m15,fresh.signals.filter(s=>s.score>=70)),
+    oldHardGate:publicStats(oldRun),
+    newAllCandidates:publicStats(newRun),
+    newScore60:publicStats(new60),
+    newScore70:publicStats(new70),
     newByAlignment:byAlignment,
+    newByMaTrend:byMaTrend,
+    newPrior60Days:publicStats(simulate(m15,priorSignals,split-1)),
+    newRecent30Days:publicStats(simulate(m15,recentSignals)),
     rawSignals:{old:old.signals.length,oldPassed:old.signals.filter(s=>s.tradable).length,new:fresh.signals.length}
   });
 }
