@@ -38,7 +38,7 @@ module.exports = async function handler(req, res) {
         if (!e || !/^[A-Z0-9]{2,20}$/.test(String(e.symbol || ''))) return false;
         if (typeof e.key !== 'string' || e.key.length > 180 || e.key.indexOf(String(e.symbol) + '|') !== 0) return false;
         if (!allowedKinds.has(String(e.kind || ''))) return false;
-        if (!['cross', 'OKX'].includes(String(e.source || ''))) return false;
+        if (!['cross', 'OKX', 'Binance', 'Bybit'].includes(String(e.source || ''))) return false;
         const ts = Number(e.ts), price = Number(e.price), amount = Number(e.amount);
         if (!Number.isFinite(ts) || ts < Date.now() - 90 * 86400000 || ts > Date.now() + 5 * 60000) return false;
         if (!Number.isFinite(price) || price <= 0 || price > 1e9) return false;
