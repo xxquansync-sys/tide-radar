@@ -171,6 +171,39 @@ table th{color:#788698;border-color:#e8edf2}td{border-color:#edf0f4}tbody tr:hov
 @media(max-width:980px){.home-market-hero{grid-template-columns:1fr}.home-market-side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}.home-side-heading{grid-column:1/-1}.home-side-divider{display:none}.home-side-note{grid-column:1/-1;margin-top:8px}}
 @media(max-width:620px){header{padding:9px 4vw}.brand{font-size:13px}.brand small{font-size:9px}.main-nav>button,.main-nav .nav-more-wrap>button{padding:7px 8px;font-size:11px}main{padding:16px 3vw 44px}.top{align-items:flex-start}.headline{font-size:20px}.home-chart-panel{padding:0 10px 8px}.home-chart-head{align-items:flex-start;padding:12px 0;flex-direction:column;gap:8px}.home-chart-title{flex-wrap:wrap}.home-eth-price{margin-left:0}.home-chart-actions{align-self:flex-end;margin-top:-32px}#tide-home-kline-canvas{height:300px}.home-chart-hint{display:none}.home-market-side{padding:12px;grid-template-columns:1fr 1fr}.home-side-stat{padding:8px 0}.home-chart-foot{font-size:9px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
+
+/* TIDELINE home: refined live-market visual language */
+body{background:radial-gradient(ellipse at 78% 5%,rgba(67,180,166,.09),transparent 34%),radial-gradient(ellipse at 8% 28%,rgba(68,126,175,.07),transparent 30%),#f4f7f9}
+header{background:rgba(255,255,255,.88);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.brand .logo{position:relative;overflow:hidden;box-shadow:0 3px 12px rgba(16,72,84,.16)}
+.brand .logo:after{content:"";position:absolute;inset:-50%;background:linear-gradient(110deg,transparent 38%,rgba(255,255,255,.42) 50%,transparent 62%);transform:translateX(-90%);animation:tdLogoSweep 6s ease-in-out infinite}
+.home-market-hero{position:relative;isolation:isolate;gap:16px;margin-bottom:20px}
+.home-chart-panel,.home-market-side{position:relative;overflow:hidden;border-radius:17px;border-color:#dfe8ec;box-shadow:0 10px 34px rgba(25,55,75,.055),0 1px 2px rgba(25,55,75,.04);transition:transform .28s ease,box-shadow .28s ease,border-color .28s ease}
+.home-chart-panel:before{content:"";position:absolute;inset:0 0 auto;height:2px;background:linear-gradient(90deg,#0b7775,#52c9b7 42%,rgba(82,201,183,0));z-index:2}
+.home-chart-panel:after{content:"";position:absolute;pointer-events:none;right:-90px;top:-140px;width:310px;height:310px;border-radius:50%;background:radial-gradient(circle,rgba(49,177,165,.085),rgba(49,177,165,0) 68%);z-index:0}
+.home-chart-head,.home-chart-toolbar,#tide-home-kline-canvas,.home-chart-foot,.home-selected-candle{position:relative;z-index:1}
+.home-chart-head{min-height:78px}
+.home-symbol-mark{width:40px;height:40px;border-radius:12px;background:linear-gradient(145deg,#e5f5f3,#f3f8f9);box-shadow:inset 0 0 0 1px rgba(16,133,126,.08);position:relative}
+.home-symbol-mark:after{content:"";position:absolute;inset:-5px;border:1px solid rgba(27,157,146,.18);border-radius:15px;animation:tdHalo 3.2s ease-out infinite}
+.home-live-dot{position:relative;box-shadow:0 0 0 0 rgba(20,161,122,.28);animation:tdLivePulse 2.2s ease-out infinite}
+.home-market-side{background:linear-gradient(155deg,#fff 0%,#fbfdfd 72%,#f3faf9 100%)}
+.home-side-stat{transition:background .2s ease;border-radius:7px;padding-left:7px;padding-right:7px}
+.home-side-stat:hover{background:#f5faf9}
+.home-side-stat strong{font-variant-numeric:tabular-nums;transition:color .2s ease}
+.home-watch-item button{transition:transform .18s ease,background .18s ease,box-shadow .18s ease}
+.home-watch-item button:hover,.home-expand:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(24,111,105,.10)}
+.home-timeframes button{transition:background .18s ease,color .18s ease,transform .18s ease}
+.home-timeframes button:active{transform:scale(.96)}
+.kpis .panel{transition:transform .24s ease,box-shadow .24s ease,border-color .24s ease}
+.kpis .panel:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(25,55,75,.09);border-color:#cfe2e1}
+.kvalue{font-variant-numeric:tabular-nums;letter-spacing:-.025em}
+@keyframes tdLivePulse{0%{box-shadow:0 0 0 0 rgba(20,161,122,.30)}70%{box-shadow:0 0 0 7px rgba(20,161,122,0)}100%{box-shadow:0 0 0 0 rgba(20,161,122,0)}}
+@keyframes tdHalo{0%{transform:scale(.92);opacity:.65}75%,100%{transform:scale(1.12);opacity:0}}
+@keyframes tdLogoSweep{0%,72%,100%{transform:translateX(-90%)}84%{transform:translateX(90%)}}
+@media(hover:hover){.home-chart-panel:hover,.home-market-side:hover{box-shadow:0 14px 40px rgba(25,55,75,.085);border-color:#d4e5e4}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+@media(max-width:620px){.home-chart-panel,.home-market-side{border-radius:13px}.home-chart-head{min-height:72px}}
+
 </style>
 </head>
 <body>
@@ -210,11 +243,11 @@ table th{color:#788698;border-color:#e8edf2}td{border-color:#edf0f4}tbody tr:hov
 </div>
 </div>
 <section class="page active" id="overview">
-<section class="home-market-hero" aria-label="ETH interactive market chart">
-<div class="home-chart-panel"><div class="home-chart-head"><div class="home-chart-title"><div class="home-symbol-mark">₿</div><div><div class="home-chart-name">BTC / USDT <span class="home-market-tag">永续合约</span></div><div class="home-chart-sub">OKX · BTC-USDT-SWAP</div></div><div class="home-eth-price"><strong id="home-btc-price">—</strong><span id="home-btc-change">—</span></div></div><div class="home-chart-actions"><span class="home-live-dot"></span><span>自动更新</span><button class="home-expand" onclick="openKlineChart('BTC')">专业图表 ↗</button></div></div>
-<div class="home-chart-toolbar"><div class="home-timeframes" id="home-chart-periods"><button data-period="1H">1H</button><button class="active" data-period="4H">4H</button><button data-period="1D">1D</button><button data-period="15m">15m</button><button data-period="5m">5m</button></div><span class="home-chart-hint">滚轮缩放 · 拖动浏览 · 点击查看单根K线</span></div>
-<div id="tide-home-kline-canvas"></div><div class="home-chart-foot"><span id="home-chart-status">正在连接 OKX 行情…</span><span>数据来源：OKX 公共行情</span></div><div class="home-selected-candle" id="home-selected-candle">点击图表中的任意一根 K 线，查看该时段 OHLC 数据</div></div>
-<aside class="home-market-side"><div class="home-side-heading"><span>市场速览</span><span>24H</span></div><div class="home-side-stat"><span>BTC 最新价格</span><strong id="home-side-price">—</strong></div><div class="home-side-stat"><span>24H 涨跌幅</span><strong id="home-side-change">—</strong></div><div class="home-side-stat"><span>24H 成交额</span><strong id="home-side-volume">—</strong></div><div class="home-side-stat"><span>24H 振幅</span><strong id="home-side-range">—</strong></div><div class="home-side-divider"></div><div class="home-side-heading"><span>重点观察</span><span class="home-side-muted">BTC · ETH</span></div><div class="home-watch-item"><span>BTC</span><span id="home-btc-watch" class="home-watch-state">行情加载中</span><button onclick="openKlineChart('BTC')">查看</button></div><div class="home-watch-item"><span>ETH</span><span id="home-eth-watch" class="home-watch-state">行情加载中</span><button onclick="openKlineChart('ETH')">查看</button></div><div class="home-side-note">方向观察仅作市场筛选，不构成交易信号。</div></aside></section>
+<section class="home-market-hero" aria-label="BTC interactive market chart">
+<div class="home-chart-panel"><div class="home-chart-head"><div class="home-chart-title"><div class="home-symbol-mark">₿</div><div><div class="home-chart-name">BTC / USDT <span class="home-market-tag" data-i18n="homePerp">USDT 永续合约</span></div><div class="home-chart-sub">OKX · BTC-USDT-SWAP</div></div><div class="home-eth-price"><strong id="home-btc-price">—</strong><span id="home-btc-change">—</span></div></div><div class="home-chart-actions"><span class="home-live-dot"></span><span data-i18n="homeAutoUpdate">实时更新</span><button class="home-expand" onclick="openKlineChart('BTC')" data-i18n="homeProChart">专业图表 ↗</button></div></div>
+<div class="home-chart-toolbar"><div class="home-timeframes" id="home-chart-periods"><button data-period="1H">1H</button><button class="active" data-period="4H">4H</button><button data-period="1D">1D</button><button data-period="15m">15m</button><button data-period="5m">5m</button></div><span class="home-chart-hint" data-i18n="homeChartHint">滚轮缩放 · 拖动浏览 · 点击查看单根K线</span></div>
+<div id="tide-home-kline-canvas"></div><div class="home-chart-foot"><span id="home-chart-status" data-i18n="homeConnecting">正在连接 OKX 行情…</span><span data-i18n="homeDataSource">数据来源：OKX 公共行情</span></div><div class="home-selected-candle" id="home-selected-candle" data-i18n="homeCandleHint">点击任意一根 K 线，查看该时段 OHLC 数据</div></div>
+<aside class="home-market-side"><div class="home-side-heading"><span data-i18n="homeMarketOverview">市场速览</span><span>24H</span></div><div class="home-side-stat"><span data-i18n="homeLatestPrice">BTC 最新价格</span><strong id="home-side-price">—</strong></div><div class="home-side-stat"><span data-i18n="home24hChange">24H 涨跌幅</span><strong id="home-side-change">—</strong></div><div class="home-side-stat"><span data-i18n="home24hVolume">24H 成交额</span><strong id="home-side-volume">—</strong></div><div class="home-side-stat"><span data-i18n="home24hRange">24H 振幅</span><strong id="home-side-range">—</strong></div><div class="home-side-divider"></div><div class="home-side-heading"><span data-i18n="homePriorityWatch">重点观察</span><span class="home-side-muted">BTC · ETH</span></div><div class="home-watch-item"><span>BTC</span><span id="home-btc-watch" class="home-watch-state" data-i18n="homeLoading">行情加载中</span><button onclick="openKlineChart('BTC')" data-i18n="homeView">查看</button></div><div class="home-watch-item"><span>ETH</span><span id="home-eth-watch" class="home-watch-state" data-i18n="homeLoading">行情加载中</span><button onclick="openKlineChart('ETH')" data-i18n="homeView">查看</button></div><div class="home-side-note" data-i18n="homeDisclaimer">方向观察仅作市场筛选，不构成交易信号。</div></aside></section>
 <div class="grid kpis">
 <div class="panel"><div class="klabel" id="kpiCoins">USDT 永续覆盖标的</div><div class="kvalue" id="count">—</div><div class="muted" id="kpiNote1">OKX SWAP 合约</div></div>
 <div class="panel"><div class="klabel" id="kpiBreadth">市场上涨占比</div><div class="kvalue" id="breadth">—</div><div class="muted" id="kpiNote2">24H 涨跌家数</div></div>
@@ -390,7 +423,7 @@ step2:'02 / 板块轮动',step2Desc:'识别相对强势板块,观察热点扩散
 step3:'03 / 异动发现',step3Desc:'筛选涨跌、振幅、成交额异常的合约。',
 step4:'04 / 多周期验证',step4Desc:'日线定大势、4H定方向、15m看形态、3–5m找时机。',
 methodDisclaimer:'数据口径与限制:',methodDisclaimerText:'行情来自 OKX 公共 API;成交额不等于净流入,持仓量变化不等于多头资金流入。板块为预设样本,不代表完整市场分类。自选数据仅保存在本机浏览器。',
-footerText:'TIDELINE · CRYPTO MARKET INTELLIGENCE · For research only · Not investment advice',
+footerText:'TIDELINE · CRYPTO MARKET INTELLIGENCE · For research only · Not investment advice',homePerp:'USDT 永续合约',homeAutoUpdate:'实时更新',homeProChart:'专业图表 ↗',homeChartHint:'滚轮缩放 · 拖动浏览 · 点击查看单根K线',homeConnecting:'正在连接 OKX 行情…',homeDataSource:'数据来源：OKX 公共行情',homeCandleHint:'点击任意一根 K 线，查看该时段 OHLC 数据',homeMarketOverview:'市场速览',homeLatestPrice:'BTC 最新价格',home24hChange:'24H 涨跌幅',home24hVolume:'24H 成交额',home24hRange:'24H 振幅',homePriorityWatch:'重点观察',homeLoading:'行情加载中',homeView:'查看',homeDisclaimer:'方向观察仅作市场筛选，不构成交易信号。',homeLoadError:'K线暂不可用：',homeLoaded:'OKX · {n} 根K线 · {time}',homeLoadingPeriod:'正在获取 BTC {period} K线 · OKX',homeTime:'时间',homeOpen:'开',homeHigh:'高',homeLow:'低',homeClose:'收',homeChange:'涨跌',
 perpContract:'USDT 永续',noResults:'没有匹配结果',
 dailyText:'日线',fourHText:'4H',oneHText:'1H',bullText:'多',bearText:'空',waitText:'等待',
 liveTrackingTag:'实时追踪',fixedSampleTag:'固定样本追踪',realTimeScanTag:'实时扫描',simpleAverageTag:'样本简单均值',ruleBased:'规则型观察',
@@ -451,7 +484,7 @@ step2:'02 / Sector Rotation',step2Desc:'Identify relative strength, watch hotspo
 step3:'03 / Anomaly Discovery',step3Desc:'Screen for abnormal change, range, or volume.',
 step4:'04 / Multi-TF Verification',step4Desc:'Daily for trend, 4H for direction, 15m for pattern, 3–5m for timing.',
 methodDisclaimer:'Data scope and limits:',methodDisclaimerText:'Market data from OKX public API; volume ≠ net inflow, OI change ≠ long capital inflow. Sectors are preset samples, not complete market categories. Watchlist saved in local browser only.',
-footerText:'Tide RADAR · Crypto Market Intelligence · Data for research only · Not investment advice',
+footerText:'Tide RADAR · Crypto Market Intelligence · Data for research only · Not investment advice',homePerp:'USDT Perpetual',homeAutoUpdate:'LIVE UPDATES',homeProChart:'Advanced chart ↗',homeChartHint:'Scroll to zoom · Drag to explore · Select a candle for details',homeConnecting:'Connecting to OKX market data…',homeDataSource:'SOURCE: OKX PUBLIC MARKET DATA',homeCandleHint:'Select any candle to inspect its OHLC data',homeMarketOverview:'MARKET SNAPSHOT',homeLatestPrice:'BTC LAST PRICE',home24hChange:'24H CHANGE',home24hVolume:'24H VOLUME',home24hRange:'24H RANGE',homePriorityWatch:'PRIORITY WATCH',homeLoading:'Loading market data',homeView:'View',homeDisclaimer:'Directional context only — not a trading signal.',homeLoadError:'Candle data unavailable: ',homeLoaded:'OKX · {n} candles · {time}',homeLoadingPeriod:'Loading BTC {period} candles · OKX',homeTime:'Time',homeOpen:'Open',homeHigh:'High',homeLow:'Low',homeClose:'Close',homeChange:'Change',
 perpContract:'USDT Perp',noResults:'No results',
 dailyText:'Daily',fourHText:'4H',oneHText:'1H',bullText:'Bull',bearText:'Bear',waitText:'Wait',
 liveTrackingTag:'Live Tracking',fixedSampleTag:'Fixed Sample',realTimeScanTag:'Real-time Scan',simpleAverageTag:'Simple Average',ruleBased:'Rule-based',
@@ -970,7 +1003,7 @@ setInterval(refresh,60000);
 
 /* Homepage ETH interactive chart */
 var tideHomeChart={chart:null,data:[],symbol:'BTC',period:'4H',timer:null,controller:null,requestId:0,clickHandler:null};
-function homeChartStatus(v){var el=$('home-chart-status');if(el)el.textContent=v;}
+function homeChartStatus(v){var el=$('home-chart-status');if(el){el.removeAttribute('data-i18n');el.textContent=v;}}
 function homeChartRenderPeriods(){var el=$('home-chart-periods');if(el)el.querySelectorAll('button').forEach(function(b){b.classList.toggle('active',b.dataset.period===tideHomeChart.period);});}
 function homeChartUpdateStats(){
  var btc=markets.find(function(x){return x.symbol==='BTC';}),eth=markets.find(function(x){return x.symbol==='ETH';});
@@ -989,8 +1022,8 @@ function homeChartSelectCandle(payload){
 }
 function homeChartLoad(){
  if(!tideHomeChart.chart)return;if(tideHomeChart.controller){try{tideHomeChart.controller.abort();}catch(e){}}
- var ctl=new AbortController();tideHomeChart.controller=ctl;var req=++tideHomeChart.requestId,period=tideHomeChart.period;homeChartStatus('正在获取 BTC '+period+' K线 · OKX');
- klineFetch(300,'BTC',period,ctl.signal).then(function(rows){if(req!==tideHomeChart.requestId||!tideHomeChart.chart)return;tideHomeChart.data=rows;tideHomeChart.chart.applyNewData(rows);homeChartStatus('OKX · '+rows.length+' 根K线 · '+new Date().toLocaleTimeString(currentLang==='zh'?'zh-CN':'en-US',{hour12:false}));var last=rows[rows.length-1];if(last){var e=$('home-btc-price');if(e)e.textContent='$'+fmt(last.close,2);}}).catch(function(e){if(e.name!=='AbortError'&&req===tideHomeChart.requestId)homeChartStatus('K线暂不可用：'+e.message);});
+ var ctl=new AbortController();tideHomeChart.controller=ctl;var req=++tideHomeChart.requestId,period=tideHomeChart.period;homeChartStatus(t('homeLoadingPeriod').replace('{period}',period));
+ klineFetch(300,'BTC',period,ctl.signal).then(function(rows){if(req!==tideHomeChart.requestId||!tideHomeChart.chart)return;tideHomeChart.data=rows;tideHomeChart.chart.applyNewData(rows);homeChartStatus(t('homeLoaded').replace('{n}',rows.length).replace('{time}',new Date().toLocaleTimeString(currentLang==='zh'?'zh-CN':'en-US',{hour12:false})));var last=rows[rows.length-1];if(last){var e=$('home-btc-price');if(e)e.textContent='$'+fmt(last.close,2);}}).catch(function(e){if(e.name!=='AbortError'&&req===tideHomeChart.requestId)homeChartStatus(t('homeLoadError')+e.message);});
 }
 function homeChartChangePeriod(p){if(tideKlinePeriods.indexOf(p)<0||p===tideHomeChart.period)return;tideHomeChart.period=p;homeChartRenderPeriods();homeChartLoad();}
 function homeChartInit(){
