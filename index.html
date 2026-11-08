@@ -1181,6 +1181,7 @@ function klineCloseEventModal(){var el=$('tide-kline-event-modal');if(el)el.styl
 function klineMoney(v){if(!Number.isFinite(Number(v)))return '—';var n=Number(v);return n>=1e9?'$'+(n/1e9).toFixed(2)+'B':n>=1e6?'$'+(n/1e6).toFixed(2)+'M':n>=1e3?'$'+(n/1e3).toFixed(1)+'K':'$'+n.toFixed(0);}
 function klineEventDuration(){return ({'1m':60000,'3m':180000,'5m':300000,'15m':900000,'30m':1800000,'1H':3600000,'2H':7200000,'4H':14400000,'6H':21600000,'12H':43200000,'1D':86400000})[tideKline.period]||3600000;}
 function klineShowAnomalyDetail(e){
+ window.__tideSelectedCandleEvent=e;window.__tideSelectedCandleTs=Number(e.timestamp)||0;
  var modal=klineEnsureEventModal(),body=$('tide-event-modal-body'),title=$('tide-event-modal-title'),sub=$('tide-event-modal-subtitle');
  var en=tideKlineLang==='en',fmt=function(v){return Number(v).toLocaleString('en-US',{maximumFractionDigits:v<1?6:2});};
  var change=(e.close/e.open-1)*100,range=(e.high/e.low-1)*100,volRatio=Number(e.volRatio)||0,bodyRatio=Number(e.bodyRatio)||0;
@@ -1209,7 +1210,23 @@ function klineLoadSelectedCandleFlow(e,seq){
  var start=Number(e.timestamp),end=start+klineEventDuration();
  fetch('/api/candle-flow?symbol='+encodeURIComponent(symbol)+'&start='+encodeURIComponent(start)+'&end='+encodeURIComponent(end)).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}).then(function(data){
   if(seq!==tideKline.eventRequestId||!el.isConnected)return;
-  var ct=Number(instCtVal[symbol+'-USDT-SWAP'])||0;
+  var ct=Number(instCtVal[symbol+'-USDT-SWAP'])||0,tradeEvents=[],tradeRows=[];
+  (data.exchanges||[]).forEach(function(x){
+   if(!x.ok)return;
+   (x.rows||[]).forEach(function(t){
+    var qty=t.q*(x.name==='OKX'?ct:1),usd=t.p*qty;
+    if(!Number.isFinite(usd)||usd<100000||!t.id)return;
+    var kind=t.side==='buy'?'largeBuy':'largeSell',key=[symbol,kind,x.name,String(t.id)].join('|');
+    var ev={key:key,symbol:symbol,kind:kind,source:x.name,amount:usd,venues:x.name,tradeId:String(t.id),ts:Number(t.ts),price:Number(t.p),return15:null,return60:null,observedAt:Number(t.ts)};
+    tradeEvents.push(ev);tradeRows.push({event:ev,side:t.side,price:t.p,amount:usd,ts:t.ts});
+   });
+  });
+  if(tradeEvents.length){
+   var archive=loadFlowEvents(),byKey={};archive.forEach(function(v){byKey[v.key]=v;});
+   tradeEvents.forEach(function(v){if(!byKey[v.key]){archive.unshift(v);byKey[v.key]=v;}});
+   saveFlowEvents(archive.slice(0,300));
+  }
+  tradeRows.sort(function(a,b){return b.amount-a.amount;});
   var html=(data.exchanges||[]).map(function(x){
    if(!x.ok)return '<div style="padding:7px 0;border-bottom:1px solid #26364a"><b>'+x.name+'</b> <span style="color:#f0a3a9">'+(en?'unavailable':'数据不可用')+'</span> · '+String(x.error||'').replace(/[<>]/g,'')+'</div>';
    var buy=0,sell=0,bigBuy=0,bigSell=0;
@@ -1217,9 +1234,31 @@ function klineLoadSelectedCandleFlow(e,seq){
    var net=buy-sell,coverage=x.matchedRows===0?(en?'no trades in returned sample':'返回样本中没有该时段成交'):(en?(x.matchedRows+' matched trades'):(x.matchedRows+' 笔匹配成交'));
    return '<div style="padding:8px 0;border-bottom:1px solid #26364a"><div style="display:flex;justify-content:space-between;gap:8px"><b>'+x.name+'</b><b style="color:'+(net>=0?'#18b88a':'#f06478')+'">'+(net>=0?'+':'')+klineMoney(net)+'</b></div><div style="color:#9fb1c5;margin-top:4px">买 '+klineMoney(buy)+' · 卖 '+klineMoney(sell)+' · '+coverage+'</div><div style="color:#8297ad;font-size:10px;margin-top:3px">大额买 '+klineMoney(bigBuy)+' · 大额卖 '+klineMoney(bigSell)+(x.capped?' · '+(en?'API sample capped':'接口样本达到上限，可能不完整'):'')+'</div></div>';
   }).join('');
+  if(tradeRows.length){
+   html+='<div style="margin-top:14px;padding-top:12px;border-top:1px solid #34465b"><div style="font-weight:700;margin-bottom:5px">'+(en?'Large trade behavior trail':'大额成交行为轨迹')+'</div><div style="font-size:10px;color:#8297ad;margin-bottom:8px">'+(en?'Click a trade to compare similar observable activity in the archive. This does not identify an account.':'点击单笔成交，查看历史上同交易所、同方向、相近金额的行为样本；这不是账户身份识别。')+'</div>';
+   html+=tradeRows.slice(0,12).map(function(r){var v=r.event,side=r.side==='buy'?'主动买入':'主动卖出';return '<button onclick="klineShowTradeBehaviorProfile(\''+encodeURIComponent(v.key)+'\')" style="display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px;text-align:left;background:#172638;border:1px solid #2c4056;color:#dce7f2;border-radius:8px;padding:9px 10px;margin:5px 0;cursor:pointer"><span><b style="color:'+(r.side==='buy'?'#18b88a':'#f06478')+'">'+r.event.source+' · '+side+'</b><small style="display:block;color:#8499af;margin-top:3px">'+new Date(r.ts).toLocaleString(en?'en-SG':'zh-CN')+' · '+Number(r.price).toPrecision(7)+'</small></span><b>'+klineMoney(r.amount)+'　›</b></button>';}).join('');
+   html+='</div>';
+  } else html+='<div style="margin-top:12px;color:#8297ad;font-size:11px">'+(en?'No individual trade in this returned sample reached $100K.':'当前返回样本中没有单笔达到 10 万美元的大额成交。')+'</div>';
   el.innerHTML=html|| (en?'No exchange trade samples returned for this candle.':'没有获取到这根K线对应时段的交易所成交样本。');
  }).catch(function(err){if(seq!==tideKline.eventRequestId)return;el.textContent=(en?'Historical candle trades unavailable: ':'该K线历史成交暂不可用：')+String(err.message||err);});
 }
+function klineShowTradeBehaviorProfile(encodedKey){
+ var key;try{key=decodeURIComponent(encodedKey);}catch(e){key=encodedKey;}
+ var all=loadFlowEvents(),selected=all.find(function(x){return x.key===key;});
+ var body=$('tide-event-modal-body'),en=tideKlineLang==='en';
+ if(!selected||!body)return;
+ var cutoff=Date.now()-30*86400000,ratio=Number(selected.amount)||0;
+ var matches=all.filter(function(x){if(x.source!==selected.source||x.kind!==selected.kind||x.ts<cutoff)return false;var amount=Number(x.amount)||0;return amount>0&&ratio>0&&amount>=ratio*.5&&amount<=ratio*2;}).sort(function(a,b){return b.ts-a.ts;}).slice(0,30);
+ var avg=matches.length?matches.reduce(function(a,x){return a+(Number(x.amount)||0);},0)/matches.length:0;
+ var html='<button onclick="klineRestoreCandleDetail()" style="background:#26364a;border:0;color:#dce7f2;border-radius:7px;padding:6px 10px;margin-bottom:12px;cursor:pointer">‹ '+(en?'Back to candle':'返回K线详情')+'</button>';
+ html+='<div style="font-size:14px;font-weight:700;margin-bottom:8px">'+(en?'Observable behavior profile':'可观测行为特征档案')+'</div>';
+ html+='<div style="font-size:11px;color:#a9bdd1;line-height:1.7;margin-bottom:12px">'+selected.symbol+' · '+selected.source+' · '+(selected.kind==='largeBuy'?(en?'Aggressive buy':'主动买入'):(en?'Aggressive sell':'主动卖出'))+'<br>'+ (en?'Reference size':'参考金额')+'：'+klineMoney(ratio)+' · '+(en?'Average matched size':'相近样本均额')+'：'+klineMoney(avg)+'<br>'+ (en?'Matching rule: same venue, same side, 0.5–2x size, last 30 days.':'匹配规则：同交易所、同买卖方向、金额为参考成交的 0.5–2 倍、近 30 天。')+'</div>';
+ html+='<div style="font-size:11px;color:#f0c979;margin-bottom:10px">'+(en?'Similarity matching only; not proof of the same trader, fund, institution, or wallet.':'这是行为相似度匹配，不代表同一交易员、资金、机构或钱包。')+'</div>';
+ if(!matches.length)html+='<div style="color:#8297ad;font-size:12px">'+(en?'No matching archived samples yet. New selected-candle trades will gradually build this profile.':'暂时没有符合条件的历史样本。随着后续点击K线并采集大额成交，这份档案会逐步积累。')+'</div>';
+ else{html+='<div style="font-size:11px;color:#91a5ba;margin-bottom:7px">'+(en?'Archived samples':'档案样本')+'：'+matches.length+'</div>';html+=matches.map(function(x){return '<div style="display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid #29394d"><span><b>'+x.symbol+' · '+x.source+'</b><small style="display:block;color:#8499af;margin-top:3px">'+fmtTime(x.ts,true)+'</small></span><span style="text-align:right"><b>'+klineMoney(x.amount)+'</b><small style="display:block;color:#8499af;margin-top:3px">'+(Number(x.price)||0).toPrecision(7)+'</small></span></div>';}).join('');}
+ body.innerHTML=html;
+}
+function klineRestoreCandleDetail(){if(window.__tideSelectedCandleEvent)klineShowAnomalyDetail(window.__tideSelectedCandleEvent);}
 function klineHandleCandleClick(payload){
  var ts=0,candidate=null,seen=[];
  function walk(o,depth){if(!o||typeof o!=='object'||depth>4||seen.indexOf(o)>=0)return;seen.push(o);
