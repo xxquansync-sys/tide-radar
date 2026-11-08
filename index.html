@@ -1705,21 +1705,28 @@ function klineDetectEvents(){
   var priorHigh=Math.max.apply(null,prev.map(function(x){return x.high;})),priorLow=Math.min.apply(null,prev.map(function(x){return x.low;}));
   var breakoutUp=c.close>priorHigh,breakoutDown=c.close<priorLow,breakout=breakoutUp||breakoutDown;
   var upperWick=c.high-Math.max(c.open,c.close),lowerWick=Math.min(c.open,c.close)-c.low;
-  var rejection=(upperWick>body*1.8&&c.close<c.open)||(lowerWick>body*1.8&&c.close>c.open);
-  var volumeExpansion=volRatio>=2.2&&rangeRatio>=1.35;
-  var impulse=bodyRatio>=2.0&&volRatio>=1.4;
-  var confirmedBreakout=breakout&&volRatio>=1.6&&rangeRatio>=1.25;
-  var highVolumeRejection=rejection&&volRatio>=1.8&&rangeRatio>=1.4;
+  var wickRatio=fullRange>0?Math.max(upperWick,lowerWick)/fullRange:0;
+  // Only retain genuinely exceptional candles; ordinary volume fluctuations are ignored.
+  var volumeExpansion=volRatio>=2.8&&rangeRatio>=1.8&&bodyRatio>=1.0;
+  var impulse=bodyRatio>=2.5&&volRatio>=2.0&&rangeRatio>=1.6;
+  var confirmedBreakout=breakout&&volRatio>=2.0&&rangeRatio>=1.5&&bodyRatio>=1.2;
+  var highVolumeRejection=wickRatio>=0.58&&volRatio>=2.4&&rangeRatio>=1.6&&((upperWick>lowerWick&&c.close<c.open)||(lowerWick>upperWick&&c.close>c.open));
   if(volumeExpansion||impulse||confirmedBreakout||highVolumeRejection){
    var direction=breakout?(breakoutUp?'up':'down'):(c.close>=c.open?'up':'down');
-   var score=(volumeExpansion?3:0)+(impulse?2:0)+(confirmedBreakout?3:0)+(highVolumeRejection?2:0)+Math.min(2,Math.max(0,volRatio-2)*.5);
-   var reasons=[];if(volumeExpansion)reasons.push('放量扩张');if(impulse)reasons.push('大实体');if(confirmedBreakout)reasons.push('放量突破');if(highVolumeRejection)reasons.push('放量拒绝');
+   var score=(volumeExpansion?4:0)+(impulse?3:0)+(confirmedBreakout?4:0)+(highVolumeRejection?3:0)+Math.min(2,Math.max(0,volRatio-2)*.5)+Math.min(1,Math.max(0,bodyRatio-1)*.4);
+   var reasons=[];if(volumeExpansion)reasons.push('极端放量扩张');if(impulse)reasons.push('强势实体推进');if(confirmedBreakout)reasons.push('放量有效突破');if(highVolumeRejection)reasons.push('高量拒绝/承接');
    candidates.push({timestamp:c.timestamp,index:i,open:c.open,high:c.high,low:c.low,close:c.close,volume:c.volume,volRatio:volRatio,bodyRatio:bodyRatio,rangeRatio:rangeRatio,direction:direction,kind:confirmedBreakout?'breakout':highVolumeRejection?'rejection':volumeExpansion?'volume':'impulse',score:score,reasons:reasons,isKeyCandle:true});
   }
  }
+ // Cluster nearby triggers into one event and keep only the strongest candle in each cluster.
  var filtered=[];
- candidates.forEach(function(e){var last=filtered[filtered.length-1];if(last&&e.index-last.index<=3){if(e.score>last.score)filtered[filtered.length-1]=e;}else filtered.push(e);});
- return filtered.slice(-12).reverse();
+ candidates.forEach(function(e){
+  var last=filtered[filtered.length-1];
+  if(last&&e.index-last.index<=8){if(e.score>last.score)filtered[filtered.length-1]=e;}
+  else filtered.push(e);
+ });
+ // The chart should show a handful of meaningful events, never a marker on every candle.
+ return filtered.slice(-5).reverse();
 }
 function klineRenderEvents(){tideKline.anomalyEvents=klineDetectEvents();}
 function klineEnsureEventModal(){
