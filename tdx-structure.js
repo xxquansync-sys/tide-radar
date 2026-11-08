@@ -24,7 +24,7 @@ function compute(data,opts,tf){
  const highs=pivots.filter(z=>z.type==='high'),lows=pivots.filter(z=>z.type==='low'),lastH=highs.at(-1),prevH=highs.at(-2),lastL=lows.at(-1),prevL=lows.at(-2);
  const structureTrend=(h,ph,l,pl)=>h&&ph&&l&&pl?(h.price>ph.price&&l.price>pl.price?'bull':h.price<ph.price&&l.price<pl.price?'bear':'range'):'neutral';
  const trend=structureTrend(lastH,prevH,lastL,prevL),overlap=lastH&&lastL&&prevH&&prevL?Math.max(0,Math.min(lastH.price,prevH.price)-Math.max(lastL.price,prevL.price))/Math.max(1e-12,Math.min(lastH.price-lastL.price,prevH.price-prevL.price)):0;
- const lastAdx=adx.at(-1)||0,regime=trend==='range'||(overlap>.55&&lastAdx<22)?'range':trend==='bull'?(lastAdx>=25?'strong-up':'weak-up'):trend==='bear'?(lastAdx>=25?'strong-down':'weak-down'):'unconfirmed';
+ const lastAdx=adx.at(-1)||0,regime=trend==='range'?(lastAdx>=25?'structure-conflict':'range'):(overlap>.55&&lastAdx<22?'range':trend==='bull'?(lastAdx>=25?'strong-up':'weak-up'):trend==='bear'?(lastAdx>=25?'strong-down':'weak-down'):'unconfirmed');
  const levels={low1:lastL?.price,low2:prevL?.price,high1:lastH?.price,high2:prevH?.price,mid:lastH&&lastL?lastL.price+(lastH.price-lastL.price)*clamp(p.halfPercent,0,100)/100:NaN};
  const recentPivots=pivots.slice(-4),centerTop=recentPivots.length===4?Math.min(...[0,1,2].map(i=>Math.max(recentPivots[i].price,recentPivots[i+1].price))):NaN,centerBottom=recentPivots.length===4?Math.max(...[0,1,2].map(i=>Math.min(recentPivots[i].price,recentPivots[i+1].price))):NaN;levels.centerHigh=centerBottom<centerTop?centerTop:NaN;levels.centerLow=centerBottom<centerTop?centerBottom:NaN;levels.centerMid=centerBottom<centerTop?(centerTop+centerBottom)/2:NaN;
  const seen=[],trendSeries=[];
