@@ -757,7 +757,7 @@ refresh();
 setInterval(refresh,60000);
 
 /* ---------------- KLineChart: OKX public candles ---------------- */
-var tideKline={chart:null,symbol:'BTC',period:'15m',timer:null,scriptLoading:null,controller:null,ws:null,wsRetry:null,wsGeneration:0,olderLoading:false,hasMoreHistory:true,indicators:{MA:true,EMA:false,VOL:true,MACD:true,RSI:false},indicatorParams:{MA:[5,10,30,60],EMA:[6,12,20],VOL:[5,10,20],MACD:[12,26,9],RSI:[6,12,24]},indicatorLocations:{MA:'main',EMA:'main'},data:[],htfData:[],htfFetchedAt:0,htfRequestedAt:0,loading:false,requestId:0,drawMode:'cursor',tdxEnabled:true,tdxParams:{penPeriod:7,halfPercent:50,atrSwing:1.2,confirmBars:2,timePeriod:1}};
+var tideKline={chart:null,symbol:'BTC',period:'15m',timer:null,scriptLoading:null,controller:null,ws:null,wsRetry:null,wsHeartbeat:null,wsGeneration:0,olderLoading:false,hasMoreHistory:true,indicators:{MA:true,EMA:false,VOL:true,MACD:true,RSI:false},indicatorParams:{MA:[5,10,30,60],EMA:[6,12,20],VOL:[5,10,20],MACD:[12,26,9],RSI:[6,12,24]},indicatorLocations:{MA:'main',EMA:'main'},data:[],htfData:[],htfFetchedAt:0,htfRequestedAt:0,loading:false,requestId:0,drawMode:'cursor',tdxEnabled:true,tdxParams:{penPeriod:7,halfPercent:50,atrSwing:1.2,confirmBars:2,timePeriod:1}};
 var tideKlinePeriods=['1m','5m','15m','1H','4H','1D'];
 try{var _savedTdx=JSON.parse(localStorage.getItem('tide_tdx_params')||'null');if(_savedTdx&&typeof _savedTdx==='object')tideKline.tdxParams=Object.assign({penPeriod:7,halfPercent:50,atrSwing:1.2,confirmBars:2,timePeriod:1},_savedTdx);}catch(e){}
 var TIDE_KLINE_CACHE='tide_kline_cache_v3';
@@ -789,7 +789,7 @@ function klineRenderControls(){
 function klineSetStatus(s){
  var en=tideKlineLang==='en';
  if(en){
-  var map=[['正在显示本地缓存，后台更新行情…','Showing cached candles; refreshing market data…'],['正在启动图表并获取OKX行情…','Starting chart and loading OKX market data…'],['正在加载','Loading'],['更新','Updating'],['OKX 实时K线','Live OKX candles'],['缓存数据已显示 · 更新失败：','Cached candles shown · Update failed: '],['K线加载失败：','Candle load failed: '],['指标创建失败：','Indicator creation failed: '],['参数数量不符合该指标要求','Invalid number of parameters for this indicator'],['参数已应用：',' parameters applied: '],['根 · ',' candles · '],['正在后台更新 OKX 行情…','refreshing OKX data…']];
+  var map=[['正在显示本地缓存，后台更新行情…','Showing cached candles; refreshing market data…'],['正在启动图表并获取OKX行情…','Starting chart and loading OKX market data…'],['正在加载','Loading'],['更新','Updating'],['OKX 实时K线','Live OKX candles'],['缓存数据已显示 · 更新失败：','Cached candles shown · Update failed: '],['K线加载失败：','Candle load failed: '],['指标创建失败：','Indicator creation failed: '],['参数数量不符合该指标要求','Invalid number of parameters for this indicator'],['参数已应用：',' parameters applied: '],['根 · ',' candles · '],['正在后台更新 OKX 行情…','refreshing OKX data…'],['正在分页加载更早历史K线…','Loading older historical candles…'],['历史分页失败：','Historical pagination failed: '],['没有更早的历史K线了','No older candles available'],['已向前加载 ','Loaded older candles: '],[' 根历史K线 · 总计 ',' candles · total ']];
   map.forEach(function(pair){s=s.split(pair[0]).join(pair[1]);});
  }
  var el=$('tide-kline-status');if(el)el.textContent=s;
@@ -812,11 +812,11 @@ function klineFetchInitial(symbol,period,signal){
   return next();
  }).then(function(all){var by={};all.forEach(function(c){by[c.timestamp]=c;});return Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){return a.timestamp-b.timestamp;}).slice(-TIDE_KLINE_MAX_CACHE);});
 }
-function klineWsStop(){tideKline.wsGeneration++;if(tideKline.wsRetry){clearTimeout(tideKline.wsRetry);tideKline.wsRetry=null;}if(tideKline.ws){try{tideKline.ws.onclose=null;tideKline.ws.close();}catch(e){}tideKline.ws=null;}}
+function klineWsStop(){tideKline.wsGeneration++;if(tideKline.wsRetry){clearTimeout(tideKline.wsRetry);tideKline.wsRetry=null;}if(tideKline.wsHeartbeat){clearInterval(tideKline.wsHeartbeat);tideKline.wsHeartbeat=null;}if(tideKline.ws){try{tideKline.ws.onclose=null;tideKline.ws.close();}catch(e){}tideKline.ws=null;}}
 function klineWsStart(){
  klineWsStop();var generation=tideKline.wsGeneration,symbol=tideKline.symbol,period=tideKline.period,ws;
  try{ws=new WebSocket('wss://ws.okx.com:8443/ws/v5/business');}catch(e){return;}tideKline.ws=ws;
- ws.onopen=function(){if(generation!==tideKline.wsGeneration)return;var args=[{channel:'candle'+klinePeriodType(period),instId:symbol+'-USDT-SWAP'}];if(period==='15m')args.push({channel:'candle4H',instId:symbol+'-USDT-SWAP'});ws.send(JSON.stringify({op:'subscribe',args:args}));};
+ ws.onopen=function(){if(generation!==tideKline.wsGeneration)return;var wsBar=period==='1D'?'1D':period;var args=[{channel:'candle'+wsBar,instId:symbol+'-USDT-SWAP'}];if(period==='15m')args.push({channel:'candle4H',instId:symbol+'-USDT-SWAP'});ws.send(JSON.stringify({op:'subscribe',args:args}));};
  ws.onmessage=function(ev){if(generation!==tideKline.wsGeneration)return;var msg;try{msg=JSON.parse(ev.data);}catch(e){return;}if(!msg.arg||!msg.data)return;var rows=klineRowsToData(msg.data);if(!rows.length)return;
   if(msg.arg.channel==='candle4H'){var hm={};tideKline.htfData.forEach(function(c){hm[c.timestamp]=c;});rows.forEach(function(c){hm[c.timestamp]=c;});tideKline.htfData=Object.keys(hm).map(function(k){return hm[k];}).sort(function(a,b){return a.timestamp-b.timestamp;}).slice(-TIDE_KLINE_MAX_CACHE);tideKline.htfFetchedAt=Date.now();klineRenderTdx();return;}
   var candle=rows[rows.length-1];klineMergeData([candle]);if(tideKline.chart){try{tideKline.chart.updateData(candle);}catch(e){tideKline.chart.applyNewData(tideKline.data);}}klineWriteCache();klineUpdatePrice();
