@@ -964,7 +964,7 @@ function klineWsStart(){
  ws.onopen=function(){if(generation!==tideKline.wsGeneration)return;var wsBar=period==='1D'?'1D':period;var args=[{channel:'candle'+wsBar,instId:symbol+'-USDT-SWAP'}];if(period==='15m')args.push({channel:'candle4H',instId:symbol+'-USDT-SWAP'});ws.send(JSON.stringify({op:'subscribe',args:args}));tideKline.wsHeartbeat=setInterval(function(){if(ws.readyState===WebSocket.OPEN)try{ws.send('ping');}catch(e){}},20000);};
  ws.onmessage=function(ev){if(generation!==tideKline.wsGeneration)return;if(ev.data==='ping'){try{ws.send('pong');}catch(e){}return;}var msg;try{msg=JSON.parse(ev.data);}catch(e){return;}if(!msg.arg||!msg.data)return;var rows=klineRowsToData(msg.data);if(!rows.length)return;
   if(msg.arg.channel==='candle4H'){var hm={};tideKline.htfData.forEach(function(c){hm[c.timestamp]=c;});rows.forEach(function(c){hm[c.timestamp]=c;});tideKline.htfData=Object.keys(hm).map(function(k){return hm[k];}).sort(function(a,b){return a.timestamp-b.timestamp;}).slice(-TIDE_KLINE_MAX_CACHE);tideKline.htfFetchedAt=Date.now();klineRenderTdx();return;}
-  var candle=rows[rows.length-1];klineMergeData([candle]);if(tideKline.chart){try{tideKline.chart.updateData(candle);}catch(e){tideKline.chart.applyNewData(tideKline.data);}}klineWriteCache();klineUpdatePrice();
+  var candle=rows[rows.length-1];klineMergeData([candle]);if(tideKline.chart){try{tideKline.chart.updateData(candle);}catch(e){tideKline.chart.applyNewData(tideKline.data);}}klineWriteCache();klineUpdatePrice();klineRenderEvents();
  };
  ws.onclose=function(){if(generation!==tideKline.wsGeneration)return;tideKline.wsRetry=setTimeout(function(){var modal=$('tide-kline-modal');if(tideKline.chart&&modal&&modal.style.display!=='none')klineWsStart();},3000);};
  ws.onerror=function(){try{ws.close();}catch(e){}};
@@ -1210,7 +1210,7 @@ function klineLoad(force){
  tideKline.loading=true;klineSetStatus((incremental?'更新':'加载')+' '+symbol+' '+period+' · OKX');
  (incremental?klineFetch(2,symbol,period,controller.signal):klineFetchInitial(symbol,period,controller.signal,function(recent){if(req!==tideKline.requestId||!tideKline.chart||symbol!==tideKline.symbol||period!==tideKline.period)return;klineMergeData(recent);tideKline.chart.applyNewData(tideKline.data);klineWriteCache();klineUpdatePrice();klineSetStatus('已显示最新 '+tideKline.data.length+' 根K线，正在后台补齐至少3000根历史…');})).then(function(data){
   if(req!==tideKline.requestId||!tideKline.chart||symbol!==tideKline.symbol||period!==tideKline.period)return;
-  tideKline.historyError=data.historyError||'';klineMergeData(data);if(incremental){try{tideKline.chart.updateData(data[data.length-1]);}catch(e){tideKline.chart.applyNewData(tideKline.data);}}else{tideKline.chart.applyNewData(tideKline.data);}klineWriteCache();klineUpdatePrice();
+  tideKline.historyError=data.historyError||'';klineMergeData(data);if(incremental){try{tideKline.chart.updateData(data[data.length-1]);}catch(e){tideKline.chart.applyNewData(tideKline.data);}}else{tideKline.chart.applyNewData(tideKline.data);}klineWriteCache();klineUpdatePrice();klineRenderEvents();
   var needHtf=period==='15m'&&Date.now()-Math.max(tideKline.htfFetchedAt,tideKline.htfRequestedAt)>60000;if(needHtf)tideKline.htfRequestedAt=Date.now();var htfTask=needHtf?klineFetch(300,symbol,'4H',controller.signal).then(function(higher){if(req===tideKline.requestId){tideKline.htfData=higher;tideKline.htfFetchedAt=Date.now();}}).catch(function(){ }):Promise.resolve();
   htfTask.then(function(){if(req===tideKline.requestId)klineRenderTdx();});
   klineSetStatus('OKX 行情 · '+tideKline.data.length+' 根 · '+(tideKline.historyError?'历史分页异常：'+tideKline.historyError:(tideKline.data.length>=TIDE_KLINE_MIN_HISTORY?'历史已加载':'当前可获取历史不足3000根'))+' · '+new Date().toLocaleTimeString());
@@ -1233,7 +1233,7 @@ function openKlineChart(symbol){
  klineSetStatus(cached?'正在显示本地缓存，后台更新行情…':'正在启动图表并获取OKX行情…');
  klineEnsureScript().then(function(lib){
   if(modal.style.display==='none')return;klineCreateChart(lib);
-  if(tideKline.data.length){tideKline.chart.applyNewData(tideKline.data);klineUpdatePrice();klineRenderTdx();}
+  if(tideKline.data.length){tideKline.chart.applyNewData(tideKline.data);klineUpdatePrice();klineRenderTdx();klineRenderEvents();}
   klineLoad(true);klineWsStart();tideKline.timer=setInterval(function(){if(!tideKline.ws||tideKline.ws.readyState!==WebSocket.OPEN)klineLoad(true);},30000);
  }).catch(function(e){klineSetStatus(e.message);});
 }
@@ -1247,7 +1247,7 @@ function changeKlinePeriod(p){
  var cached=klineReadCache(tideKline.symbol,p);tideKline.data=cached?cached.data:[];
  klineRenderControls();
  if(tideKline.chart&&tideKline.data.length)tideKline.chart.applyNewData(tideKline.data);
- klineUpdatePrice();klineRenderTdx();
+ klineUpdatePrice();klineRenderTdx();klineRenderEvents();
  klineSetStatus(cached?'已切换 '+p+' · 正在后台更新 OKX 行情…':'正在加载 '+p+' OKX K线…');
  klineLoad(true);klineWsStart();
 }
