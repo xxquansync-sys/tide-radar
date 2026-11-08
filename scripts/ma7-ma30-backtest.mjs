@@ -83,21 +83,21 @@ function summarizeTrades(trades) {
   };
 }
 function publicStats(result) { const { _trades, ...stats } = result; return stats; }
-function simulate(data, signals) {
+function simulate(data, signals, windowEnd=data.length-1) {
   const sorted = [...signals].sort((a,b) => a.index-b.index);
   const trades = [];
   let lockedUntil = -1;
   for (const s of sorted) {
     if (s.index <= lockedUntil) continue;
     const entryBar = data[s.index + 1];
-    if (!entryBar) continue;
+    if (!entryBar || s.index+1>windowEnd) continue;
     const dir = s.direction === 'long' ? 1 : -1;
     const entry = entryBar.open;
     const stop = s.stop, target = s.target;
     const risk = Math.abs(entry-stop);
     if (!Number.isFinite(risk) || risk <= 0 || !Number.isFinite(target)) continue;
     let exit = null, reason = 'time';
-    const end = Math.min(data.length-1, s.index + 1 + MAX_HOLD_BARS);
+    const end = Math.min(windowEnd, data.length-1, s.index + 1 + MAX_HOLD_BARS);
     for (let i=s.index+1; i<=end; i++) {
       const c=data[i], stopHit=dir===1?c.low<=stop:c.high>=stop;
       const targetHit=dir===1?c.high>=target:c.low<=target;
@@ -146,7 +146,7 @@ for (const instId of SYMBOLS) {
     newScore70:publicStats(new70),
     newByAlignment:byAlignment,
     newByMaTrend:byMaTrend,
-    newPrior60Days:publicStats(simulate(m15,priorSignals)),
+    newPrior60Days:publicStats(simulate(m15,priorSignals,split-1)),
     newRecent30Days:publicStats(simulate(m15,recentSignals)),
     rawSignals:{old:old.signals.length,oldPassed:old.signals.filter(s=>s.tradable).length,new:fresh.signals.length}
   });
