@@ -1382,7 +1382,7 @@ setInterval(refresh,60000);
 
 /* Homepage ETH interactive chart */
 var tideHomeChart={chart:null,data:[],symbol:'BTC',period:'4H',timer:null,controller:null,requestId:0,clickHandler:null};
-function homeChartStatus(v){var el=$('home-chart-status');if(el){el.removeAttribute('data-i18n');el.textContent=v;}}
+function homeChartStatus(v,retry){var el=$('home-chart-status');if(el){el.removeAttribute('data-i18n');el.textContent=v;el.style.cursor=retry?'pointer':'default';el.style.textDecoration=retry?'underline dotted':'none';el.title=retry?(currentLang==='zh'?'点击此处重试':'Click here to retry'):'';el.onclick=retry?function(){homeChartStatus(currentLang==='zh'?'正在重试 K 线…':'Retrying chart…');if(tideHomeChart.chart)homeChartLoad();else homeChartInit();}:null;}}
 function homeChartRenderPeriods(){var el=$('home-chart-periods');if(el)el.querySelectorAll('button').forEach(function(b){b.classList.toggle('active',b.dataset.period===tideHomeChart.period);});}
 function homeChartUpdateStats(){
  var btc=markets.find(function(x){return x.symbol==='BTC';}),eth=markets.find(function(x){return x.symbol==='ETH';});
@@ -1402,7 +1402,7 @@ function homeChartSelectCandle(payload){
 function homeChartLoad(){
  if(!tideHomeChart.chart)return;if(tideHomeChart.controller){try{tideHomeChart.controller.abort();}catch(e){}}
  var ctl=new AbortController();tideHomeChart.controller=ctl;var req=++tideHomeChart.requestId,period=tideHomeChart.period;homeChartStatus(t('homeLoadingPeriod').replace('{period}',period));
- klineFetch(300,'BTC',period,ctl.signal).then(function(rows){if(req!==tideHomeChart.requestId||!tideHomeChart.chart)return;tideHomeChart.data=rows;tideHomeChart.chart.applyNewData(rows);homeChartStatus(t('homeLoaded').replace('{n}',rows.length).replace('{time}',new Date().toLocaleTimeString(currentLang==='zh'?'zh-CN':'en-US',{hour12:false})));var last=rows[rows.length-1];if(last){var e=$('home-btc-price');if(e)e.textContent='$'+fmt(last.close,2);}}).catch(function(e){if(e.name!=='AbortError'&&req===tideHomeChart.requestId)homeChartStatus(t('homeLoadError')+e.message);});
+ klineFetch(300,'BTC',period,ctl.signal).then(function(rows){if(req!==tideHomeChart.requestId||!tideHomeChart.chart)return;tideHomeChart.data=rows;tideHomeChart.chart.applyNewData(rows);homeChartStatus(t('homeLoaded').replace('{n}',rows.length).replace('{time}',new Date().toLocaleTimeString(currentLang==='zh'?'zh-CN':'en-US',{hour12:false})));var last=rows[rows.length-1];if(last){var e=$('home-btc-price');if(e)e.textContent='$'+fmt(last.close,2);}}).catch(function(e){if(e.name!=='AbortError'&&req===tideHomeChart.requestId)homeChartStatus(t('homeLoadError')+e.message,true);});
 }
 function homeChartChangePeriod(p){if(tideKlinePeriods.indexOf(p)<0||p===tideHomeChart.period)return;tideHomeChart.period=p;homeChartRenderPeriods();homeChartLoad();}
 function homeChartInit(){
