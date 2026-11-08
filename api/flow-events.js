@@ -5,7 +5,7 @@ module.exports = async function handler(req, res) {
   const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!base || !key) { res.statusCode = 503; return res.end(JSON.stringify({ enabled: false, error: 'Archive database is not configured' })); }
   const headers = { apikey: key, Authorization: 'Bearer ' + key, 'Content-Type': 'application/json', Prefer: 'return=representation' };
-  const endpoint = base.replace(/\\/$/, '') + '/rest/v1/flow_events';
+  const endpoint = (base.endsWith('/') ? base.slice(0, -1) : base) + '/rest/v1/flow_events';
   try {
     if (req.method === 'GET') {
       const r = await fetch(endpoint + '?select=event_key,symbol,kind,source,amount,venues,trade_id,ts,price,return15,return60,observed_at&order=ts.desc&limit=300', { headers });
