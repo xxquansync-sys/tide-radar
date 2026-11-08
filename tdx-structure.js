@@ -47,11 +47,46 @@ function compute(data,opts,tf){
  const stats=pivots.slice(-4).slice(1).map((z,i)=>{const a=pivots.slice(-4)[i];return {bars:z.index-a.index,change:(z.price-a.price)/a.price*100};});
  return {params:p,pivots,labels,signals:signals.sort((a,b)=>a.index-b.index),levels,trend,trendSeries,regime,adx:lastAdx,overlap,stats,barCount:m,confirmedOnly:true};
 }
-function computeMultiTimeframe(data,htf,opts,tf){
- const out=compute(data,opts,tf);if(tf!=='15m'||!htf?.length){out.htf=null;return out;}
- const higher=compute(htf,opts,'4H'),dur=14400000,localDur=900000;
- const bias=data.map(b=>{const end=+b.timestamp+localDur;let picked=-1;for(let i=0;i<htf.length;i++){const x=htf[i],closed=x.confirmed===true||(!('confirmed'in x)&&i<htf.length-1);if(closed&&+x.timestamp+dur<=end)picked=i;}return picked>=0?(higher.trendSeries[picked]||'neutral'):'neutral';});
- out.htf={trend:bias.at(-1)||'neutral',aligned:bias};out.signals=out.signals.map(s=>{const h=bias[s.index]||'neutral',aligned=s.direction==='long'?h==='bull':h==='bear';return Object.assign({},s,{htfTrend:h,aligned,score:clamp(s.score+(aligned?15:h==='neutral'?0:-15),0,100)});});return out;
+function mapClosedBias(lower,higher,higherResult,lowerDuration,higherDuration){
+ const out=Array(lower.length).fill('neutral');
+ if(!Array.isArray(higher)||!higher.length||!higherResult)return out;
+ for(let i=0;i<lower.length;i++){
+  const end=+lower[i].timestamp+lowerDuration;let picked=-1;
+  for(let j=0;j<higher.length;j++){
+   const x=higher[j],closed=x.confirmed===true||(!('confirmed'in x)&&j<higher.length-1);
+   if(closed&&+x.timestamp+higherDuration<=end)picked=j;
+  }
+  if(picked>=0)out[i]=higherResult.trendSeries[picked]||'neutral';
+ }
+ return out;
+}
+function computeMultiTimeframe(data,htf,daily,opts,tf){
+ const out=compute(data,opts,tf),is15=tf==='15m',is4h=tf==='4H';
+ if(!is15&&!is4h){out.htf=null;out.daily=null;return out;}
+ const localDur=is15?900000:14400000,dailyDur=86400000;
+ const dailyResult=Array.isArray(daily)&&daily.length?compute(daily,opts,'1D'):null;
+ const dailyBias=mapClosedBias(data,daily,dailyResult,localDur,dailyDur);
+ let htfBias;
+ if(is15){
+  const htfResult=Array.isArray(htf)&&htf.length?compute(htf,opts,'4H'):null;
+  htfBias=mapClosedBias(data,htf,htfResult,localDur,14400000);
+ }else{
+  htfBias=out.trendSeries.map(v=>v||'neutral');
+ }
+ out.daily={trend:dailyBias.at(-1)||'neutral',aligned:dailyBias,available:!!dailyResult};
+ out.htf={trend:is4h?out.trend:(htfBias.at(-1)||'neutral'),aligned:htfBias,available:is4h||!!(htf&&htf.length)};
+ out.signals=out.signals.map(s=>{
+  const h=htfBias[s.index]||'neutral',d=dailyBias[s.index]||'neutral';
+  const direction=s.direction==='long'?'bull':'bear';
+  const hAligned=h===direction,dAligned=d===direction;
+  const tradable=hAligned&&dAligned;
+  const reasons=[];
+  if(!dAligned)reasons.push(d==='neutral'?'1D unavailable/neutral':'1D '+d);
+  if(!hAligned)reasons.push(h==='neutral'?'4H unavailable/neutral':'4H '+h);
+  return Object.assign({},s,{htfTrend:h,dailyTrend:d,aligned:tradable,tradable,filterReason:reasons.join(' · '),score:clamp(s.score+(tradable?10:0),0,100)});
+ });
+ out.directionGate={required:['1D','4H'],passed:out.signals.filter(s=>s.tradable).length,blocked:out.signals.filter(s=>!s.tradable).length};
+ return out;
 }
 function render(chart,data,r,lang){
  if(!chart||!data.length||!r)return;try{chart.removeOverlay({groupId:'tide-tdx-structure'});}catch(e){}const lib=g.klinecharts;if(!lib?.registerOverlay)return;
@@ -60,10 +95,10 @@ function render(chart,data,r,lang){
  for(let i=1;i<r.pivots.length;i++){const a=r.pivots[i-1],b=r.pivots[i];line(pt(a.index,a.price),pt(b.index,b.price),'#d5a64a');}
  [['low1','#22a45a'],['high1','#df535b'],['mid','#e4a83d'],['centerHigh','#8c78d8'],['centerLow','#8c78d8'],['centerMid','#a995ed']].forEach(([k,c])=>{if(finite(r.levels[k])){line(pt(0,r.levels[k]),pt(last,r.levels[k]),c);if(k==='mid')txt(last,r.levels[k],'50% MID',c);if(k==='centerHigh')txt(last,r.levels[k],'CENTER',c);}});
  r.labels.slice(-35).forEach(x=>txt(x.index,x.price,x.text,x.color));
- r.signals.slice(-12).forEach(x=>txt(x.index,x.price,x.text+' '+x.score+(x.aligned===false?' · 4H mismatch':''),x.aligned===false?'#9299a3':x.direction==='long'?'#22b88a':'#ed6676'));
- const trade=r.signals.at(-1);if(trade&&trade.index<=last){[['entry','#4da3ff','ENTRY'],['stop','#e05b68','STOP'],['target','#22a45a','TARGET']].forEach(([k,color,label])=>{if(finite(trade[k])){line(pt(trade.index,trade[k]),pt(last,trade[k]),color);txt(last,trade[k],label+' '+trade[k].toPrecision(6),color);}});}
+ r.signals.slice(-12).forEach(x=>txt(x.index,x.price,x.text+' '+x.score+(x.tradable===false?' · BLOCKED':''),x.tradable===false?'#9299a3':x.direction==='long'?'#22b88a':'#ed6676'));
+ const trade=r.signals.at(-1);if(trade&&trade.index<=last&&trade.tradable!==false){[['entry','#4da3ff','ENTRY'],['stop','#e05b68','STOP'],['target','#22a45a','TARGET']].forEach(([k,color,label])=>{if(finite(trade[k])){line(pt(trade.index,trade[k]),pt(last,trade[k]),color);txt(last,trade[k],label+' '+trade[k].toPrecision(6),color);}});}
  txt(last,data[last].high*1.015,(lang==='en'?'Regime: ':'结构：')+r.regime+' · ADX '+r.adx.toFixed(0),r.trend==='bull'?'#22a45a':r.trend==='bear'?'#df535b':'#a0a8b2');
- if(r.htf)txt(last,data[last].high*1.035,(lang==='en'?'4H: ':'4H方向：')+r.htf.trend,r.htf.trend==='bull'?'#22a45a':r.htf.trend==='bear'?'#df535b':'#a0a8b2');
+ if(r.daily)txt(last,data[last].high*1.035,(lang==='en'?'1D: ':'日线：')+r.daily.trend,r.daily.trend==='bull'?'#22a45a':r.daily.trend==='bear'?'#df535b':'#a0a8b2');if(r.htf)txt(last,data[last].high*1.055,(lang==='en'?'4H: ':'4H方向：')+r.htf.trend,r.htf.trend==='bull'?'#22a45a':r.htf.trend==='bear'?'#df535b':'#a0a8b2');
 }
 g.TideTdxStructure={defaults:D,compute,computeMultiTimeframe,render,timeframeMs:p=>({'15m':900000,'4H':14400000}[p]||900000)};
 })(window);
