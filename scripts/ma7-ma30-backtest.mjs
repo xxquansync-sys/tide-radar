@@ -162,6 +162,7 @@ for (const instId of SYMBOLS) {
     newPrior120Days:publicStats(simulate(m15,priorSignals,split-1)),
     newRecent60Days:publicStats(simulate(m15,recentSignals)),
     newRecent60DaysByDirection:{long:summarizeTrades(simulate(m15,recentSignals)._trades.filter(t=>t.direction==='long')),short:summarizeTrades(simulate(m15,recentSignals)._trades.filter(t=>t.direction==='short'))},
+    newRecent60DaysByMaTrendDirection:Object.fromEntries(['bull','bear','neutral'].map(trend=>[trend,Object.fromEntries(['long','short'].map(direction=>[direction,summarizeTrades(simulate(m15,recentSignals)._trades.filter(t=>t.maTrend===trend&&t.direction===direction))]))])),
     rawSignals:{old:old.signals.length,oldPassed:old.signals.filter(s=>s.tradable).length,new:fresh.signals.length}
   });
 }
