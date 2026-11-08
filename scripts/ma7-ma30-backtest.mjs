@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import vm from 'node:vm';
 
 const SYMBOLS = ['BTC-USDT-SWAP','ETH-USDT-SWAP','WLD-USDT-SWAP'];
-const DAYS = 90;
+const DAYS = 180;
 const FEE_PER_SIDE = 0.0005;
 const MAX_HOLD_BARS = 96;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -135,7 +135,7 @@ for (const instId of SYMBOLS) {
   for (const key of ['bull','bear','neutral']) {
     byMaTrend[key] = summarizeTrades(newRun._trades.filter(t=>t.maTrend===key));
   }
-  const split = m15.length - 30*96;
+  const split = m15.length - 60*96;
   const recentSignals = fresh.signals.filter(s=>s.index>=split);
   const priorSignals = fresh.signals.filter(s=>s.index<split);
   results.push({
@@ -146,8 +146,8 @@ for (const instId of SYMBOLS) {
     newScore70:publicStats(new70),
     newByAlignment:byAlignment,
     newByMaTrend:byMaTrend,
-    newPrior60Days:publicStats(simulate(m15,priorSignals,split-1)),
-    newRecent30Days:publicStats(simulate(m15,recentSignals)),
+    newPrior120Days:publicStats(simulate(m15,priorSignals,split-1)),
+    newRecent60Days:publicStats(simulate(m15,recentSignals)),
     rawSignals:{old:old.signals.length,oldPassed:old.signals.filter(s=>s.tradable).length,new:fresh.signals.length}
   });
 }
