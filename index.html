@@ -711,13 +711,30 @@ async function syncFlowEvents(){
   var j=await r.json();
   if(!r.ok||!j.enabled)throw new Error(j.error||'Archive not configured');
   var remote=(j.events||[]).map(function(e){return{key:e.event_key,symbol:e.symbol,kind:e.kind,source:e.source,amount:Number(e.amount)||0,venues:e.venues,tradeId:e.trade_id,ts:Date.parse(e.ts),price:Number(e.price),return15:e.return15===null?null:Number(e.return15),return60:e.return60===null?null:Number(e.return60),observedAt:Date.parse(e.observed_at)};}).filter(function(e){return e.key&&Number.isFinite(e.ts);});
-  var local=loadFlowEvents(),remoteKeys={};
-  remote.forEach(function(e){remoteKeys[e.key]=true;});
-  var localOnly=local.filter(function(e){return e&&e.key&&!remoteKeys[e.key];});
-  var merged=remote.concat(localOnly).sort(function(a,b){return b.ts-a.ts;}).slice(0,300);
+  var local=loadFlowEvents(),remoteByKey={},mergedByKey={},updates=[];
+  remote.forEach(function(e){remoteByKey[e.key]=e;mergedByKey[e.key]=e;});
+  local.forEach(function(e){
+   if(!e||!e.key||!Number.isFinite(e.ts))return;
+   var old=remoteByKey[e.key];
+   if(!old){
+    mergedByKey[e.key]=e;
+    updates.push(e);
+    return;
+   }
+   var improved=(e.return15!==null&&e.return15!==undefined&&old.return15===null)||(e.return60!==null&&e.return60!==undefined&&old.return60===null);
+   var newer=(Number(e.observedAt)||0)>(Number(old.observedAt)||0);
+   var merged=Object.assign({},old,{
+    return15:e.return15!==null&&e.return15!==undefined?e.return15:old.return15,
+    return60:e.return60!==null&&e.return60!==undefined?e.return60:old.return60,
+    observedAt:Math.max(Number(e.observedAt)||0,Number(old.observedAt)||0)
+   });
+   mergedByKey[e.key]=merged;
+   if(improved||newer)updates.push(merged);
+  });
+  var merged=Object.keys(mergedByKey).map(function(k){return mergedByKey[k];}).sort(function(a,b){return b.ts-a.ts;}).slice(0,300);
   try{localStorage.setItem(TIDE_FLOW_EVENTS_KEY,JSON.stringify(merged));}catch(e){}
   flowArchiveRemote={state:'synced',lastSync:Date.now(),error:''};
-  if(localOnly.length)await pushFlowEvents(merged.slice(0,100));
+  if(updates.length)await pushFlowEvents(updates.slice(0,100));
  }catch(e){
   flowArchiveRemote={state:'local',lastSync:flowArchiveRemote.lastSync,error:String(e.message||e)};
  }
