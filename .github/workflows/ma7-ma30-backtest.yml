@@ -1,0 +1,30 @@
+name: MA7 MA30 historical replay
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/ma7-ma30-backtest.mjs'
+      - '.github/workflows/ma7-ma30-backtest.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: write
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run OKX historical replay
+        run: node scripts/ma7-ma30-backtest.mjs
+      - name: Upload replay report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ma7-ma30-historical-replay
+          path: ma7-ma30-backtest.json
+          retention-days: 14
