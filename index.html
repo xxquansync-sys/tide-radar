@@ -1695,19 +1695,31 @@ function klineApplyTdxSettings(){
  klineRenderTdx();klineSetStatus('结构参数已应用：笔周期 '+pen+' / 半分位 '+half+'% / ATR过滤 '+atr+' / 收盘确认 '+confirm+'根');
 }
 function klineDetectEvents(){
- var data=tideKline.data||[],events=[];
- if(data.length<25)return events;
+ var data=tideKline.data||[],candidates=[];
+ if(data.length<30)return [];
  for(var i=20;i<data.length-1;i++){
   var c=data[i],prev=data.slice(i-20,i),avgVol=prev.reduce(function(a,x){return a+(Number(x.volume)||0);},0)/20;
   var ranges=data.slice(Math.max(0,i-14),i).map(function(x){return Math.max(x.high-x.low,Math.abs(x.high-x.close),Math.abs(x.low-x.close));});
-  var atr=ranges.reduce(function(a,x){return a+x;},0)/(ranges.length||1),body=Math.abs(c.close-c.open),volRatio=avgVol>0?c.volume/avgVol:0;
-  var bodyRatio=atr>0?body/atr:0;
-  if(volRatio>=3||bodyRatio>=1.8){
-   var direction=c.close>=c.open?'up':'down';
-   events.push({timestamp:c.timestamp,index:i,open:c.open,high:c.high,low:c.low,close:c.close,volume:c.volume,volRatio:volRatio,bodyRatio:bodyRatio,direction:direction,kind:volRatio>=3&&bodyRatio>=1.8?'both':volRatio>=3?'volume':'candle'});
+  var atr=ranges.reduce(function(a,x){return a+x;},0)/(ranges.length||1),body=Math.abs(c.close-c.open),fullRange=Math.max(0,c.high-c.low);
+  var volRatio=avgVol>0?c.volume/avgVol:0,bodyRatio=atr>0?body/atr:0,rangeRatio=atr>0?fullRange/atr:0;
+  var priorHigh=Math.max.apply(null,prev.map(function(x){return x.high;})),priorLow=Math.min.apply(null,prev.map(function(x){return x.low;}));
+  var breakoutUp=c.close>priorHigh,breakoutDown=c.close<priorLow,breakout=breakoutUp||breakoutDown;
+  var upperWick=c.high-Math.max(c.open,c.close),lowerWick=Math.min(c.open,c.close)-c.low;
+  var rejection=(upperWick>body*1.8&&c.close<c.open)||(lowerWick>body*1.8&&c.close>c.open);
+  var volumeExpansion=volRatio>=2.2&&rangeRatio>=1.35;
+  var impulse=bodyRatio>=2.0&&volRatio>=1.4;
+  var confirmedBreakout=breakout&&volRatio>=1.6&&rangeRatio>=1.25;
+  var highVolumeRejection=rejection&&volRatio>=1.8&&rangeRatio>=1.4;
+  if(volumeExpansion||impulse||confirmedBreakout||highVolumeRejection){
+   var direction=breakout?(breakoutUp?'up':'down'):(c.close>=c.open?'up':'down');
+   var score=(volumeExpansion?3:0)+(impulse?2:0)+(confirmedBreakout?3:0)+(highVolumeRejection?2:0)+Math.min(2,Math.max(0,volRatio-2)*.5);
+   var reasons=[];if(volumeExpansion)reasons.push('放量扩张');if(impulse)reasons.push('大实体');if(confirmedBreakout)reasons.push('放量突破');if(highVolumeRejection)reasons.push('放量拒绝');
+   candidates.push({timestamp:c.timestamp,index:i,open:c.open,high:c.high,low:c.low,close:c.close,volume:c.volume,volRatio:volRatio,bodyRatio:bodyRatio,rangeRatio:rangeRatio,direction:direction,kind:confirmedBreakout?'breakout':highVolumeRejection?'rejection':volumeExpansion?'volume':'impulse',score:score,reasons:reasons,isKeyCandle:true});
   }
  }
- return events.slice(-30).reverse();
+ var filtered=[];
+ candidates.forEach(function(e){var last=filtered[filtered.length-1];if(last&&e.index-last.index<=3){if(e.score>last.score)filtered[filtered.length-1]=e;}else filtered.push(e);});
+ return filtered.slice(-12).reverse();
 }
 function klineRenderEvents(){tideKline.anomalyEvents=klineDetectEvents();}
 function klineEnsureEventModal(){
@@ -1725,25 +1737,13 @@ function klineShowAnomalyDetail(e){
  window.__tideSelectedCandleEvent=e;window.__tideSelectedCandleTs=Number(e.timestamp)||0;
  var modal=klineEnsureEventModal(),body=$('tide-event-modal-body'),title=$('tide-event-modal-title'),sub=$('tide-event-modal-subtitle');
  var en=tideKlineLang==='en',fmt=function(v){return Number(v).toLocaleString('en-US',{maximumFractionDigits:v<1?6:2});};
- var change=(e.close/e.open-1)*100,range=(e.high/e.low-1)*100,volRatio=Number(e.volRatio)||0,bodyRatio=Number(e.bodyRatio)||0;
- var anomaly=volRatio>=3||bodyRatio>=1.8;
+ var change=(e.close/e.open-1)*100,range=(e.high/e.low-1)*100,volRatio=Number(e.volRatio)||0,bodyRatio=Number(e.bodyRatio)||0,isKey=!!e.isKeyCandle;
  title.textContent=(en?tideKline.symbol+' candle details':tideKline.symbol+' K线详情');
  sub.textContent=tideKline.period+' · '+new Date(e.timestamp).toLocaleString(en?'en-SG':'zh-CN')+' · '+(en?'OKX perpetual':'OKX 永续');
- body.innerHTML='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><span style="background:'+(anomaly?'#493b1d':'#25374b')+';color:'+(anomaly?'#f1c86c':'#c4d3e3')+';padding:5px 9px;border-radius:20px;font-size:11px">'+(anomaly?(en?'Abnormal candle':'异常K线'):(en?'Regular candle':'普通K线'))+'</span><span style="background:#1d2d40;color:#a9bdd1;padding:5px 9px;border-radius:20px;font-size:11px">'+(e.direction==='up'?(en?'Bullish':'阳线'):(en?'Bearish':'阴线'))+'</span></div><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px"><div><small style="color:#8fa3b9">Open</small><div>'+fmt(e.open)+'</div></div><div><small style="color:#8fa3b9">High</small><div>'+fmt(e.high)+'</div></div><div><small style="color:#8fa3b9">Low</small><div>'+fmt(e.low)+'</div></div><div><small style="color:#8fa3b9">Close</small><div>'+fmt(e.close)+'</div></div><div><small style="color:#8fa3b9">'+(en?'Change':'涨跌幅')+'</small><div style="color:'+(change>=0?'#18b88a':'#f06478')+'">'+(change>=0?'+':'')+change.toFixed(2)+'%</div></div><div><small style="color:#8fa3b9">'+(en?'Range':'振幅')+'</small><div>'+range.toFixed(2)+'%</div></div><div><small style="color:#8fa3b9">'+(en?'Volume':'成交量')+'</small><div>'+fmt(e.volume)+'</div></div><div><small style="color:#8fa3b9">'+(en?'Volume / 20 avg':'成交量 / 20均量')+'</small><div style="color:'+(volRatio>=3?'#f1c86c':'#e5edf6')+'">'+volRatio.toFixed(2)+'x</div></div><div><small style="color:#8fa3b9">'+(en?'Body / ATR':'实体 / ATR')+'</small><div>'+bodyRatio.toFixed(2)+'x</div></div></div><div style="margin-top:18px;padding-top:14px;border-top:1px solid #2c3d51"><div style="font-weight:700;margin-bottom:8px">'+(en?'Trades during this candle':'这根K线对应时段的逐笔资金')+'</div><div id="tide-event-candle-flow" style="font-size:12px;color:#9fb1c5">'+(en?'Loading time-aligned trade samples…':'正在读取该K线时间范围内的成交样本…')+'</div><div style="font-size:10px;color:#758ba3;margin-top:8px">'+(en?'Historical coverage differs by exchange and API limits. A capped sample is not full candle volume.':'各交易所历史接口覆盖范围和条数有限；达到接口上限时，样本不代表整根K线的全部成交量。')+'</div></div><div style="margin-top:18px;padding-top:14px;border-top:1px solid #2c3d51"><div style="font-weight:700;margin-bottom:8px">'+(en?'Market flow · rolling last 15 minutes':'市场资金行为 · 最近滚动15分钟')+'</div><div id="tide-event-cross" style="font-size:12px;color:#9fb1c5">'+(en?'Loading exchange trade flow…':'正在读取各交易所成交方向…')+'</div><div style="font-size:10px;color:#758ba3;margin-top:8px">'+(en?'Important: this is the latest rolling 15-minute sample, not historical trades aligned to the selected candle.':'注意：这里展示的是当前最近滚动15分钟样本，不是所选历史K线对应时段的历史逐笔成交。')+'</div></div><div style="margin-top:14px;padding-top:14px;border-top:1px solid #2c3d51"><div style="font-weight:700;margin-bottom:8px">'+(en?'Open interest · current snapshot':'持仓量 · 当前快照')+'</div><div id="tide-event-oi" style="font-size:12px;color:#9fb1c5">'+(en?'Loading current open interest…':'正在读取当前持仓量…')+'</div><div style="font-size:10px;color:#758ba3;margin-top:8px">'+(en?'Current OI is not the historical OI at this candle.':'当前 OI 不等于这根历史K线发生时的 OI。')+'</div></div><div style="font-size:10px;line-height:1.6;color:#7f93a9;margin-top:15px">'+(en?'Public exchange trades do not expose account identity. Large trades and synchronized venue flow are behavioral evidence, not verified institutional identities.':'交易所公开成交数据不包含账户身份。大额成交与跨所同步只能作为资金行为证据，不能据此确认机构或同一账户。')+'</div>';
- modal.style.display='flex';
- var symbol=tideKline.symbol,seq=++tideKline.eventRequestId;
- klineLoadSelectedCandleFlow(e,seq);
- fetchCrossExchangeFlow(symbol).then(function(cross){
-  if(seq!==tideKline.eventRequestId||modal.style.display==='none')return;
-  var el=$('tide-event-cross');if(!el)return;
-  var rows=(cross.exchanges||[]).map(function(x){return '<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid #26364a"><span>'+x.name+' · '+(x.ok?(x.status==='live'?'LIVE':x.status):'ERROR')+'</span><span style="color:'+(x.net>=0?'#18b88a':'#f06478')+'">'+(x.net>=0?'+':'')+klineMoney(x.net)+'</span><span style="color:#91a5ba">'+(en?'Buy ':'买 ')+klineMoney(x.buy)+' / '+(en?'Sell ':'卖 ')+klineMoney(x.sell)+'</span></div>';}).join('');
-  el.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:8px"><span>'+(en?'Cross-venue net':'跨所合计净主动成交')+'</span><b style="color:'+(cross.net>=0?'#18b88a':'#f06478')+'">'+(cross.net>=0?'+':'')+klineMoney(cross.net)+'</b></div>'+rows+'<div style="margin-top:8px">'+(en?'Large taker buys ':'大额主动买入 ')+klineMoney(cross.bigBuy)+' · '+(en?'Large taker sells ':'大额主动卖出 ')+klineMoney(cross.bigSell)+' · '+(en?'venues':'可用交易所')+' '+cross.available+'/3</div><div style="margin-top:6px;color:#d5bb79">'+(cross.sync==='multiBuy'?(en?'Multi-venue buy alignment':'多交易所买方同步'):cross.sync==='multiSell'?(en?'Multi-venue sell alignment':'多交易所卖方同步'):cross.sync==='mixed'?(en?'Mixed venue directions':'交易所方向分歧'):(en?'No clear multi-venue consensus':'未形成明确跨所共识'))+'</div>';
- }).catch(function(err){var el=$('tide-event-cross');if(el)el.textContent=(en?'Flow unavailable: ':'资金数据暂不可用：')+String(err.message||err);});
- api('/api/v5/public/open-interest?instType=SWAP&instId='+symbol+'-USDT-SWAP').then(function(rows){
-  if(seq!==tideKline.eventRequestId||modal.style.display==='none')return;var el=$('tide-event-oi');if(!el)return;
-  var x=rows&&rows[0],v=x?Number(x.oi):NaN,ts=x?Number(x.ts):0;
-  el.textContent=Number.isFinite(v)?(en?'Current contract OI: ':'当前合约持仓量：')+fmt(v)+(ts?' · '+new Date(ts).toLocaleTimeString():''):(en?'No OI data returned':'暂无 OI 数据');
- }).catch(function(err){var el=$('tide-event-oi');if(el)el.textContent=(en?'OI unavailable: ':'OI 数据暂不可用：')+String(err.message||err);});
+ body.innerHTML='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><span style="background:'+(isKey?'#493b1d':'#25374b')+';color:'+(isKey?'#f1c86c':'#c4d3e3')+';padding:5px 9px;border-radius:20px;font-size:11px">'+(isKey?(en?'Key candle · capital flow review':'关键K线 · 触发资金观察'):(en?'Regular candle · no flow scan':'普通K线 · 不触发资金扫描'))+'</span><span style="background:#1d2d40;color:#a9bdd1;padding:5px 9px;border-radius:20px;font-size:11px">'+(e.direction==='up'?(en?'Bullish':'阳线'):(en?'Bearish':'阴线'))+'</span>'+(isKey?'<span style="background:#1d2d40;color:#d5bb79;padding:5px 9px;border-radius:20px;font-size:11px">'+(e.reasons||[]).join(' · ')+'</span>':'')+'</div><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px"><div><small style="color:#8fa3b9">Open</small><div>'+fmt(e.open)+'</div></div><div><small style="color:#8fa3b9">High</small><div>'+fmt(e.high)+'</div></div><div><small style="color:#8fa3b9">Low</small><div>'+fmt(e.low)+'</div></div><div><small style="color:#8fa3b9">Close</small><div>'+fmt(e.close)+'</div></div><div><small style="color:#8fa3b9">'+(en?'Change':'涨跌幅')+'</small><div style="color:'+(change>=0?'#18b88a':'#f06478')+'">'+(change>=0?'+':'')+change.toFixed(2)+'%</div></div><div><small style="color:#8fa3b9">'+(en?'Range':'振幅')+'</small><div>'+range.toFixed(2)+'%</div></div><div><small style="color:#8fa3b9">'+(en?'Volume':'成交量')+'</small><div>'+fmt(e.volume)+'</div></div>'+(isKey?'<div><small style="color:#8fa3b9">'+(en?'Volume / 20 avg':'成交量 / 20均量')+'</small><div style="color:#f1c86c">'+volRatio.toFixed(2)+'x</div></div><div><small style="color:#8fa3b9">'+(en?'Body / ATR':'实体 / ATR')+'</small><div>'+bodyRatio.toFixed(2)+'x</div></div>':'')+'</div>';
+ if(!isKey){body.innerHTML+='<div style="margin-top:16px;padding:12px;border-top:1px solid #2c3d51;color:#8fa3b9;font-size:11px;line-height:1.7">'+(en?'Capital-flow sampling is intentionally limited to selected candles with clear volume expansion, strong price displacement, confirmed breakout or high-volume rejection.':'资金观察已过滤：仅对明显放量、价格扩张、放量突破或放量拒绝等关键K线采集成交行为，普通K线不逐根追踪。')+'</div>';modal.style.display='flex';return;}
+ body.innerHTML+='<div style="margin-top:18px;padding-top:14px;border-top:1px solid #2c3d51"><div style="font-weight:700;margin-bottom:8px">'+(en?'Capital flow during this key candle':'关键K线对应时段的资金行为')+'</div><div id="tide-event-candle-flow" style="font-size:12px;color:#9fb1c5">'+(en?'Loading time-aligned trade samples…':'正在读取该关键K线时间范围内的成交样本…')+'</div><div style="font-size:10px;color:#758ba3;margin-top:8px">'+(en?'Historical coverage differs by exchange and API limits. A capped sample is not full candle volume.':'各交易所历史接口覆盖范围和条数有限；样本不代表整根K线的全部成交量。')+'</div></div><div style="font-size:10px;line-height:1.6;color:#7f93a9;margin-top:15px">'+(en?'Public exchange trades do not expose account identity. Large trades are behavioral evidence, not verified institutional identities.':'交易所公开成交数据不包含账户身份。大额成交只能作为资金行为证据，不能据此确认机构或同一账户。')+'</div>';
+ modal.style.display='flex';var seq=++tideKline.eventRequestId;klineLoadSelectedCandleFlow(e,seq);
 }
 function klineLoadSelectedCandleFlow(e,seq){
  var el=$('tide-event-candle-flow'),en=tideKlineLang==='en',symbol=tideKline.symbol;
@@ -1829,7 +1829,7 @@ function klineHandleCandleClick(payload){
  var candle=(tideKline.data||[]).find(function(x){return x.timestamp===ts;});
  if(!candle)return;
  var event=(tideKline.anomalyEvents||[]).find(function(x){return x.timestamp===ts;});
- var e=event||{timestamp:candle.timestamp,open:candle.open,high:candle.high,low:candle.low,close:candle.close,volume:candle.volume||0,volRatio:0,bodyRatio:0,direction:candle.close>=candle.open?'up':'down'};
+ var e=event||{timestamp:candle.timestamp,open:candle.open,high:candle.high,low:candle.low,close:candle.close,volume:candle.volume||0,volRatio:0,bodyRatio:0,direction:candle.close>=candle.open?'up':'down',isKeyCandle:false};
  klineShowAnomalyDetail(e);
 }
 function klineUpdatePrice(){
