@@ -802,14 +802,28 @@ function klineFetch(limit,symbol,period,signal,before){
  var inst=(symbol||tideKline.symbol)+'-USDT-SWAP',bar=klinePeriodType(period||tideKline.period);
  var endpoint=before?'/api/v5/market/history-candles':'/api/v5/market/candles';
  var path=endpoint+'?instId='+encodeURIComponent(inst)+'&bar='+encodeURIComponent(bar)+'&limit='+Math.min(before?100:300,limit)+(before?'&after='+encodeURIComponent(before):'');
- return fetch(API+path,{signal:signal}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}).then(function(j){if(j.code!=='0')throw new Error(j.msg||('API '+j.code));var data=klineRowsToData(j.data);if(!data.length)throw new Error('No candle data');return data;});
+ function request(attempt){
+  if(signal&&signal.aborted)return Promise.reject(new DOMException('Aborted','AbortError'));
+  return fetch(API+path,{signal:signal}).then(function(r){
+   if(!r.ok){var e=new Error('HTTP '+r.status);e.status=r.status;throw e;}
+   return r.json();
+  }).then(function(j){
+   if(j.code!=='0'){var e=new Error(j.msg||('API '+j.code));e.apiCode=j.code;throw e;}
+   var data=klineRowsToData(j.data);if(!data.length)throw new Error('No candle data');return data;
+  }).catch(function(e){
+   var limited=e.status===429||e.status===418||e.apiCode==='50011'||/too many requests|rate limit/i.test(e.message||'');
+   if(!limited||attempt>=3||(signal&&signal.aborted))throw e;
+   return klineDelay(1200*Math.pow(2,attempt)).then(function(){return request(attempt+1);});
+  });
+ }
+ return request(0);
 }
 function klineDelay(ms){return new Promise(function(resolve){setTimeout(resolve,ms);});}
 function klineFetchInitial(symbol,period,signal,onInitial){
  return klineFetch(300,symbol,period,signal).then(function(recent){
   if(typeof onInitial==='function')onInitial(recent);
   var all=recent.slice(),oldest=all[0]&&all[0].timestamp;
-  function next(){if(all.length>=TIDE_KLINE_MIN_HISTORY||!oldest)return Promise.resolve(all);return klineFetch(100,symbol,period,signal,oldest).then(function(page){var older=page.filter(function(c){return c.timestamp<oldest;});if(!older.length)return all;all=older.concat(all);oldest=all[0].timestamp;return klineDelay(120).then(next);});}
+  function next(){if(all.length>=TIDE_KLINE_MIN_HISTORY||!oldest)return Promise.resolve(all);return klineFetch(100,symbol,period,signal,oldest).then(function(page){var older=page.filter(function(c){return c.timestamp<oldest;});if(!older.length)return all;all=older.concat(all);oldest=all[0].timestamp;return klineDelay(700).then(next);});}
   return next().catch(function(e){all.historyError=e.message;return all;});
  }).then(function(all){var error=all.historyError||'';var by={};all.forEach(function(c){by[c.timestamp]=c;});var result=Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){return a.timestamp-b.timestamp;}).slice(-TIDE_KLINE_MAX_CACHE);if(error)result.historyError=error;return result;});
 }
@@ -829,7 +843,7 @@ function klineLoadOlder(){
  if(tideKline.olderLoading||!tideKline.data.length||!tideKline.hasMoreHistory)return;
  tideKline.olderLoading=true;var symbol=tideKline.symbol,period=tideKline.period,oldest=tideKline.data[0].timestamp,controller=new AbortController(),collected=[],pages=0;
  klineSetStatus('正在分页加载更早历史K线…');
- function page(){if(pages>=10)return Promise.resolve();return klineFetch(100,symbol,period,controller.signal,oldest).then(function(rows){var older=rows.filter(function(c){return c.timestamp<oldest;});if(!older.length){tideKline.hasMoreHistory=false;return;}pages++;collected=older.concat(collected);oldest=older[0].timestamp;if(pages<10)return klineDelay(120).then(page);});}
+ function page(){if(pages>=10)return Promise.resolve();return klineFetch(100,symbol,period,controller.signal,oldest).then(function(rows){var older=rows.filter(function(c){return c.timestamp<oldest;});if(!older.length){tideKline.hasMoreHistory=false;return;}pages++;collected=older.concat(collected);oldest=older[0].timestamp;if(pages<10)return klineDelay(700).then(page);});}
  page().then(function(){if(!collected.length){klineSetStatus('没有更早的历史K线了');return;}var by={};collected.concat(tideKline.data).forEach(function(c){by[c.timestamp]=c;});var merged=Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){return a.timestamp-b.timestamp;}).slice(-TIDE_KLINE_MAX_CACHE);var older=merged.filter(function(c){return c.timestamp<tideKline.data[0].timestamp;});tideKline.data=merged;if(tideKline.chart){try{tideKline.chart.applyMoreData(older,true);}catch(e){tideKline.chart.applyNewData(merged);}}klineWriteCache();klineRenderTdx();klineSetStatus('已向前加载 '+older.length+' 根历史K线 · 总计 '+merged.length+' 根');}).catch(function(e){if(e.name!=='AbortError')klineSetStatus('历史分页失败：'+e.message);}).then(function(){tideKline.olderLoading=false;});
 }
 var tideIndicatorDefaults={MA:[5,10,30,60],EMA:[6,12,20],VOL:[5,10,20],MACD:[12,26,9],RSI:[6,12,24]};
