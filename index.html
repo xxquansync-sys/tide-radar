@@ -212,7 +212,7 @@ header{background:rgba(255,255,255,.88);backdrop-filter:blur(18px);-webkit-backd
 <div style="display:flex;align-items:center;gap:15px;flex-wrap:wrap;flex:1">
 <nav class="main-nav">
 <button class="active" data-page="overview">首页</button><button data-page="radar">异动雷达</button><button data-page="dragon">资金行为</button><button data-page="watch">自选观察</button>
-<span class="nav-more-wrap"><button type="button" id="more-nav-toggle" aria-expanded="false">更多⌄</button><span class="nav-more-menu" id="nav-more-menu"><button class="nav-extra" data-page="sectors">板块轮动</button><button class="nav-extra" data-page="signals">多空观察</button><button class="nav-extra" data-page="brief">市场简报</button><button class="nav-extra" data-page="method">研究框架</button></span></span></nav>
+<span class="nav-more-wrap"><button type="button" id="more-nav-toggle" aria-expanded="false" data-i18n="navMore">更多⌄</button><span class="nav-more-menu" id="nav-more-menu"><button class="nav-extra" data-page="sectors">板块轮动</button><button class="nav-extra" data-page="signals">多空观察</button><button class="nav-extra" data-page="brief">市场简报</button><button class="nav-extra" data-page="method">研究框架</button></span></span></nav>
 <div class="lang-switch">
 <button class="active" data-lang="zh">中文</button>
 <button data-lang="en">EN</button>
@@ -451,7 +451,7 @@ watchWaiting:'等待行情',loadFail:'行情未能加载,请刷新重试。',upd
 },
 en:{
 brand:'TIDELINE',tagline:'CRYPTO MARKET INTELLIGENCE',
-navOverview:'Overview',navSectors:'Sectors',navRadar:'Radar',navDragon:'Hot Money',navSignals:'Signals',navBrief:'Brief',navWatch:'Watchlist',navMethod:'Method',
+navOverview:'Overview',navMore:'More',navSectors:'Sectors',navRadar:'Radar',navDragon:'Hot Money',navSignals:'Signals',navBrief:'Brief',navWatch:'Watchlist',navMethod:'Method',
 eyebrow:'MARKET PULSE / LIVE MONITOR',headline:'See what\'s happening in the market',subheadline:'From breadth to rotation to anomalies, find signals worth deeper research.',
 connecting:'Connecting...',connected:'Connected',failed:'Connection failed',waitingData:'Waiting for data',updatedAt:'Updated',refreshBtn:'Refresh ↻',
 focusTitle:'🎯 Focus Today',focusNote:'💡 Auto-generated. For reference only, not investment advice',
@@ -608,10 +608,12 @@ if($('marketSort'))$('marketSort').addEventListener('change',renderMarketTable);
 $('addWatch').onclick=function(){var s=$('watchInput').value.trim().toUpperCase().replace(/USDT$/,'');if(s)addWatch(s);$('watchInput').value='';};
 $('copy-brief').onclick=function(){var txt=$('brief-content').textContent;if(navigator.clipboard){navigator.clipboard.writeText(txt).then(function(){$('copy-brief').textContent=t('copiedBtn');setTimeout(function(){$('copy-brief').textContent=t('copyBtn');},1800);}).catch(function(){$('copy-brief').textContent=t('copyFailBtn');});}else{$('copy-brief').textContent=t('copyFailBtn');}};
 function t(key){return translations[currentLang][key]||key;}
-function switchLang(lang){currentLang=lang;document.documentElement.lang=lang==='zh'?'zh-CN':'en';localStorage.setItem('tide_lang',lang);document.querySelectorAll('.lang-switch button').forEach(function(b){b.classList.toggle('active',b.dataset.lang===lang);});updateUI();if(tideHomeChart.chart){try{tideHomeChart.chart.setLocale(lang==='zh'?'zh-CN':'en-US');}catch(e){}homeChartLoad();}}
+function switchLang(lang){currentLang=lang;document.documentElement.lang=lang==='zh'?'zh-CN':'en';localStorage.setItem('tide_lang',lang);document.querySelectorAll('.lang-switch button').forEach(function(b){b.classList.toggle('active',b.dataset.lang===lang);});updateUI();if(tideHomeChart.chart){try{tideHomeChart.chart.setLocale(lang==='zh'?'zh-CN':'en-US');tideHomeChart.chart.setStyles(klineThemeStyles('light',lang));}catch(e){}homeChartLoad();}}
 function updateUI(){
 document.querySelector('.brand').innerHTML="<span class=\"logo\" aria-hidden=\"true\"><svg viewBox=\"0 0 32 32\" width=\"22\" height=\"22\" fill=\"none\"><circle cx=\"16\" cy=\"16\" r=\"11.5\" stroke=\"currentColor\" stroke-width=\"1.6\" opacity=\".45\"/><circle cx=\"16\" cy=\"16\" r=\"7\" stroke=\"currentColor\" stroke-width=\"1.6\" opacity=\".7\"/><path d=\"M16 16 26 7\" stroke=\"#63D6C7\" stroke-width=\"2\" stroke-linecap=\"round\"/><circle cx=\"16\" cy=\"16\" r=\"2.3\" fill=\"#63D6C7\"/></svg></span>"+t('brand')+'<small>'+t('tagline')+'</small>';
 document.querySelector('[data-page="overview"]').textContent=t('navOverview');
+ if($('more-nav-toggle'))$('more-nav-toggle').textContent=t('navMore')+'⌄';
+ var zhLangButton=document.querySelector('.lang-switch button[data-lang="zh"]');if(zhLangButton)zhLangButton.textContent=currentLang==='en'?'CN':'中文';
 document.querySelector('[data-page="sectors"]').textContent=t('navSectors');
 document.querySelector('[data-page="radar"]').textContent=t('navRadar');
 document.querySelector('[data-page="dragon"]').textContent=t('navDragon');
@@ -1028,12 +1030,12 @@ function homeChartLoad(){
 function homeChartChangePeriod(p){if(tideKlinePeriods.indexOf(p)<0||p===tideHomeChart.period)return;tideHomeChart.period=p;homeChartRenderPeriods();homeChartLoad();}
 function homeChartInit(){
  if(tideHomeChart.chart)return;var host=$('tide-home-kline-canvas');if(!host)return;klineEnsureScript().then(function(lib){if(tideHomeChart.chart||!$('tide-home-kline-canvas'))return;
- tideHomeChart.chart=lib.init('tide-home-kline-canvas',{locale:currentLang==='zh'?'zh-CN':'en-US',timezone:'Asia/Singapore',styles:klineThemeStyles('light')});
+ tideHomeChart.chart=lib.init('tide-home-kline-canvas',{locale:currentLang==='zh'?'zh-CN':'en-US',timezone:'Asia/Singapore',styles:klineThemeStyles('light',currentLang)});
  try{tideHomeChart.chart.createIndicator({name:'MA',calcParams:[20]},true,{id:'candle_pane'});}catch(e){}try{tideHomeChart.chart.createIndicator('VOL',false,{id:'home_volume_pane',height:72,minHeight:48});}catch(e){}
  tideHomeChart.clickHandler=homeChartSelectCandle;try{tideHomeChart.chart.subscribeAction('onCandleBarClick',tideHomeChart.clickHandler);}catch(e){}
  var periodHost=$('home-chart-periods');if(periodHost)periodHost.querySelectorAll('button').forEach(function(b){b.onclick=function(){homeChartChangePeriod(b.dataset.period);};});
  homeChartLoad();homeChartRenderPeriods();tideHomeChart.timer=setInterval(function(){var page=$('overview');if(page&&page.classList.contains('active'))homeChartLoad();},60000);
- }).catch(function(e){homeChartStatus('图表加载失败：'+e.message);});
+ }).catch(function(e){homeChartStatus(t('homeLoadError')+e.message);});
 }
 
 /* ---------------- KLineChart: OKX public candles ---------------- */
@@ -1149,7 +1151,7 @@ function klineSetLanguage(lang){
  set('tide-kline-settings-button',dict.settingsButton);
  set('tide-kline-TDX',dict.tdx);set('tide-tdx-settings-title',dict.tdxTitle);set('tide-tdx-pen-label',dict.pen);set('tide-tdx-half-label',dict.half);set('tide-tdx-atr-label',dict.atr);set('tide-tdx-confirm-label',dict.confirm);set('tide-tdx-time-label',dict.time);set('tide-tdx-param-note',dict.tdxNote);set('tide-tdx-apply',dict.tdxApply);
  var input=$('tide-kline-setting-params');if(input)input.placeholder=dict.placeholder;
- set('tide-kline-lang',en?'中文':'EN');
+ set('tide-kline-lang',en?'CN':'EN');
  set('tide-kline-theme',tideKlineTheme==='dark'?dict.themeDark:dict.themeLight);
  var b=document.querySelectorAll('.kline-drawbar button');
  var keys=['cursor','segment','ray','straight','horizontal','hray','vertical','rect','parallel','fib','brush','delete','clear'];
