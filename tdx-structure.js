@@ -74,7 +74,7 @@ function computeMultiTimeframe(data,htf,daily,opts,tf){
   htfBias=out.trendSeries.map(v=>v||'neutral');
  }
  out.daily={trend:dailyBias.at(-1)||'neutral',aligned:dailyBias,available:!!dailyResult};
- out.htf={trend:htfBias.at(-1)||'neutral',aligned:htfBias,available:is4h||!!(htf&&htf.length)};
+ out.htf={trend:is4h?out.trend:(htfBias.at(-1)||'neutral'),aligned:htfBias,available:is4h||!!(htf&&htf.length)};
  out.signals=out.signals.map(s=>{
   const h=htfBias[s.index]||'neutral',d=dailyBias[s.index]||'neutral';
   const direction=s.direction==='long'?'bull':'bear';
