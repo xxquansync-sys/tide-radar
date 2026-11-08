@@ -234,6 +234,66 @@ section+section{margin-top:22px}
  td,th{padding:8px 9px}
 }
 @media(prefers-reduced-motion:reduce){.panel,.section-card,.market-card,button{transition:none!important}}
+
+/* TIDELINE home v2 — stronger product hierarchy and market-terminal character */
+.top{position:relative;align-items:flex-end;margin:0 0 22px;padding:22px 24px 21px;border:1px solid #dce7eb;border-radius:18px;background:linear-gradient(112deg,rgba(255,255,255,.97) 0%,rgba(247,252,251,.94) 58%,rgba(232,247,245,.88) 100%);box-shadow:0 12px 34px rgba(24,61,76,.055);overflow:hidden}
+.top:after{content:"";position:absolute;right:-55px;top:-125px;width:310px;height:310px;border:1px solid rgba(28,145,135,.12);border-radius:50%;box-shadow:0 0 0 22px rgba(28,145,135,.025),0 0 0 48px rgba(28,145,135,.02);pointer-events:none}
+.top>div,.top>.status{position:relative;z-index:1}
+.eyebrow{color:#16877e;font-size:10px;letter-spacing:.2em}
+.headline{font-size:clamp(25px,3vw,34px);letter-spacing:-.045em;color:#142b3d;margin:7px 0 5px}
+.top .sub{color:#6f8291;font-size:13px;max-width:580px}
+.status{display:flex;align-items:center;gap:7px;padding:9px 11px;border:1px solid #e0e9ec;background:rgba(255,255,255,.78);border-radius:10px;color:#718392;white-space:nowrap}
+.status .btn{margin-left:5px}
+.highlight{position:relative;overflow:hidden;background:linear-gradient(115deg,#102c3c 0%,#123d4a 55%,#174a51 100%);border:1px solid rgba(82,192,181,.28);border-radius:16px;padding:17px 19px 14px;box-shadow:0 12px 28px rgba(10,42,57,.10);margin-bottom:18px}
+.highlight:after{content:"";position:absolute;right:-95px;bottom:-190px;width:370px;height:370px;border:1px solid rgba(109,222,207,.15);border-radius:50%;box-shadow:0 0 0 28px rgba(109,222,207,.035),0 0 0 58px rgba(109,222,207,.025);pointer-events:none}
+.highlight>*{position:relative;z-index:1}
+.highlight-title{font-size:11px;letter-spacing:.14em;color:#81e0d3}
+.insight{background:rgba(5,20,30,.30);border:1px solid rgba(143,220,214,.12);border-left:3px solid #69d7c8;border-radius:9px;padding:10px 13px}
+.insight-text{color:#edf8f7;font-size:12px}
+.insight-ref{color:#9ab8bd}
+.focus-note{color:#8caeb3;font-size:10px}
+#overview .kpis{gap:11px;margin:0 0 17px}
+#overview .kpis .panel{background:linear-gradient(155deg,#fff,#f9fcfc);border:1px solid #e0e9ed;border-radius:13px;padding:15px 16px;box-shadow:0 5px 18px rgba(23,53,71,.035);min-height:104px}
+#overview .kpis .panel:before{content:"";display:block;width:24px;height:2px;background:linear-gradient(90deg,#178e83,#8bd7ca);border-radius:2px;margin-bottom:11px}
+#overview .klabel{color:#778997;font-size:10px;letter-spacing:.035em}
+#overview .kvalue{color:#1b3448;font-size:clamp(21px,2vw,26px);letter-spacing:-.035em;margin:5px 0 2px}
+#overview .muted{color:#91a0aa}
+#overview>.panel,#overview .layout>.panel{background:linear-gradient(155deg,#fff,#fbfdfd);border:1px solid #e0e9ed;border-radius:15px;box-shadow:0 7px 24px rgba(23,53,71,.04);padding:17px 18px}
+#overview .head h2{font-size:14px;color:#20394c;letter-spacing:-.02em}
+#overview .tag{background:#f1f8f7;border-color:#dcece9;color:#43877f}
+#overview .hot-tag{background:#f1f8f7;border-color:#dcece9;color:#277e76}
+#overview .tile{background:linear-gradient(145deg,#f8fbfc,#f2f8f8);border-color:#e3ecef;color:#284153}
+#overview .tile strong{color:#203d50}
+#overview .bar{background:#e6eff0}
+#overview table th{background:#f4f8f9;color:#738594;border-color:#e6edef}
+#overview table td{color:#344c5e;border-color:#edf1f3}
+#overview tbody tr:hover{background:#f5faf9}
+#overview .reason-badge{background:#f2f7f8;border-color:#e1e9ec;color:#70828e}
+#overview .scroll{border-radius:9px}
+.home-chart-panel{box-shadow:0 12px 34px rgba(25,55,75,.065),0 1px 2px rgba(25,55,75,.04)}
+.home-chart-title{gap:11px}
+.home-chart-name{font-size:15px;letter-spacing:-.025em;color:#20374b}
+.home-chart-sub{letter-spacing:.06em}
+.home-market-tag{background:#edf7f5;color:#39877e;border:1px solid #dcece8;border-radius:5px;padding:3px 6px}
+.home-chart-toolbar{border-top:1px solid #f0f3f4;padding-top:9px}
+.home-side-heading{letter-spacing:.015em}
+.home-side-stat strong{font-size:13px}
+.home-watch-item{padding:10px 0}
+@media(max-width:760px){
+ .top{padding:17px 16px;align-items:flex-start}
+ .top:after{right:-190px}
+ .status{white-space:normal;flex-wrap:wrap}
+ #overview .kpis .panel{min-height:94px}
+ #overview>.panel,#overview .layout>.panel{padding:14px}
+}
+@media(max-width:560px){
+ .headline{font-size:24px}
+ .top{border-radius:14px;margin-bottom:15px}
+ .highlight{padding:14px;border-radius:13px}
+ #overview .kpis{gap:8px}
+ #overview .kpis .panel{padding:11px;min-height:88px}
+ #overview .kpis .kvalue{font-size:20px}
+}
 </style>
 </head>
 <body>
@@ -1103,6 +1163,11 @@ function klineSetStatus(s){
  var en=tideKlineLang==='en';
  if(en){
   var historyFill=s.match(/^已显示最新\s*(\d+)\s*根K线，正在后台补齐至少\s*(\d+)\s*根历史…$/);
+  var loadedStatus=s.match(/^OKX 行情 · ([\\d,]+) 根 · (历史已加载|当前可获取历史不足3000根|历史分页异常：.*) · (.+)$/);
+  if(loadedStatus){
+   var historyLabel=loadedStatus[2]==='历史已加载'?'History loaded':(loadedStatus[2]==='当前可获取历史不足3000根'?'Available history below 3,000 candles':'History pagination error: '+loadedStatus[2].replace('历史分页异常：',''));
+   s='OKX market data · '+loadedStatus[1]+' candles · '+historyLabel+' · '+loadedStatus[3];
+  }
   if(historyFill)s='Showing latest '+historyFill[1]+' candles; backfilling at least '+historyFill[2]+' historical candles in the background…';
   var map=[['正在显示本地缓存，后台更新行情…','Showing cached candles; refreshing market data…'],['正在启动图表并获取OKX行情…','Starting chart and loading OKX market data…'],['正在加载','Loading'],['更新','Updating'],['OKX 实时K线','Live OKX candles'],['缓存数据已显示 · 更新失败：','Cached candles shown · Update failed: '],['K线加载失败：','Candle load failed: '],['指标创建失败：','Indicator creation failed: '],['参数数量不符合该指标要求','Invalid number of parameters for this indicator'],['参数已应用：',' parameters applied: '],['根 · ',' candles · '],['正在后台更新 OKX 行情…','refreshing OKX data…'],['正在分页加载更早历史K线…','Loading older historical candles…'],['历史分页失败：','Historical pagination failed: '],['没有更早的历史K线了','No older candles available'],['已向前加载 ','Loaded older candles: '],[' 根历史K线 · 总计 ',' candles · total '],['参数无效：请输入 1–500 的整数，以逗号分隔','Invalid parameters: enter integers from 1 to 500, separated by commas'],['参数无效','Invalid parameters'],['应用结构参数','Apply structure parameters'],['结构参数已应用：笔周期 ','Structure parameters applied: pen period '],[' / 半分位 ',' / midpoint '],[' / ATR过滤 ',' / ATR filter '],[' / 收盘确认 ',' / closed-bar confirmation '],['更早历史','Load older']];
   map.forEach(function(pair){s=s.split(pair[0]).join(pair[1]);});
