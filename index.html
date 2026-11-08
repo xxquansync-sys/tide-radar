@@ -486,6 +486,7 @@ th{position:static!important;top:auto!important;z-index:auto!important}
 .home-flow-row>strong{color:#1c3945;font-size:12px}
 .home-flow-amount-track{display:block;height:3px;width:100%;max-width:150px;background:#edf2f2;border-radius:5px;overflow:hidden}
 .home-flow-amount-track em{display:block;height:100%;background:linear-gradient(90deg,#70c7b8,#188c80);border-radius:5px}
+.home-move-track i{transition:width .65s cubic-bezier(.2,.7,.2,1)}
 .home-flow-arrow{color:#7ca39f}
 .home-intel-empty{color:#84949b}
 .home-intel-empty b{color:#38515c}
@@ -528,7 +529,9 @@ th{position:static!important;top:auto!important;z-index:auto!important}
 @media(prefers-reduced-motion:no-preference){
  .home-intel-stat b{animation:tdStatIn .45s ease both}
  .home-flow-row{animation:tdRowIn .35s ease both}
+ .home-flow-amount-track em,.home-move-track i{transform-origin:left center;animation:tdSignalGrow .7s cubic-bezier(.2,.7,.2,1) both}
 }
+@keyframes tdSignalGrow{from{transform:scaleX(.08);opacity:.55}to{transform:scaleX(1);opacity:1}}
 @keyframes tdStatIn{from{opacity:.45;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 @keyframes tdRowIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 
@@ -1371,7 +1374,6 @@ else h+='<div class="table-wrap"><table class="dragon-table card-table"><thead><
 h+='<div class="wh-head"><h2>'+t('whTreasuryTitle')+'</h2></div><p class="wh-note">'+t('whTreasuryNote')+'</p>';
 var tr=whaleState.treasuries;h+=tr.length?'<div class="table-wrap"><table class="dragon-table card-table"><thead><tr>'+['whCompany','whCoin','whHoldings','whValue','whTicker'].map(function(k){return '<th>'+t(k)+'</th>';}).join('')+'</tr></thead><tbody>'+tr.map(function(x){return '<tr><td class="coin wh-name" data-label="">'+escHtml(x.name)+'<small>'+escHtml(x.country||'')+'</small></td><td data-label="'+t('whCoin')+'">'+x.coin+'</td><td data-label="'+t('whHoldings')+'">'+fmt(x.hold,0)+' '+x.coin+'</td><td data-label="'+t('whValue')+'">'+compact(x.usd)+'</td><td data-label="'+t('whTicker')+'">'+escHtml(x.symbol||'—')+'</td></tr>';}).join('')+'</tbody></table></div>':'<div class="muted" style="padding:14px">'+t('whTreasuryPending')+'</div>';
 h+='<div class="notice" style="margin-top:14px">'+t('whDisclaimer')+'</div>';box.innerHTML=h;}
-setInterval(function(){if(dragonTigerData.lastUpdate&&!dragonState.loading&&Date.now()-dragonTigerData.lastUpdate>15*60000)fetchDragonTigerData();},60000);
 setInterval(function(){if(dragonTigerData.lastUpdate&&!dragonState.loading&&Date.now()-dragonTigerData.lastUpdate>15*60000)fetchDragonTigerData();},60000);
 renderWatchList();
 refresh();
