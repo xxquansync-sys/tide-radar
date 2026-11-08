@@ -1406,8 +1406,10 @@ function homeChartLoad(){
 }
 function homeChartChangePeriod(p){if(tideKlinePeriods.indexOf(p)<0||p===tideHomeChart.period)return;tideHomeChart.period=p;homeChartRenderPeriods();homeChartLoad();}
 function homeChartInit(){
- if(tideHomeChart.chart)return;var host=$('tide-home-kline-canvas');if(!host)return;klineEnsureScript().then(function(lib){if(tideHomeChart.chart||!$('tide-home-kline-canvas'))return;
- tideHomeChart.chart=lib.init('tide-home-kline-canvas',{locale:currentLang==='zh'?'zh-CN':'en-US',timezone:'Asia/Singapore',styles:klineThemeStyles('light',currentLang)});
+ if(tideHomeChart.chart)return;var host=$('tide-home-kline-canvas');if(!host){homeChartStatus(currentLang==='zh'?'图表容器未找到':'Chart container not found',true);return;}klineEnsureScript().then(function(lib){if(tideHomeChart.chart||!$('tide-home-kline-canvas'))return;
+ var chart=lib&&typeof lib.init==='function'?lib.init('tide-home-kline-canvas',{locale:currentLang==='zh'?'zh-CN':'en-US',timezone:'Asia/Singapore',styles:klineThemeStyles('light',currentLang)}):null;
+ if(!chart||typeof chart.applyNewData!=='function')throw new Error('KLineChart 初始化未返回有效图表实例');
+ tideHomeChart.chart=chart;
  try{tideHomeChart.chart.createIndicator({name:'MA',calcParams:[20]},true,{id:'candle_pane'});}catch(e){}try{tideHomeChart.chart.createIndicator('VOL',false,{id:'home_volume_pane',height:72,minHeight:48});}catch(e){}
  tideHomeChart.clickHandler=homeChartSelectCandle;try{tideHomeChart.chart.subscribeAction('onCandleBarClick',tideHomeChart.clickHandler);}catch(e){}
  var periodHost=$('home-chart-periods');if(periodHost)periodHost.querySelectorAll('button').forEach(function(b){b.onclick=function(){homeChartChangePeriod(b.dataset.period);};});
