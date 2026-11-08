@@ -742,7 +742,11 @@ async function syncFlowEvents(){
 }
 var TIDE_FLOW_ALERTS_KEY='tide_flow_alerts_v1';
 function loadFlowAlerts(){try{return JSON.parse(localStorage.getItem(TIDE_FLOW_ALERTS_KEY)||'[]')||[];}catch(e){return [];}}
-function saveFlowAlerts(a){try{localStorage.setItem(TIDE_FLOW_ALERTS_KEY,JSON.stringify(a.slice(0,120)));}catch(e){}}
+var flowAlertRemote={state:'checking',lastSync:0,error:''},flowAlertPushTimer=null;
+function saveFlowAlerts(a){a=(a||[]).slice(0,120);try{localStorage.setItem(TIDE_FLOW_ALERTS_KEY,JSON.stringify(a));}catch(e){}clearTimeout(flowAlertPushTimer);flowAlertPushTimer=setTimeout(function(){pushFlowAlerts(a.slice(0,100));},1000);}
+async function pushFlowAlerts(a){try{var r=await fetch('/api/flow-alerts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({alerts:a})});var j=await r.json();if(!r.ok||!j.enabled)throw new Error(j.error||'Alert cloud archive unavailable');flowAlertRemote={state:'synced',lastSync:Date.now(),error:''};}catch(e){flowAlertRemote={state:'local',lastSync:flowAlertRemote.lastSync,error:String(e.message||e)};}if(typeof renderDragonTigerSoon==='function')renderDragonTigerSoon();}
+async function syncFlowAlerts(){try{var r=await fetch('/api/flow-alerts'),j=await r.json();if(!r.ok||!j.enabled)throw new Error(j.error||'Alert cloud archive unavailable');var remote=(j.alerts||[]).map(function(a){return{key:a.alert_key,symbol:a.symbol,type:a.alert_type,level:a.level,direction:a.direction,title:a.title,detail:a.detail,venues:a.venues,amount:Number(a.amount)||0,ts:Date.parse(a.ts),price:Number(a.price)||0,oiDelta:Number(a.oi_delta)||0};}).filter(function(a){return a.key&&Number.isFinite(a.ts);});var local=loadFlowAlerts(),byKey={};remote.concat(local).forEach(function(a){if(a&&a.key&&Number.isFinite(a.ts)){var old=byKey[a.key];if(!old||a.ts>old.ts)byKey[a.key]=a;}});var merged=Object.keys(byKey).map(function(k){return byKey[k];}).sort(function(a,b){return b.ts-a.ts;}).slice(0,120);try{localStorage.setItem(TIDE_FLOW_ALERTS_KEY,JSON.stringify(merged));}catch(e){}var remoteKeys={};remote.forEach(function(a){remoteKeys[a.key]=true;});var missing=merged.filter(function(a){return !remoteKeys[a.key];});flowAlertRemote={state:'synced',lastSync:Date.now(),error:''};if(missing.length)await pushFlowAlerts(missing.slice(0,100));}catch(e){flowAlertRemote={state:'local',lastSync:flowAlertRemote.lastSync,error:String(e.message||e)};}if(typeof renderDragonTigerSoon==='function')renderDragonTigerSoon();}
+
 function recordFlowAlerts(c){
  var f=c.flow||{},x=f.cross||{},now=Date.now(),bucket=Math.floor(now/900000),alerts=loadFlowAlerts(),candidates=[];
  var aligned=x.sync==='multiBuy'||x.sync==='multiSell',direction=x.sync==='multiBuy'?'buy':'sell';
@@ -770,7 +774,9 @@ function recordFlowAlerts(c){
 }
 function flowAlertBoard(){
  var alerts=loadFlowAlerts().filter(function(a){return Date.now()-a.ts<=48*3600000;}).slice(0,20),en=currentLang!=='zh';
- var h='<div style="margin:12px 0;padding:12px;background:#101c2a;border:1px solid #30445b;border-radius:9px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:5px"><b style="font-size:12px">'+(en?'Capital behavior alerts':'资金行为预警')+'</b><span style="font-size:10px;color:#8fa3b9">'+(en?'Last 48 hours':'最近48小时')+' · '+alerts.length+'</span></div><div style="font-size:10px;color:#8297ad;margin-bottom:8px">'+(en?'Rule-based alerts from sampled public trades, cross-venue taker flow and positioning. Not a trade instruction.':'基于公开成交样本、跨所主动成交方向及持仓变化的规则预警，不构成交易指令。')+'</div>';
+ var cloudLabel=flowAlertRemote.state==='synced'?(en?'Cloud synced':'云端已同步'):flowAlertRemote.state==='checking'?(en?'Checking cloud':'正在检查云端'):(en?'Local only':'仅本机保存');
+ var h='<div style="margin:12px 0;padding:12px;background:#101c2a;border:1px solid #30445b;border-radius:9px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:5px"><b style="font-size:12px">'+(en?'Capital behavior alerts':'资金行为预警')+'</b><span style="font-size:10px;color:#8fa3b9">'+cloudLabel+' · '+(en?'Last 48 hours':'最近48小时')+' · '+alerts.length+'</span></div>'+(flowAlertRemote.error?'<div style="font-size:10px;color:#e7a5a5;margin-bottom:6px">'+escHtml(flowAlertRemote.error)+'</div>':'');
+ h+='<div style="font-size:10px;color:#8297ad;margin-bottom:8px">'+(en?'Rule-based alerts from sampled public trades, cross-venue taker flow and positioning. Not a trade instruction.':'基于公开成交样本、跨所主动成交方向及持仓变化的规则预警，不构成交易指令。')+'</div>';<div style="font-size:10px;color:#8297ad;margin-bottom:8px">'+(en?'Rule-based alerts from sampled public trades, cross-venue taker flow and positioning. Not a trade instruction.':'基于公开成交样本、跨所主动成交方向及持仓变化的规则预警，不构成交易指令。')+'</div>';
  if(!alerts.length)return h+'<div class="muted">'+(en?'No qualifying alerts yet.':'暂时没有满足条件的预警。')+'</div></div>';
  h+=alerts.map(function(a){return '<div style="display:flex;justify-content:space-between;gap:9px;padding:9px 0;border-top:1px solid #29394d"><div style="min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><b>'+a.symbol+' · '+escHtml(a.title)+'</b><span style="font-size:9px;padding:2px 5px;border-radius:4px;background:'+(a.level==='high'?'#4b2c35':'#29394d')+';color:'+(a.level==='high'?'#ff9ba8':'#b6c6d7')+'">'+(a.level==='high'?(en?'STRONG':'较强'):(en?'WATCH':'观察'))+'</span></div><div style="font-size:10px;color:#a1b3c6;margin-top:4px">'+escHtml(a.detail)+'</div><small style="display:block;color:#778da5;margin-top:4px">'+fmtTime(a.ts,true)+' · '+escHtml(a.venues||'—')+'</small></div><div style="text-align:right;white-space:nowrap;color:'+(a.direction==='buy'?'#18b88a':'#f06478')+';font-size:11px;font-weight:700">'+(a.direction==='buy'?(en?'BUY':'偏多'):(en?'SELL':'偏空'))+'</div></div>';}).join('');
  return h+'</div>';
@@ -1422,6 +1428,7 @@ else setTimeout(function(){klineEnsureScript().catch(function(){});},1200);
 <script src="./tdx-structure.js"></script>
 <script>
 setTimeout(syncFlowEvents,1200);
+setTimeout(syncFlowAlerts,1800);
 </script>
 </body>
 </html>
