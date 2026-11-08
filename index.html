@@ -740,6 +740,41 @@ async function syncFlowEvents(){
  }
  if(typeof renderDragonTigerSoon==='function')renderDragonTigerSoon();
 }
+var TIDE_FLOW_ALERTS_KEY='tide_flow_alerts_v1';
+function loadFlowAlerts(){try{return JSON.parse(localStorage.getItem(TIDE_FLOW_ALERTS_KEY)||'[]')||[];}catch(e){return [];}}
+function saveFlowAlerts(a){try{localStorage.setItem(TIDE_FLOW_ALERTS_KEY,JSON.stringify(a.slice(0,120)));}catch(e){}}
+function recordFlowAlerts(c){
+ var f=c.flow||{},x=f.cross||{},now=Date.now(),bucket=Math.floor(now/900000),alerts=loadFlowAlerts(),candidates=[];
+ var aligned=x.sync==='multiBuy'||x.sync==='multiSell',direction=x.sync==='multiBuy'?'buy':'sell';
+ if(aligned&&Number(x.available)>=2){
+  var oi=Number(c.oiDelta24)||0,net=Number(x.net)||0,oiConfirm=oi!==0&&((oi>0&&net>0)||(oi<0&&net<0));
+  var venues=(x.syncExchanges||[]).join(', ');
+  candidates.push({type:'crossConsensus',level:oiConfirm?'high':'watch',direction:direction,title:oiConfirm?'跨所方向共振 + OI确认':'跨所方向共振',detail:'净主动'+(direction==='buy'?'买入':'卖出')+' '+compact(Math.abs(net)+'')+' · '+(x.syncExchanges||[]).length+'/3 venues'+(oiConfirm?' · OI '+(oi>0?'增加':'减少'):' · OI未确认'),venues:venues,amount:Math.abs(net)});
+ }
+ var big=(f.bigTrades||[]).filter(function(z){return z.usd>=100000;});
+ var buys=big.filter(function(z){return z.side==='buy';}),sells=big.filter(function(z){return z.side==='sell';});
+ if(buys.length>=2||sells.length>=2){
+  var side=buys.length>=2&&sells.length>=2?(buys.reduce(function(a,z){return a+z.usd;},0)>=sells.reduce(function(a,z){return a+z.usd;},0)?'buy':'sell'):(buys.length>=2?'buy':'sell');
+  var chosen=side==='buy'?buys:sells,total=chosen.reduce(function(a,z){return a+z.usd;},0);
+  candidates.push({type:'largeCluster',level:chosen.length>=4?'high':'watch',direction:side,title:'短时多笔大额'+(side==='buy'?'主动买入':'主动卖出'),detail:chosen.length+' 笔 · 合计 '+compact(total),venues:'OKX',amount:total});
+ }
+ if(f.whale==='whaleLong'||f.whale==='whaleShort'){
+  candidates.push({type:'topTraderShift',level:'watch',direction:f.whale==='whaleLong'?'buy':'sell',title:'顶级交易员多空比明显变化',detail:'Top trader ratio '+(f.whale==='whaleLong'?'上升':'下降')+' · 1H变化超过3%',venues:'OKX',amount:0});
+ }
+ candidates.forEach(function(a){
+  var key=[c.symbol,a.type,a.direction,bucket].join('|');
+  if(alerts.some(function(z){return z.key===key;}))return;
+  alerts.unshift({key:key,symbol:c.symbol,type:a.type,level:a.level,direction:a.direction,title:a.title,detail:a.detail,venues:a.venues,amount:a.amount,ts:now,price:Number(c.last)||0,oiDelta:Number(c.oiDelta24)||0,ack:false});
+ });
+ saveFlowAlerts(alerts);
+}
+function flowAlertBoard(){
+ var alerts=loadFlowAlerts().filter(function(a){return Date.now()-a.ts<=48*3600000;}).slice(0,20),en=currentLang!=='zh';
+ var h='<div style="margin:12px 0;padding:12px;background:#101c2a;border:1px solid #30445b;border-radius:9px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:5px"><b style="font-size:12px">'+(en?'Capital behavior alerts':'资金行为预警')+'</b><span style="font-size:10px;color:#8fa3b9">'+(en?'Last 48 hours':'最近48小时')+' · '+alerts.length+'</span></div><div style="font-size:10px;color:#8297ad;margin-bottom:8px">'+(en?'Rule-based alerts from sampled public trades, cross-venue taker flow and positioning. Not a trade instruction.':'基于公开成交样本、跨所主动成交方向及持仓变化的规则预警，不构成交易指令。')+'</div>';
+ if(!alerts.length)return h+'<div class="muted">'+(en?'No qualifying alerts yet.':'暂时没有满足条件的预警。')+'</div></div>';
+ h+=alerts.map(function(a){return '<div style="display:flex;justify-content:space-between;gap:9px;padding:9px 0;border-top:1px solid #29394d"><div style="min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><b>'+a.symbol+' · '+escHtml(a.title)+'</b><span style="font-size:9px;padding:2px 5px;border-radius:4px;background:'+(a.level==='high'?'#4b2c35':'#29394d')+';color:'+(a.level==='high'?'#ff9ba8':'#b6c6d7')+'">'+(a.level==='high'?(en?'STRONG':'较强'):(en?'WATCH':'观察'))+'</span></div><div style="font-size:10px;color:#a1b3c6;margin-top:4px">'+escHtml(a.detail)+'</div><small style="display:block;color:#778da5;margin-top:4px">'+fmtTime(a.ts,true)+' · '+escHtml(a.venues||'—')+'</small></div><div style="text-align:right;white-space:nowrap;color:'+(a.direction==='buy'?'#18b88a':'#f06478')+';font-size:11px;font-weight:700">'+(a.direction==='buy'?(en?'BUY':'偏多'):(en?'SELL':'偏空'))+'</div></div>';}).join('');
+ return h+'</div>';
+}
 function recordFlowEvents(c){
  var f=c.flow||{},x=f.cross||{},events=loadFlowEvents(),now=Date.now(),bucket=Math.floor(now/900000),candidates=[];
  if(x.sync==='multiBuy'||x.sync==='multiSell')candidates.push({kind:x.sync,source:'cross',amount:Math.abs(x.net||0),venues:(x.syncExchanges||[]).join(',')});
@@ -749,6 +784,7 @@ function recordFlowEvents(c){
  });
  events.forEach(function(e){if(e.symbol!==c.symbol||!Number.isFinite(c.last)||!Number.isFinite(e.price)||!e.price)return;var age=now-e.ts;if(age>=15*60000&&e.return15===null)e.return15=(c.last/e.price-1)*100;if(age>=60*60000&&e.return60===null)e.return60=(c.last/e.price-1)*100;});
  saveFlowEvents(events);
+ recordFlowAlerts(c);
 }
 var flowArchiveFilter={symbol:'ALL',kind:'ALL',period:'ALL'};
 function setFlowArchiveFilter(key,value){flowArchiveFilter[key]=value;renderDragonTiger();}
@@ -825,6 +861,7 @@ var day=dayKey();var hist=loadHist()[day]||{};var list=dragonTigerData.todayList
 h+='<div class="dragon-criteria" style="margin:15px 0;padding:12px;background:#0f1621;border-radius:8px"><div style="font-size:12px;color:var(--text);font-weight:600;margin-bottom:5px">'+t('dragonCriteria')+'</div><div style="font-size:11px;color:var(--muted)">'+(currentLang==='zh'?'逐小时统计主动买入/卖出、持仓量变化与大额成交；点击币种查看资金发生的时间和方向。':'Hourly taker buy/sell, open-interest changes and large trades. Open an asset to inspect when and which direction flow occurred.')+'</div></div>';
 h+='<div class="dragon-criteria" style="margin:12px 0;padding:12px;background:#0f1621;border-radius:8px"><div style="font-size:12px;font-weight:600;margin-bottom:8px">'+t('rotationTitle')+'</div><div class="table-wrap"><table class="dragon-table"><thead><tr><th>'+t('rotationAsset')+'</th><th>'+t('rotationNet')+'</th><th>'+t('rotationSync')+'</th><th>'+t('rotationVenues')+'</th></tr></thead><tbody>'+list.map(function(c){var x=c.flow&&c.flow.cross;var sy=x?x.sync:'noConsensus';var n=x&&x.available?x.net:null;return '<tr><td><b>'+c.symbol+'</b></td><td class="'+(n===null?'muted':cls(n))+'">'+(n===null?'—':signedUsd(n))+'</td><td>'+t('sync_'+sy)+'</td><td>'+(x?x.available+'/3':'—')+'</td></tr>';}).join('')+'</tbody></table></div><div class="muted" style="font-size:10px;margin-top:6px">'+t('rotationNote')+' '+t('crossLiveNote')+'</div></div>';
 h+=dtTableHead(false)+list.map(function(c){return '<tr class="dragon-row">'+dtRowCells(coinToRow(c,hist[c.symbol]),day,false)+'</tr>';}).join('')+'</tbody></table></div>';
+h+=flowAlertBoard();
 h+='<div class="dragon-criteria" style="margin:12px 0;padding:12px;background:#0f1621;border-radius:8px"><div style="font-size:12px;font-weight:600;margin-bottom:8px">'+t('eventArchiveTitle')+'</div>'+flowEventBoard()+'<div class="muted" style="font-size:10px;margin-top:6px">'+t('eventArchiveNote')+'</div></div>';h+='<div class="notice" style="margin-top:14px">'+t('dtDisclaimer')+'</div>';box.innerHTML=h;}
 function renderDragonHistory(box){var hist=loadHist();var days=Object.keys(hist).sort().reverse();var h=dtHeader(null);
 if(!days.length){box.innerHTML=h+'<div class="muted" style="padding:30px;text-align:center">'+t('dtHistEmpty')+'</div>';return;}
