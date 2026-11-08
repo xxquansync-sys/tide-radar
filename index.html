@@ -316,6 +316,39 @@ th{position:static;top:auto;z-index:auto}
  #overview .kpis .panel{padding:11px;min-height:88px}
  #overview .kpis .kvalue{font-size:20px}
 }
+
+/* Editorial motion system — restrained, readable, and reduced-motion aware */
+.reveal-label{height:0;position:relative;z-index:1}
+[data-reveal-label]:not(.reveal-label)::before,
+.reveal-label::before{
+ content:attr(data-reveal-label);display:block;color:#78909d;font-size:9px;
+ font-weight:750;letter-spacing:.2em;line-height:1;text-transform:uppercase;
+ margin:0 0 12px 2px
+}
+.reveal-label::before{transform:translateY(-2px)}
+#overview .home-market-hero[data-reveal-label]::before{color:#4e8f89;margin-bottom:12px}
+#overview .market-ranking[data-reveal-label]::before{margin-bottom:14px}
+.reveal-enabled [data-reveal]{opacity:0;transform:translate3d(0,18px,0);transition:opacity .68s cubic-bezier(.2,.7,.2,1),transform .68s cubic-bezier(.2,.7,.2,1);transition-delay:var(--reveal-delay,0ms)}
+.reveal-enabled [data-reveal].is-visible{opacity:1;transform:translate3d(0,0,0)}
+#overview .home-chart-panel,#overview .home-market-side{transition:box-shadow .35s ease,border-color .35s ease,transform .35s ease}
+#overview .home-chart-panel:hover{box-shadow:0 18px 44px rgba(25,55,75,.11),0 2px 5px rgba(23,53,71,.05)}
+#overview .home-market-side:hover{border-color:#d1e3e2}
+#overview .kpis .panel{transition:transform .28s ease,box-shadow .28s ease,border-color .28s ease}
+#overview .kpis .panel:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(23,53,71,.085);border-color:#cbdedc}
+#overview .hot-tag{transition:transform .22s ease,background .22s ease,border-color .22s ease}
+#overview .hot-tag:hover{transform:translateY(-2px);background:#e7f5f2;border-color:#c6e4dd}
+#overview .tile{transition:transform .25s ease,box-shadow .25s ease}
+#overview .tile:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(23,53,71,.07)}
+#overview .market-ranking{overflow:hidden}
+#overview .market-ranking tbody tr{transition:background .2s ease,box-shadow .2s ease}
+#overview .market-ranking tbody tr:hover{box-shadow:inset 3px 0 #69b9ad}
+.page{animation:page-enter .32s ease both}
+@keyframes page-enter{from{opacity:.72;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){
+ .reveal-enabled [data-reveal],.page,#overview .kpis .panel,#overview .hot-tag,#overview .tile{transition:none!important;animation:none!important;transform:none!important}
+ .reveal-enabled [data-reveal]{opacity:1!important}
+}
+
 </style>
 </head>
 <body>
@@ -332,7 +365,7 @@ th{position:static;top:auto;z-index:auto}
 </div>
 </header>
 <main>
-<div class="top">
+<div class="top" data-reveal>
 <div>
 <div class="eyebrow">MARKET PULSE / LIVE MONITOR</div>
 <div class="headline">看见市场正在发生什么</div>
@@ -344,29 +377,30 @@ th{position:static;top:auto;z-index:auto}
 </div>
 </div>
 <section class="page active" id="overview">
-<section class="home-market-hero" aria-label="BTC interactive market chart">
+<section class="home-market-hero" data-reveal data-reveal-label="LIVE MARKET" aria-label="BTC interactive market chart">
 <div class="home-chart-panel"><div class="home-chart-head"><div class="home-chart-title"><div class="home-symbol-mark">₿</div><div><div class="home-chart-name">BTC / USDT <span class="home-market-tag" data-i18n="homePerp">USDT 永续合约</span></div><div class="home-chart-sub">OKX · BTC-USDT-SWAP</div></div><div class="home-eth-price"><strong id="home-btc-price">—</strong><span id="home-btc-change">—</span></div></div><div class="home-chart-actions"><span class="home-live-dot"></span><span data-i18n="homeAutoUpdate">实时更新</span><button class="home-expand" onclick="openKlineChart('BTC')" data-i18n="homeProChart">专业图表 ↗</button></div></div>
 <div class="home-chart-toolbar"><div class="home-timeframes" id="home-chart-periods"><button data-period="1H">1H</button><button class="active" data-period="4H">4H</button><button data-period="1D">1D</button><button data-period="15m">15m</button><button data-period="5m">5m</button></div><span class="home-chart-hint" data-i18n="homeChartHint">滚轮缩放 · 拖动浏览 · 点击查看单根K线</span></div>
 <div id="tide-home-kline-canvas"></div><div class="home-chart-foot"><span id="home-chart-status" data-i18n="homeConnecting">正在连接 OKX 行情…</span><span data-i18n="homeDataSource">数据来源：OKX 公共行情</span></div><div class="home-selected-candle" id="home-selected-candle" data-i18n="homeCandleHint">点击任意一根 K 线，查看该时段 OHLC 数据</div></div>
 <aside class="home-market-side"><div class="home-side-heading"><span data-i18n="homeMarketOverview">市场速览</span><span>24H</span></div><div class="home-side-stat"><span data-i18n="homeLatestPrice">BTC 最新价格</span><strong id="home-side-price">—</strong></div><div class="home-side-stat"><span data-i18n="home24hChange">24H 涨跌幅</span><strong id="home-side-change">—</strong></div><div class="home-side-stat"><span data-i18n="home24hVolume">24H 成交额</span><strong id="home-side-volume">—</strong></div><div class="home-side-stat"><span data-i18n="home24hRange">24H 振幅</span><strong id="home-side-range">—</strong></div><div class="home-side-divider"></div><div class="home-side-heading"><span data-i18n="homePriorityWatch">重点观察</span><span class="home-side-muted">BTC · ETH</span></div><div class="home-watch-item"><span>BTC</span><span id="home-btc-watch" class="home-watch-state" data-i18n="homeLoading">行情加载中</span><button onclick="openKlineChart('BTC')" data-i18n="homeView">查看</button></div><div class="home-watch-item"><span>ETH</span><span id="home-eth-watch" class="home-watch-state" data-i18n="homeLoading">行情加载中</span><button onclick="openKlineChart('ETH')" data-i18n="homeView">查看</button></div><div class="home-side-note" data-i18n="homeDisclaimer">方向观察仅作市场筛选，不构成交易信号。</div></aside></section>
-<div class="grid kpis">
+<div class="reveal-label" data-reveal data-reveal-label="MARKET SNAPSHOT"></div>
+<div class="grid kpis" data-reveal>
 <div class="panel"><div class="klabel" id="kpiCoins">USDT 永续覆盖标的</div><div class="kvalue" id="count">—</div><div class="muted" id="kpiNote1">OKX SWAP 合约</div></div>
 <div class="panel"><div class="klabel" id="kpiBreadth">市场上涨占比</div><div class="kvalue" id="breadth">—</div><div class="muted" id="kpiNote2">24H 涨跌家数</div></div>
 <div class="panel"><div class="klabel" id="kpiVolume">24H 总成交额</div><div class="kvalue" id="volume">—</div><div class="muted" id="kpiNote3">ticker 报价币成交额合计</div></div>
 <div class="panel"><div class="klabel" id="kpiAlerts">大幅波动标的</div><div class="kvalue" id="alerts">—</div><div class="muted" id="kpiNote4">涨跌幅或振幅阈值筛选</div></div>
 <div class="panel"><div class="klabel" id="kpiBtc">BTC 24H 涨跌</div><div class="kvalue" id="btc">—</div><div class="muted" id="btcprice">等待报价</div></div>
 </div>
-<div class="panel">
+<div class="panel" data-reveal data-reveal-label="SECTOR PULSE">
 <div class="head"><h2 id="hotSectorsTitle">本周热点板块</h2><span class="tag" id="hotSectorsTag">动态追踪</span></div>
 <div class="hot-tags" id="hot-sectors">
 <div class="hot-tag">加载中...</div>
 </div>
 </div>
-<div class="grid layout">
+<div class="grid layout" data-reveal>
 <div class="panel"><div class="head"><h2 id="sectorTilesTitle">板块热度概览</h2><span class="tag" id="sectorTilesTag">固定样本追踪</span></div><div class="tiles" id="tiles">加载中…</div></div>
 <div class="panel"><div class="head"><h2 id="summaryTitle">市场异动摘要</h2><span class="tag" id="summaryTag">实时扫描</span></div><div id="summary" class="muted">等待行情…</div></div>
 </div>
-<div class="panel">
+<div class="panel market-ranking" data-reveal data-reveal-label="CONTRACT ACTIVITY">
 <div class="head">
 <div class="market-heading-copy"><h2 id="marketTitle">市场合约排行</h2><p class="market-intro" id="marketIntro">按 24H 成交额排序，快速查看主流合约与异常波动标的。</p></div>
 <div style="display:flex;gap:8px;align-items:center">
@@ -699,6 +733,26 @@ function addWatch(s){var a=JSON.parse(localStorage.getItem('tide_watch')||'["BTC
 function removeWatch(s){var a=JSON.parse(localStorage.getItem('tide_watch')||'[]').filter(function(x){return x!==s;});localStorage.setItem('tide_watch',JSON.stringify(a));renderWatchList();}
 function renderWatchList(){var a=JSON.parse(localStorage.getItem('tide_watch')||'["BTC","ETH","WLD"]');$('watchList').innerHTML=a.length?a.map(function(s){var x=markets.find(function(y){return y.symbol===s;});return '<div class="watchrow"><span><b>'+s+'</b>　'+(x?('<span class="'+cls(x.change)+'">'+pct(x.change)+'</span>　$'+fmt(x.last,x.last<1?6:2)):t('watchWaiting'))+'</span><button onclick="removeWatch(\''+s+'\')">'+t('watchRemoveBtn')+'</button></div>';}).join(''):t('watchEmpty');}
 document.querySelectorAll('nav button[data-page]').forEach(function(b){b.onclick=function(){document.querySelectorAll('nav button[data-page]').forEach(function(x){x.classList.toggle('active',x===b);});document.querySelectorAll('.page').forEach(function(x){x.classList.toggle('active',x.id===b.dataset.page);});var menu=$('nav-more-menu'),toggle=$('more-nav-toggle');if(menu)menu.classList.remove('open');if(toggle)toggle.setAttribute('aria-expanded','false');if(b.dataset.page==='watch')renderWatchList();if(b.dataset.page==='dragon'&&!dragonTigerData.lastUpdate)renderDragonTiger();if(b.dataset.page==='overview'&&!tideHomeChart.chart)homeChartInit();};});
+
+/* Progressive scroll reveals: content remains visible if the API is unavailable. */
+(function initEditorialMotion(){
+ if(!('IntersectionObserver' in window))return;
+ var nodes=document.querySelectorAll('[data-reveal]');
+ if(!nodes.length)return;
+ var reduced=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+ if(reduced){nodes.forEach(function(n){n.classList.add('is-visible');});return;}
+ document.documentElement.classList.add('reveal-enabled');
+ var observer=new IntersectionObserver(function(entries){
+  entries.forEach(function(entry){
+   if(entry.isIntersecting){entry.target.classList.add('is-visible');observer.unobserve(entry.target);}
+  });
+ },{root:null,rootMargin:'0px 0px -7% 0px',threshold:0.06});
+ nodes.forEach(function(node,index){
+  node.style.setProperty('--reveal-delay',Math.min(index%4,3)*75+'ms');
+  observer.observe(node);
+ });
+})();
+
 var moreToggle=$('more-nav-toggle');if(moreToggle)moreToggle.onclick=function(e){e.stopPropagation();var menu=$('nav-more-menu');if(menu){menu.classList.toggle('open');moreToggle.setAttribute('aria-expanded',menu.classList.contains('open')?'true':'false');}};
 document.addEventListener('click',function(e){var wrap=document.querySelector('.nav-more-wrap');if(wrap&&!wrap.contains(e.target)){var menu=$('nav-more-menu');if(menu)menu.classList.remove('open');if(moreToggle)moreToggle.setAttribute('aria-expanded','false');}});
 $('refresh').onclick=refresh;
