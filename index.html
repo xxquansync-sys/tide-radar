@@ -805,8 +805,9 @@ function klineFetch(limit,symbol,period,signal,before){
  return fetch(API+path,{signal:signal}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}).then(function(j){if(j.code!=='0')throw new Error(j.msg||('API '+j.code));var data=klineRowsToData(j.data);if(!data.length)throw new Error('No candle data');return data;});
 }
 function klineDelay(ms){return new Promise(function(resolve){setTimeout(resolve,ms);});}
-function klineFetchInitial(symbol,period,signal){
+function klineFetchInitial(symbol,period,signal,onInitial){
  return klineFetch(300,symbol,period,signal).then(function(recent){
+  if(typeof onInitial==='function')onInitial(recent);
   var all=recent.slice(),oldest=all[0]&&all[0].timestamp;
   function next(){if(all.length>=TIDE_KLINE_MIN_HISTORY||!oldest)return Promise.resolve(all);return klineFetch(100,symbol,period,signal,oldest).then(function(page){var older=page.filter(function(c){return c.timestamp<oldest;});if(!older.length)return all;all=older.concat(all);oldest=all[0].timestamp;return klineDelay(120).then(next);});}
   return next().catch(function(e){all.historyError=e.message;return all;});
@@ -1017,7 +1018,7 @@ function klineLoad(force){
  var controller=new AbortController();tideKline.controller=controller;
  var req=++tideKline.requestId,symbol=tideKline.symbol,period=tideKline.period,incremental=tideKline.data.length>=TIDE_KLINE_MIN_HISTORY;
  tideKline.loading=true;klineSetStatus((incremental?'更新':'加载')+' '+symbol+' '+period+' · OKX');
- (incremental?klineFetch(2,symbol,period,controller.signal):klineFetchInitial(symbol,period,controller.signal)).then(function(data){
+ (incremental?klineFetch(2,symbol,period,controller.signal):klineFetchInitial(symbol,period,controller.signal,function(recent){if(req!==tideKline.requestId||!tideKline.chart||symbol!==tideKline.symbol||period!==tideKline.period)return;klineMergeData(recent);tideKline.chart.applyNewData(tideKline.data);klineWriteCache();klineUpdatePrice();klineSetStatus('已显示最新 '+tideKline.data.length+' 根K线，正在后台补齐至少3000根历史…');})).then(function(data){
   if(req!==tideKline.requestId||!tideKline.chart||symbol!==tideKline.symbol||period!==tideKline.period)return;
   tideKline.historyError=data.historyError||'';klineMergeData(data);if(incremental){try{tideKline.chart.updateData(data[data.length-1]);}catch(e){tideKline.chart.applyNewData(tideKline.data);}}else{tideKline.chart.applyNewData(tideKline.data);}klineWriteCache();klineUpdatePrice();
   var needHtf=period==='15m'&&Date.now()-Math.max(tideKline.htfFetchedAt,tideKline.htfRequestedAt)>60000;if(needHtf)tideKline.htfRequestedAt=Date.now();var htfTask=needHtf?klineFetch(300,symbol,'4H',controller.signal).then(function(higher){if(req===tideKline.requestId){tideKline.htfData=higher;tideKline.htfFetchedAt=Date.now();}}).catch(function(){ }):Promise.resolve();
@@ -1055,7 +1056,7 @@ function changeKlinePeriod(p){
  tideKline.controller=null;tideKline.loading=false;tideKline.requestId++;
  var cached=klineReadCache(tideKline.symbol,p);tideKline.data=cached?cached.data:[];
  klineRenderControls();
- if(tideKline.chart)tideKline.chart.applyNewData(tideKline.data);
+ if(tideKline.chart&&tideKline.data.length)tideKline.chart.applyNewData(tideKline.data);
  klineUpdatePrice();klineRenderTdx();
  klineSetStatus(cached?'已切换 '+p+' · 正在后台更新 OKX 行情…':'正在加载 '+p+' OKX K线…');
  klineLoad(true);klineWsStart();
