@@ -608,7 +608,7 @@ if($('marketSort'))$('marketSort').addEventListener('change',renderMarketTable);
 $('addWatch').onclick=function(){var s=$('watchInput').value.trim().toUpperCase().replace(/USDT$/,'');if(s)addWatch(s);$('watchInput').value='';};
 $('copy-brief').onclick=function(){var txt=$('brief-content').textContent;if(navigator.clipboard){navigator.clipboard.writeText(txt).then(function(){$('copy-brief').textContent=t('copiedBtn');setTimeout(function(){$('copy-brief').textContent=t('copyBtn');},1800);}).catch(function(){$('copy-brief').textContent=t('copyFailBtn');});}else{$('copy-brief').textContent=t('copyFailBtn');}};
 function t(key){return translations[currentLang][key]||key;}
-function switchLang(lang){currentLang=lang;localStorage.setItem('tide_lang',lang);document.querySelectorAll('.lang-switch button').forEach(function(b){b.classList.toggle('active',b.dataset.lang===lang);});updateUI();}
+function switchLang(lang){currentLang=lang;localStorage.setItem('tide_lang',lang);document.querySelectorAll('.lang-switch button').forEach(function(b){b.classList.toggle('active',b.dataset.lang===lang);});updateUI();if(tideHomeChart.chart){try{tideHomeChart.chart.setLocale(lang==='zh'?'zh-CN':'en-US');}catch(e){}homeChartLoad();}}
 function updateUI(){
 document.querySelector('.brand').innerHTML="<span class=\"logo\" aria-hidden=\"true\"><svg viewBox=\"0 0 32 32\" width=\"22\" height=\"22\" fill=\"none\"><circle cx=\"16\" cy=\"16\" r=\"11.5\" stroke=\"currentColor\" stroke-width=\"1.6\" opacity=\".45\"/><circle cx=\"16\" cy=\"16\" r=\"7\" stroke=\"currentColor\" stroke-width=\"1.6\" opacity=\".7\"/><path d=\"M16 16 26 7\" stroke=\"#63D6C7\" stroke-width=\"2\" stroke-linecap=\"round\"/><circle cx=\"16\" cy=\"16\" r=\"2.3\" fill=\"#63D6C7\"/></svg></span>"+t('brand')+'<small>'+t('tagline')+'</small>';
 document.querySelector('[data-page="overview"]').textContent=t('navOverview');
@@ -1018,7 +1018,7 @@ function homeChartSelectCandle(payload){
  var candidate=null,seen=[];function walk(o,d){if(!o||typeof o!=='object'||d>4||seen.indexOf(o)>=0)return;seen.push(o);if(Number.isFinite(Number(o.timestamp))&&Number(o.timestamp)>0&&Number.isFinite(Number(o.open))&&Number.isFinite(Number(o.close))){candidate=o;return;}['data','kLineData','klineData','candle','bar','current','item'].forEach(function(k){if(!candidate&&o[k]&&typeof o[k]==='object')walk(o[k],d+1);});}
  walk(payload,0);if(!candidate)return;var c=tideHomeChart.data.find(function(x){return x.timestamp===Number(candidate.timestamp);})||candidate;
  var d=new Date(Number(c.timestamp)),time=d.toLocaleString(currentLang==='zh'?'zh-CN':'en-US',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}),change=(Number(c.close)/Number(c.open)-1)*100;
- var el=$('home-selected-candle');if(el)el.textContent=time+' · 开 '+fmt(c.open,c.open<1?6:2)+' 高 '+fmt(c.high,c.high<1?6:2)+' 低 '+fmt(c.low,c.low<1?6:2)+' 收 '+fmt(c.close,c.close<1?6:2)+' 涨跌 '+pct(change);
+ var el=$('home-selected-candle');if(el){var tr=translations[currentLang],labels=[tr.homeTime,tr.homeOpen,tr.homeHigh,tr.homeLow,tr.homeClose,tr.homeChange];el.removeAttribute('data-i18n');el.textContent=time+' · '+labels[1]+' '+fmt(c.open,c.open<1?6:2)+' '+labels[2]+' '+fmt(c.high,c.high<1?6:2)+' '+labels[3]+' '+fmt(c.low,c.low<1?6:2)+' '+labels[4]+' '+fmt(c.close,c.close<1?6:2)+' '+labels[5]+' '+pct(change);}
 }
 function homeChartLoad(){
  if(!tideHomeChart.chart)return;if(tideHomeChart.controller){try{tideHomeChart.controller.abort();}catch(e){}}
