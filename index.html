@@ -983,6 +983,7 @@ function homeChartInit(){
  tideHomeChart.chart=lib.init('tide-home-kline-canvas',{locale:currentLang==='zh'?'zh-CN':'en-US',timezone:'Asia/Singapore',styles:klineThemeStyles('light')});
  try{tideHomeChart.chart.createIndicator({name:'MA',calcParams:[20]},true,{id:'candle_pane'});}catch(e){}try{tideHomeChart.chart.createIndicator('VOL',false,{id:'home_volume_pane',height:72,minHeight:48});}catch(e){}
  tideHomeChart.clickHandler=homeChartSelectCandle;try{tideHomeChart.chart.subscribeAction('onCandleBarClick',tideHomeChart.clickHandler);}catch(e){}
+ var periodHost=$('home-chart-periods');if(periodHost)periodHost.querySelectorAll('button').forEach(function(b){b.onclick=function(){homeChartChangePeriod(b.dataset.period);};});
  homeChartLoad();homeChartRenderPeriods();tideHomeChart.timer=setInterval(function(){var page=$('overview');if(page&&page.classList.contains('active'))homeChartLoad();},60000);
  }).catch(function(e){homeChartStatus('图表加载失败：'+e.message);});
 }
