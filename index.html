@@ -1418,7 +1418,7 @@ function homeChartInit(){
 }
 
 /* ---------------- KLineChart: OKX public candles ---------------- */
-var tideKline={chart:null,anomalyEvents:[],selectedAnomaly:null,eventRequestId:0,candleClickHandler:null,symbol:'BTC',period:'15m',timer:null,scriptLoading:null,controller:null,ws:null,wsRetry:null,wsHeartbeat:null,wsGeneration:0,olderLoading:false,hasMoreHistory:true,indicators:{MA:true,EMA:false,VOL:true,MACD:true,RSI:false},indicatorParams:{MA:[5,10,30,60],EMA:[6,12,20],VOL:[5,10,20],MACD:[12,26,9],RSI:[6,12,24]},indicatorLocations:{MA:'main',EMA:'main'},data:[],htfData:[],htfFetchedAt:0,htfRequestedAt:0,loading:false,requestId:0,drawMode:'cursor',tdxEnabled:true,tdxParams:{penPeriod:7,halfPercent:50,atrSwing:1.2,confirmBars:2,timePeriod:1}};
+var tideKline={chart:null,anomalyEvents:[],selectedAnomaly:null,eventRequestId:0,candleClickHandler:null,symbol:'BTC',period:'15m',timer:null,scriptLoading:null,controller:null,ws:null,wsRetry:null,wsHeartbeat:null,wsGeneration:0,olderLoading:false,hasMoreHistory:true,indicators:{MA:true,EMA:false,VOL:true,MACD:true,RSI:false},indicatorParams:{MA:[5,10,30,60],EMA:[6,12,20],VOL:[5,10,20],MACD:[12,26,9],RSI:[6,12,24]},indicatorLocations:{MA:'main',EMA:'main'},data:[],htfData:[],htfFetchedAt:0,htfRequestedAt:0,dailyData:[],dailyFetchedAt:0,dailyRequestedAt:0,loading:false,requestId:0,drawMode:'cursor',tdxEnabled:true,tdxParams:{penPeriod:7,halfPercent:50,atrSwing:1.2,confirmBars:2,timePeriod:1}};
 var tideKlinePeriods=['1m','5m','15m','1H','4H','1D'];
 try{var _savedTdx=JSON.parse(localStorage.getItem('tide_tdx_params')||'null');if(_savedTdx&&typeof _savedTdx==='object')tideKline.tdxParams=Object.assign({penPeriod:7,halfPercent:50,atrSwing:1.2,confirmBars:2,timePeriod:1},_savedTdx);}catch(e){}
 var TIDE_KLINE_CACHE='tide_kline_cache_v3';
@@ -1502,9 +1502,9 @@ function klineWsStop(){tideKline.wsGeneration++;if(tideKline.wsRetry){clearTimeo
 function klineWsStart(){
  klineWsStop();var generation=tideKline.wsGeneration,symbol=tideKline.symbol,period=tideKline.period,ws;
  try{ws=new WebSocket('wss://ws.okx.com:8443/ws/v5/business');}catch(e){return;}tideKline.ws=ws;
- ws.onopen=function(){if(generation!==tideKline.wsGeneration)return;var wsBar=period==='1D'?'1D':period;var args=[{channel:'candle'+wsBar,instId:symbol+'-USDT-SWAP'}];if(period==='15m')args.push({channel:'candle4H',instId:symbol+'-USDT-SWAP'});ws.send(JSON.stringify({op:'subscribe',args:args}));tideKline.wsHeartbeat=setInterval(function(){if(ws.readyState===WebSocket.OPEN)try{ws.send('ping');}catch(e){}},20000);};
+ ws.onopen=function(){if(generation!==tideKline.wsGeneration)return;var wsBar=period==='1D'?'1D':period;var args=[{channel:'candle'+wsBar,instId:symbol+'-USDT-SWAP'}];if(period==='15m')args.push({channel:'candle4H',instId:symbol+'-USDT-SWAP'});if(period==='15m'||period==='4H')args.push({channel:'candle1D',instId:symbol+'-USDT-SWAP'});ws.send(JSON.stringify({op:'subscribe',args:args}));tideKline.wsHeartbeat=setInterval(function(){if(ws.readyState===WebSocket.OPEN)try{ws.send('ping');}catch(e){}},20000);};
  ws.onmessage=function(ev){if(generation!==tideKline.wsGeneration)return;if(ev.data==='ping'){try{ws.send('pong');}catch(e){}return;}var msg;try{msg=JSON.parse(ev.data);}catch(e){return;}if(!msg.arg||!msg.data)return;var rows=klineRowsToData(msg.data);if(!rows.length)return;
-  if(msg.arg.channel==='candle4H'){var hm={};tideKline.htfData.forEach(function(c){hm[c.timestamp]=c;});rows.forEach(function(c){hm[c.timestamp]=c;});tideKline.htfData=Object.keys(hm).map(function(k){return hm[k];}).sort(function(a,b){return a.timestamp-b.timestamp;}).slice(-TIDE_KLINE_MAX_CACHE);tideKline.htfFetchedAt=Date.now();klineRenderTdx();return;}
+  if(msg.arg.channel==='candle4H'){var hm={};tideKline.htfData.forEach(function(c){hm[c.timestamp]=c;});rows.forEach(function(c){hm[c.timestamp]=c;});tideKline.htfData=Object.keys(hm).map(function(k){return hm[k];}).sort(function(a,b){return a.timestamp-b.timestamp;}).slice(-TIDE_KLINE_MAX_CACHE);tideKline.htfFetchedAt=Date.now();klineRenderTdx();return;}if(msg.arg.channel==='candle1D'){var dm={};tideKline.dailyData.forEach(function(c){dm[c.timestamp]=c;});rows.forEach(function(c){dm[c.timestamp]=c;});tideKline.dailyData=Object.keys(dm).map(function(k){return dm[k];}).sort(function(a,b){return a.timestamp-b.timestamp;}).slice(-TIDE_KLINE_MAX_CACHE);tideKline.dailyFetchedAt=Date.now();klineRenderTdx();return;}
   var candle=rows[rows.length-1];klineMergeData([candle]);if(tideKline.chart){try{tideKline.chart.updateData(candle);}catch(e){tideKline.chart.applyNewData(tideKline.data);}}klineWriteCache();klineUpdatePrice();klineRenderEvents();
  };
  ws.onclose=function(){if(generation!==tideKline.wsGeneration)return;tideKline.wsRetry=setTimeout(function(){var modal=$('tide-kline-modal');if(tideKline.chart&&modal&&modal.style.display!=='none')klineWsStart();},3000);};
@@ -1529,12 +1529,12 @@ function klineSetLanguage(lang){
   settings:'Indicator Settings',select:'Indicator',params:'Calculation parameters (comma-separated)',placeholder:'e.g. 5,10,30,60',apply:'Apply',close:'Close',main:'MA / EMA are overlaid on the main chart',
   themeLight:'Switch to dark background',themeDark:'Switch to white background',
   cursor:'Select / Crosshair',segment:'Trend Line',ray:'Ray',straight:'Straight Line',horizontal:'Horizontal Line',hray:'Horizontal Ray',vertical:'Vertical Line',rect:'Rectangle',parallel:'Parallel Channel',fib:'Fibonacci Retracement',brush:'Brush',delete:'Delete Selected Drawing',clear:'Clear All Drawings',loading:'Preparing chart…',
-  settingsButton:'Indicator Settings',tdx:'Structure',tdxTitle:'Crypto Structure System',pen:'Pen period',half:'Midpoint (%)',atr:'ATR swing filter',confirm:'Closed-bar confirmation',time:'Time parameter',tdxNote:'Defaults: pen 7, midpoint 50%, ATR swing filter 1.2x, confirmation 2 closed bars. Crypto trades 24/7; no daily price-limit logic. The 15m chart uses closed 4H candles for directional alignment.',tdxApply:'Apply structure parameters'
+  settingsButton:'Indicator Settings',tdx:'Structure',tdxTitle:'Crypto Structure System',pen:'Pen period',half:'Midpoint (%)',atr:'ATR swing filter',confirm:'Closed-bar confirmation',time:'Time parameter',tdxNote:'Defaults: pen 7, midpoint 50%, ATR swing filter 1.2x, confirmation 2 closed bars. Crypto trades 24/7; no daily price-limit logic. The 4H and 15m charts require closed 1D bias; 15m also requires closed 4H alignment.',tdxApply:'Apply structure parameters'
  }:{
   settings:'指标参数',select:'选择指标',params:'计算参数（逗号分隔）',placeholder:'例如 5,10,30,60',apply:'应用参数',close:'关闭',main:'MA / EMA 固定叠加在K线主图上',
   themeLight:'切换黑色背景',themeDark:'切换白色背景',
   cursor:'选择/十字光标',segment:'趋势线',ray:'射线',straight:'直线',horizontal:'水平线',hray:'水平射线',vertical:'垂直线',rect:'矩形区域',parallel:'平行通道',fib:'斐波那契回撤',brush:'自由画笔',delete:'删除选中绘图',clear:'清空全部绘图',loading:'准备图表…',
-  settingsButton:'参数设置',tdx:'结构',tdxTitle:'加密市场结构系统',pen:'笔周期',half:'半分位（%）',atr:'ATR波动过滤倍数',confirm:'收盘确认K线数',time:'时间参数',tdxNote:'默认：笔周期 7、半分位 50%、ATR过滤 1.2倍、收盘确认2根。加密市场24/7交易，不使用涨跌停价逻辑。15分钟图自动使用已收盘的4小时K线过滤方向。',tdxApply:'应用结构参数'
+  settingsButton:'参数设置',tdx:'结构',tdxTitle:'加密市场结构系统',pen:'笔周期',half:'半分位（%）',atr:'ATR波动过滤倍数',confirm:'收盘确认K线数',time:'时间参数',tdxNote:'默认：笔周期 7、半分位 50%、ATR过滤 1.2倍、收盘确认2根。加密市场24/7交易，不使用涨跌停价逻辑。4H与15M均使用已收盘日线过滤方向；15M还必须通过已收盘4H方向确认。',tdxApply:'应用结构参数'
  };
  var set=function(id,v){var el=$(id);if(el)el.textContent=v;};
  set('tide-kline-settings-title',dict.settings);
@@ -1673,17 +1673,17 @@ function klineRenderTdx(){
  if(!tideKline.tdxEnabled){try{tideKline.chart.removeOverlay({groupId:'tide-tdx-structure'});}catch(e){}var dash=$('tide-tdx-dashboard');if(dash)dash.style.display='none';return;}
  var dash=$('tide-tdx-dashboard');if(dash)dash.style.display='grid';
  try{
- var result=tideKline.period==='15m'?window.TideTdxStructure.computeMultiTimeframe(tideKline.data,tideKline.htfData,tideKline.tdxParams,'15m'):window.TideTdxStructure.compute(tideKline.data,tideKline.tdxParams,tideKline.period);
+ var result=(tideKline.period==='15m'||tideKline.period==='4H')?window.TideTdxStructure.computeMultiTimeframe(tideKline.data,tideKline.htfData,tideKline.dailyData,tideKline.tdxParams,tideKline.period):window.TideTdxStructure.compute(tideKline.data,tideKline.tdxParams,tideKline.period);
  window.TideTdxStructure.render(tideKline.chart,tideKline.data,result,tideKlineLang);
  var en=tideKlineLang==='en',last=result.signals.length?result.signals[result.signals.length-1]:null;
  var fmt=function(v){return Number.isFinite(v)?(v<1?v.toFixed(6):v.toLocaleString('en-US',{maximumFractionDigits:2})):'—';};
  var set=function(id,v){var el=$(id);if(el)el.textContent=v;};
- set('tdx-label-regime',en?'Structure':'结构状态');set('tdx-label-htf',en?'4H bias':'4H方向');set('tdx-label-signal',en?'Latest signal':'最新信号');set('tdx-label-entry',en?'Entry / Stop':'入场 / 止损');set('tdx-label-target',en?'Target / R:R':'目标 / R:R');
+ set('tdx-label-regime',en?'Structure':'结构状态');set('tdx-label-htf',en?'1D / 4H bias':'日线 / 4H方向');set('tdx-label-signal',en?'Latest signal':'最新信号');set('tdx-label-entry',en?'Entry / Stop':'入场 / 止损');set('tdx-label-target',en?'Target / R:R':'目标 / R:R');
  set('tdx-value-regime',result.regime.toUpperCase()+' · ADX '+(result.adx||0).toFixed(0));
- set('tdx-value-htf',result.htf?result.htf.trend.toUpperCase():(en?'Local TF':'本周期'));
- set('tdx-value-signal',last?(last.text+' '+last.direction.toUpperCase()+' · '+(en?'Quality ':'质量 ')+last.score+'/100'+(last.aligned===false?' · 4H ×':'')):(en?'No confirmed signal':'暂无已确认信号'));
- set('tdx-value-entry',last?fmt(last.entry)+' / '+fmt(last.stop):'—');
- set('tdx-value-target',last?fmt(last.target)+' / '+(last.rr?last.rr.toFixed(2):'—'):'—');
+ set('tdx-value-htf',result.htf?('1D '+(result.daily?result.daily.trend:'neutral')+' · 4H '+result.htf.trend).toUpperCase():(en?'Local TF':'本周期'));
+ set('tdx-value-signal',last?(last.text+' '+last.direction.toUpperCase()+' · '+(en?'Quality ':'质量 ')+last.score+'/100'+(last.tradable===false?' · '+(en?'BLOCKED':'已过滤')+' · '+last.filterReason:'')):(en?'No confirmed signal':'暂无已确认信号'));
+ set('tdx-value-entry',last?(last.tradable===false?(en?'Blocked by 1D / 4H filter':'日线 / 4H 方向过滤未通过'):fmt(last.entry)+' / '+fmt(last.stop)):'—');
+ set('tdx-value-target',last?(last.tradable===false?'—':fmt(last.target)+' / '+(last.rr?last.rr.toFixed(2):'—')):'—');
  }catch(e){klineSetStatus('结构指标计算失败：'+e.message);}
 }
 function klineToggleTdx(){tideKline.tdxEnabled=!tideKline.tdxEnabled;var b=$('tide-kline-TDX');if(b)b.classList.toggle('active',tideKline.tdxEnabled);klineRenderTdx();}
@@ -1847,8 +1847,8 @@ function klineLoad(force){
  (incremental?klineFetch(2,symbol,period,controller.signal):klineFetchInitial(symbol,period,controller.signal,function(recent){if(req!==tideKline.requestId||!tideKline.chart||symbol!==tideKline.symbol||period!==tideKline.period)return;klineMergeData(recent);tideKline.chart.applyNewData(tideKline.data);klineWriteCache();klineUpdatePrice();klineSetStatus('已显示最新 '+tideKline.data.length+' 根K线，正在后台补齐至少3000根历史…');})).then(function(data){
   if(req!==tideKline.requestId||!tideKline.chart||symbol!==tideKline.symbol||period!==tideKline.period)return;
   tideKline.historyError=data.historyError||'';klineMergeData(data);if(incremental){try{tideKline.chart.updateData(data[data.length-1]);}catch(e){tideKline.chart.applyNewData(tideKline.data);}}else{tideKline.chart.applyNewData(tideKline.data);}klineWriteCache();klineUpdatePrice();klineRenderEvents();
-  var needHtf=period==='15m'&&Date.now()-Math.max(tideKline.htfFetchedAt,tideKline.htfRequestedAt)>60000;if(needHtf)tideKline.htfRequestedAt=Date.now();var htfTask=needHtf?klineFetch(300,symbol,'4H',controller.signal).then(function(higher){if(req===tideKline.requestId){tideKline.htfData=higher;tideKline.htfFetchedAt=Date.now();}}).catch(function(){ }):Promise.resolve();
-  htfTask.then(function(){if(req===tideKline.requestId)klineRenderTdx();});
+  var needHtf=period==='15m'&&Date.now()-Math.max(tideKline.htfFetchedAt,tideKline.htfRequestedAt)>60000;if(needHtf)tideKline.htfRequestedAt=Date.now();var needDaily=(period==='15m'||period==='4H')&&Date.now()-Math.max(tideKline.dailyFetchedAt,tideKline.dailyRequestedAt)>60000;if(needDaily)tideKline.dailyRequestedAt=Date.now();var htfTask=needHtf?klineFetch(300,symbol,'4H',controller.signal).then(function(higher){if(req===tideKline.requestId){tideKline.htfData=higher;tideKline.htfFetchedAt=Date.now();}}).catch(function(){ }):Promise.resolve();var dailyTask=needDaily?klineFetch(300,symbol,'1D',controller.signal).then(function(daily){if(req===tideKline.requestId){tideKline.dailyData=daily;tideKline.dailyFetchedAt=Date.now();}}).catch(function(){ }):Promise.resolve();
+  Promise.all([htfTask,dailyTask]).then(function(){if(req===tideKline.requestId)klineRenderTdx();});
   klineSetStatus('OKX 行情 · '+tideKline.data.length+' 根 · '+(tideKline.historyError?'历史分页异常：'+tideKline.historyError:(tideKline.data.length>=TIDE_KLINE_MIN_HISTORY?'历史已加载':'当前可获取历史不足3000根'))+' · '+new Date().toLocaleTimeString());
  }).catch(function(e){
   if(req!==tideKline.requestId||e.name==='AbortError')return;
@@ -1860,7 +1860,7 @@ function klineLoad(force){
 function openKlineChart(symbol){
  tideKlineLang=currentLang;try{localStorage.setItem('tide_kline_lang',tideKlineLang);}catch(e){}
  tideKline.symbol=String(symbol||'BTC').toUpperCase().replace(/[^A-Z0-9]/g,'');klineWsStop();tideKline.hasMoreHistory=true;
- tideKline.htfData=[];tideKline.htfFetchedAt=0;tideKline.htfRequestedAt=0;
+ tideKline.htfData=[];tideKline.htfFetchedAt=0;tideKline.htfRequestedAt=0;tideKline.dailyData=[];tideKline.dailyFetchedAt=0;tideKline.dailyRequestedAt=0;
  var modal=klineModal();modal.style.display='flex';
  try{tideKlineTheme=localStorage.getItem('tide_kline_theme')||'dark';}catch(e){}$('tide-kline-title').textContent=tideKline.symbol+'-USDT-SWAP';klineRenderControls();klineApplyTheme();klineSetLanguage(tideKlineLang);
  if(tideKline.timer){clearInterval(tideKline.timer);tideKline.timer=null;}
