@@ -1,10 +1,14 @@
 (function(g){'use strict';
 const D={penPeriod:7,halfPercent:50,timePeriod:1,atrPeriod:14,atrSwing:1.2,confirmBars:2,volumePeriod:20,stopAtr:0.35,targetR:2};
 const finite=Number.isFinite,clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),nan=n=>Array(n).fill(NaN);
+function sma(a,p){const out=nan(a.length);let sum=0;for(let i=0;i<a.length;i++){sum+=a[i];if(i>=p)sum-=a[i-p];if(i>=p-1)out[i]=sum/p;}return out;}
+function classifyMa(fast,slow,close,i){if(i<32||!finite(fast[i])||!finite(slow[i]))return 'neutral';const back=Math.max(0,i-3),fs=fast[i]-fast[back],ss=slow[i]-slow[back],spread=(fast[i]-slow[i])/Math.max(Math.abs(close[i]),1e-12);if(Math.abs(spread)<0.00035&&Math.abs(fs/close[i])<0.00035&&Math.abs(ss/close[i])<0.00025)return 'neutral';if(fast[i]>slow[i]&&fs>0&&ss>=0)return 'bull';if(fast[i]<slow[i]&&fs<0&&ss<=0)return 'bear';return 'neutral';}
 function ema(a,p){const out=nan(a.length),k=2/(p+1);let v=NaN;for(let i=0;i<a.length;i++){if(finite(a[i])){v=finite(v)?v+k*(a[i]-v):a[i];out[i]=v;}}return out;}
 function compute(data,opts,tf){
  const p=Object.assign({},D,opts||{}),n=data.length,closed=data.map((x,i)=>({x,i})).filter(z=>z.x.confirmed===true||(!('confirmed'in z.x)&&z.i<n-1));
  const rows=closed.map(z=>z.x),idx=closed.map(z=>z.i),m=rows.length,H=rows.map(x=>+x.high),L=rows.map(x=>+x.low),C=rows.map(x=>+x.close),O=rows.map(x=>+x.open),V=rows.map(x=>+x.volume||0),tr=nan(m),atr=nan(m),dmP=nan(m),dmM=nan(m);
+ const ma7=sma(C,7),ma30=sma(C,30),maTrendLocal=ma7.map((v,i)=>classifyMa(ma7,ma30,C,i)),maTrendSeries=[],maCrossSeries=[];
+ for(let i=0;i<m;i++){const orig=idx[i];maTrendSeries[orig]=maTrendLocal[i];maCrossSeries[orig]=i>0&&((ma7[i]>ma30[i]&&ma7[i-1]<=ma30[i-1])||(ma7[i]<ma30[i]&&ma7[i-1]>=ma30[i-1]))?(ma7[i]>ma30[i]?'golden':'death'):'none';}
  for(let i=0;i<m;i++){const up=i?H[i]-H[i-1]:0,down=i?L[i-1]-L[i]:0;dmP[i]=up>down&&up>0?up:0;dmM[i]=down>up&&down>0?down:0;tr[i]=Math.max(H[i]-L[i],i?Math.abs(H[i]-C[i-1]):0,i?Math.abs(L[i]-C[i-1]):0);const s=Math.max(0,i-p.atrPeriod+1);atr[i]=tr.slice(s,i+1).reduce((a,b)=>a+b,0)/(i-s+1);}
  const smTR=ema(tr,p.atrPeriod),smDMp=ema(dmP,p.atrPeriod),smDMm=ema(dmM,p.atrPeriod),pDI=dmP.map((v,i)=>smTR[i]>0?100*smDMp[i]/smTR[i]:0),mDI=dmM.map((v,i)=>smTR[i]>0?100*smDMm[i]/smTR[i]:0),dx=pDI.map((v,i)=>v+mDI[i]>0?100*Math.abs(v-mDI[i])/(v+mDI[i]):0),adx=ema(dx,Math.max(3,p.atrPeriod));
  const macdFast=ema(C,12),macdSlow=ema(C,26),diff=macdFast.map((v,i)=>v-macdSlow[i]),macdSignal=ema(diff,9),hist=diff.map((v,i)=>v-macdSignal[i]);
@@ -45,7 +49,7 @@ function compute(data,opts,tf){
  // Divergence is emitted once, at the confirmation bar of a new structural extreme.
  for(const z of pivots){const same=pivots.filter(x=>x.type===z.type&&x.confirmedAt<z.confirmedAt);if(!same.length)continue;const prev=same.at(-1),nowHist=hist[z.localIndex],oldHist=hist[prev.localIndex];if(z.type==='low'&&z.price<prev.price&&nowHist>oldHist&&divSeen.low!==z.confirmedAt){const entry=rows[z.confirmLocal].close,stop=z.price-(atr[z.localIndex]||tr[z.localIndex])*p.stopAtr,risk=entry-stop;signals.push({index:z.confirmedAt,price:entry,text:'Bull div',direction:'long',entry,stop,target:entry+risk*p.targetR,rr:p.targetR,confirmedAt:z.confirmedAt,score:55});divSeen.low=z.confirmedAt;}if(z.type==='high'&&z.price>prev.price&&nowHist<oldHist&&divSeen.high!==z.confirmedAt){const entry=rows[z.confirmLocal].close,stop=z.price+(atr[z.localIndex]||tr[z.localIndex])*p.stopAtr,risk=stop-entry;signals.push({index:z.confirmedAt,price:entry,text:'Bear div',direction:'short',entry,stop,target:entry-risk*p.targetR,rr:p.targetR,confirmedAt:z.confirmedAt,score:55});divSeen.high=z.confirmedAt;}}
  const stats=pivots.slice(-4).slice(1).map((z,i)=>{const a=pivots.slice(-4)[i];return {bars:z.index-a.index,change:(z.price-a.price)/a.price*100};});
- return {params:p,pivots,labels,signals:signals.sort((a,b)=>a.index-b.index),levels,trend,trendSeries,regime,adx:lastAdx,overlap,stats,barCount:m,confirmedOnly:true};
+ return {params:p,pivots,labels,signals:signals.sort((a,b)=>a.index-b.index),levels,trend,trendSeries,ma7:ma7.at(-1),ma30:ma30.at(-1),maTrend:maTrendLocal.at(-1)||'neutral',maTrendSeries,maCrossSeries,regime,adx:lastAdx,overlap,stats,barCount:m,confirmedOnly:true};
 }
 function mapClosedBias(lower,higher,higherResult,lowerDuration,higherDuration){
  const out=Array(lower.length).fill('neutral');
@@ -56,7 +60,7 @@ function mapClosedBias(lower,higher,higherResult,lowerDuration,higherDuration){
    const x=higher[j],closed=x.confirmed===true||(!('confirmed'in x)&&j<higher.length-1);
    if(closed&&+x.timestamp+higherDuration<=end)picked=j;
   }
-  if(picked>=0)out[i]=higherResult.trendSeries[picked]||'neutral';
+  if(picked>=0)out[i]=higherResult.maTrendSeries[picked]||'neutral';
  }
  return out;
 }
@@ -71,21 +75,20 @@ function computeMultiTimeframe(data,htf,daily,opts,tf){
   const htfResult=Array.isArray(htf)&&htf.length?compute(htf,opts,'4H'):null;
   htfBias=mapClosedBias(data,htf,htfResult,localDur,14400000);
  }else{
-  htfBias=out.trendSeries.map(v=>v||'neutral');
+  htfBias=out.maTrendSeries.map(v=>v||'neutral');
  }
  out.daily={trend:dailyBias.at(-1)||'neutral',aligned:dailyBias,available:!!dailyResult};
- out.htf={trend:is4h?out.trend:(htfBias.at(-1)||'neutral'),aligned:htfBias,available:is4h||!!(htf&&htf.length)};
+ out.htf={trend:htfBias.at(-1)||'neutral',aligned:htfBias,available:is4h||!!(htf&&htf.length)};
  out.signals=out.signals.map(s=>{
-  const h=htfBias[s.index]||'neutral',d=dailyBias[s.index]||'neutral';
-  const direction=s.direction==='long'?'bull':'bear';
-  const hAligned=h===direction,dAligned=d===direction;
-  const tradable=hAligned&&dAligned;
-  const reasons=[];
-  if(!dAligned)reasons.push(d==='neutral'?'1D unavailable/neutral':'1D '+d);
-  if(!hAligned)reasons.push(h==='neutral'?'4H unavailable/neutral':'4H '+h);
-  return Object.assign({},s,{htfTrend:h,dailyTrend:d,aligned:tradable,tradable,filterReason:reasons.join(' · '),score:clamp(s.score+(tradable?10:0),0,100)});
+  const h=htfBias[s.index]||'neutral',d=dailyBias[s.index]||'neutral',local=out.maTrendSeries[s.index]||'neutral';
+  const direction=s.direction==='long'?'bull':'bear',hAligned=h===direction,dAligned=d===direction,maAligned=local===direction;
+  const opposed=(h!=='neutral'&&h!==direction)||(d!=='neutral'&&d!==direction);
+  const alignment=maAligned&&!opposed&&(hAligned||dAligned)?'aligned':maAligned&&opposed?'countertrend':maAligned?'transition':'mixed';
+  const cross=out.maCrossSeries[s.index]||'none',crossBonus=(cross==='golden'&&direction==='bull')||(cross==='death'&&direction==='bear')?4:0;
+  const bonus=(maAligned?12:local==='neutral'?0:-8)+(hAligned?8:h==='neutral'?0:-6)+(dAligned?5:d==='neutral'?0:-4)+crossBonus;
+  return Object.assign({},s,{htfTrend:h,dailyTrend:d,maTrend:local,maCross:cross,alignment,aligned:alignment==='aligned',tradable:true,filterReason:'',score:clamp(s.score+bonus,0,100)});
  });
- out.directionGate={required:['1D','4H'],passed:out.signals.filter(s=>s.tradable).length,blocked:out.signals.filter(s=>!s.tradable).length};
+ out.directionGate={mode:'soft-score',blocked:0};
  return out;
 }
 function render(chart,data,r,lang){
@@ -96,9 +99,9 @@ function render(chart,data,r,lang){
  [['low1','#22a45a'],['high1','#df535b'],['mid','#e4a83d'],['centerHigh','#8c78d8'],['centerLow','#8c78d8'],['centerMid','#a995ed']].forEach(([k,c])=>{if(finite(r.levels[k])){line(pt(0,r.levels[k]),pt(last,r.levels[k]),c);if(k==='mid')txt(last,r.levels[k],'50% MID',c);if(k==='centerHigh')txt(last,r.levels[k],'CENTER',c);}});
  r.labels.slice(-35).forEach(x=>txt(x.index,x.price,x.text,x.color));
  r.signals.slice(-12).forEach(x=>txt(x.index,x.price,x.text+' '+x.score+(x.tradable===false?' · BLOCKED':''),x.tradable===false?'#9299a3':x.direction==='long'?'#22b88a':'#ed6676'));
- const trade=r.signals.at(-1);if(trade&&trade.index<=last&&trade.tradable!==false){[['entry','#4da3ff','ENTRY'],['stop','#e05b68','STOP'],['target','#22a45a','TARGET']].forEach(([k,color,label])=>{if(finite(trade[k])){line(pt(trade.index,trade[k]),pt(last,trade[k]),color);txt(last,trade[k],label+' '+trade[k].toPrecision(6),color);}});}
+ const trade=r.signals.at(-1);if(trade&&trade.index<=last){[['entry','#4da3ff','ENTRY'],['stop','#e05b68','STOP'],['target','#22a45a','TARGET']].forEach(([k,color,label])=>{if(finite(trade[k])){line(pt(trade.index,trade[k]),pt(last,trade[k]),color);txt(last,trade[k],label+' '+trade[k].toPrecision(6),color);}});}
  txt(last,data[last].high*1.015,(lang==='en'?'Regime: ':'结构：')+r.regime+' · ADX '+r.adx.toFixed(0),r.trend==='bull'?'#22a45a':r.trend==='bear'?'#df535b':'#a0a8b2');
- if(r.daily)txt(last,data[last].high*1.035,(lang==='en'?'1D: ':'日线：')+r.daily.trend,r.daily.trend==='bull'?'#22a45a':r.daily.trend==='bear'?'#df535b':'#a0a8b2');if(r.htf)txt(last,data[last].high*1.055,(lang==='en'?'4H: ':'4H方向：')+r.htf.trend,r.htf.trend==='bull'?'#22a45a':r.htf.trend==='bear'?'#df535b':'#a0a8b2');
+ if(r.daily)txt(last,data[last].high*1.035,(lang==='en'?'1D MA7/30: ':'日线MA7/30：')+r.daily.trend,r.daily.trend==='bull'?'#22a45a':r.daily.trend==='bear'?'#df535b':'#a0a8b2');if(r.htf)txt(last,data[last].high*1.055,(lang==='en'?'4H MA7/30: ':'4H MA7/30：')+r.htf.trend,r.htf.trend==='bull'?'#22a45a':r.htf.trend==='bear'?'#df535b':'#a0a8b2');txt(last,data[last].high*1.075,(lang==='en'?'Local MA7/30: ':'本周期MA7/30：')+r.maTrend,r.maTrend==='bull'?'#22a45a':r.maTrend==='bear'?'#df535b':'#a0a8b2');
 }
 g.TideTdxStructure={defaults:D,compute,computeMultiTimeframe,render,timeframeMs:p=>({'15m':900000,'4H':14400000}[p]||900000)};
 })(window);
