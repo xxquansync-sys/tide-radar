@@ -235,6 +235,28 @@ section+section{margin-top:22px}
 }
 @media(prefers-reduced-motion:reduce){.panel,.section-card,.market-card,button{transition:none!important}}
 
+/* Table alignment and homepage information hierarchy fix */
+.highlight{display:block}
+th{position:static;top:auto;z-index:auto}
+.scroll{overflow-x:auto;overflow-y:visible}
+#overview .card-table{min-width:900px}
+.market-heading-copy{min-width:0}
+.market-heading-copy h2{margin:0}
+.market-intro{margin:4px 0 0;color:#8795a3;font-size:11px;line-height:1.45}
+#overview .market-heading-copy h2{color:#20394c}
+#overview .card-table thead th{position:static;background:#f3f7f8;vertical-align:middle;padding-top:12px;padding-bottom:12px}
+#overview .card-table tbody tr.priority-btc td:first-child,
+#overview .card-table tbody tr.priority-eth td:first-child{position:relative;font-weight:750}
+#overview .card-table tbody tr.priority-btc td:first-child:before,
+#overview .card-table tbody tr.priority-eth td:first-child:before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:3px;background:#15988c}
+#overview .card-table tbody tr.priority-eth td:first-child:before{background:#7587a2}
+#overview .card-table tbody tr.priority-btc{background:#f5fbfa}
+#overview .card-table tbody tr.priority-eth{background:#f8fafc}
+@media(max-width:560px){
+ #overview .card-table{min-width:0}
+ .market-heading-copy{width:100%}
+}
+
 /* TIDELINE home v2 — stronger product hierarchy and market-terminal character */
 .top{position:relative;align-items:flex-end;margin:0 0 22px;padding:22px 24px 21px;border:1px solid #dce7eb;border-radius:18px;background:linear-gradient(112deg,rgba(255,255,255,.97) 0%,rgba(247,252,251,.94) 58%,rgba(232,247,245,.88) 100%);box-shadow:0 12px 34px rgba(24,61,76,.055);overflow:hidden}
 .top:after{content:"";position:absolute;right:-55px;top:-125px;width:310px;height:310px;border:1px solid rgba(28,145,135,.12);border-radius:50%;box-shadow:0 0 0 22px rgba(28,145,135,.025),0 0 0 48px rgba(28,145,135,.02);pointer-events:none}
@@ -357,7 +379,7 @@ section+section{margin-top:22px}
 </div>
 <div class="panel">
 <div class="head">
-<h2 id="marketTitle">市场合约排行</h2>
+<div class="market-heading-copy"><h2 id="marketTitle">市场合约排行</h2><p class="market-intro" id="marketIntro">按 24H 成交额排序，快速查看主流合约与异常波动标的。</p></div>
 <div style="display:flex;gap:8px;align-items:center">
 <span class="muted" style="font-size:11px" id="marketSortLabel">排序:</span>
 <select id="marketSort" style="padding:5px 8px;font-size:11px;min-width:120px">
@@ -488,7 +510,7 @@ kpiCoins:'USDT 永续覆盖标的',kpiBreadth:'市场上涨占比',kpiVolume:'24
 kpiNote1:'OKX SWAP 合约',kpiNote2:'24H 涨跌家数',kpiNote3:'报价币成交额合计',kpiNote4:'涨跌幅或振幅阈值筛选',kpiNote5:'等待报价',
 hotSectorsTitle:'本周热门板块',hotSectorsTag:'实时追踪',
 sectorTilesTitle:'板块热度概览',sectorTilesTag:'固定样本追踪',summaryTitle:'市场异动摘要',summaryTag:'实时扫描',
-marketTitle:'市场合约排行',marketSort:'排序:',sortVolume:'成交额(默认)',sortChangeDesc:'涨跌 ↓',sortChangeAsc:'涨跌 ↑',sortRange:'振幅',
+marketTitle:'市场合约排行',marketIntro:'按 24H 成交额排序，快速查看主流合约与异常波动标的。',marketSort:'排序:',sortVolume:'成交额(默认)',sortChangeDesc:'涨跌 ↓',sortChangeAsc:'涨跌 ↑',sortRange:'振幅',
 thContract:'合约',thPrice:'最新价',thChange:'24H 涨跌',thVolume:'成交额',thRange:'高低振幅',thReason:'上榜原因',thAction:'操作',
 addBtn:'＋ 自选',copyBtn:'复制简报',copiedBtn:'已复制 ✓',copyFailBtn:'请手动选取复制',
 sectorTableTitle:'板块强弱与轮动',sectorTableTag:'样本简单均值',sectorTableNote:'板块涨跌幅为预设样本币种 24H 涨跌幅的简单平均,并非交易所官方分类。',
@@ -549,7 +571,7 @@ kpiCoins:'USDT Perp Coverage',kpiBreadth:'Upside Breadth',kpiVolume:'24H Total V
 kpiNote1:'OKX SWAP contracts',kpiNote2:'24H up/down count',kpiNote3:'ticker quote currency volume total',kpiNote4:'threshold-based screening',kpiNote5:'Waiting for price',
 hotSectorsTitle:'Hot Sectors This Week',hotSectorsTag:'Live Tracking',
 sectorTilesTitle:'Sector Heatmap',sectorTilesTag:'Fixed Sample',summaryTitle:'Market Anomalies',summaryTag:'Real-time Scan',
-marketTitle:'Market Rankings',marketSort:'Sort:',sortVolume:'Volume (default)',sortChangeDesc:'Change ↓',sortChangeAsc:'Change ↑',sortRange:'Range',
+marketTitle:'Market Rankings',marketIntro:'Ranked by 24H volume to surface major contracts and unusual moves.',marketSort:'Sort:',sortVolume:'Volume (default)',sortChangeDesc:'Change ↓',sortChangeAsc:'Change ↑',sortRange:'Range',
 thContract:'Symbol',thPrice:'Price',thChange:'24H Change',thVolume:'Volume',thRange:'Range',thReason:'Reason',thAction:'Action',
 addBtn:'+ Add',copyBtn:'Copy Brief',copiedBtn:'Copied ✓',copyFailBtn:'Please select manually',
 sectorTableTitle:'Sector Strength',sectorTableTag:'Simple Average',sectorTableNote:'Sector changes are simple averages of preset samples, not official exchange categories.',
@@ -658,7 +680,7 @@ function okxRequest(path,signal){
 function apiCall(path,cb){okxRequest(path).then(function(j){cb(null,j.data||[]);}).catch(function(e){cb(e,null);});}
 function normalize(t){var p=+t.last,o=+t.open24h,h=+t.high24h,l=+t.low24h;return{symbol:t.instId.replace('-USDT-SWAP',''),id:t.instId,last:p,change:o?(p/o-1)*100:0,vol:(+t.volCcy24h||0)*p,range:l?(h/l-1)*100:0};}
 function refresh(){$('connection').textContent=t('updating');apiCall('/api/v5/market/tickers?instType=SWAP',function(err,data){if(err){$('connection').textContent=t('failed')+': '+err.message;if(!markets.length)$('market').innerHTML='<tr><td colspan="7" style="color:var(--red)">'+t('loadFail')+'</td></tr>';return;}markets=data.filter(function(t){return t.instId.endsWith('-USDT-SWAP');}).map(normalize).filter(function(x){return x.last>0;});render();$('connection').textContent=t('connected');$('updated').textContent=t('updatedAt')+' '+new Date().toLocaleTimeString(currentLang==='zh'?'zh-CN':'en-US',{hour12:false});loadFocus();});}
-function row(x){var reason=getReason(x);return '<tr><td class="coin" data-label="">'+x.symbol+'<small>'+t('perpContract')+'</small></td><td data-label="'+t('thPrice')+'">'+fmt(x.last,x.last<1?6:2)+'</td><td data-label="'+t('thChange')+'" class="'+cls(x.change)+'">'+pct(x.change)+'</td><td data-label="'+t('thVolume')+'">'+compact(x.vol)+'</td><td data-label="'+t('thRange')+'">'+fmt(x.range,2)+'%</td><td data-label="'+t('thReason')+'"><span class="reason-badge">'+reason+'</span></td><td data-label="'+t('thAction')+'"><button class="btn" onclick="openKlineChart(\''+x.symbol+'\')">'+(currentLang==='zh'?'图表':'Chart')+'</button> <button class="btn" onclick="addWatch(\''+x.symbol+'\')">'+t('addBtn')+'</button></td></tr>';}
+function row(x){var reason=getReason(x);var priority=x.symbol==='BTC'?'priority-btc':x.symbol==='ETH'?'priority-eth':'';return '<tr class="'+priority+'"><td class="coin" data-label="">'+x.symbol+'<small>'+t('perpContract')+'</small></td><td data-label="'+t('thPrice')+'">'+fmt(x.last,x.last<1?6:2)+'</td><td data-label="'+t('thChange')+'" class="'+cls(x.change)+'">'+pct(x.change)+'</td><td data-label="'+t('thVolume')+'">'+compact(x.vol)+'</td><td data-label="'+t('thRange')+'">'+fmt(x.range,2)+'%</td><td data-label="'+t('thReason')+'"><span class="reason-badge">'+reason+'</span></td><td data-label="'+t('thAction')+'"><button class="btn" onclick="openKlineChart(\''+x.symbol+'\')">'+(currentLang==='zh'?'图表':'Chart')+'</button> <button class="btn" onclick="addWatch(\''+x.symbol+'\')">'+t('addBtn')+'</button></td></tr>';}
 var sectorNamesEn={'主流资产':'Majors','公链生态':'L1 / L2','AI / 数据':'AI / Data','交易平台':'Exchange Tokens'};
 function sectorName(n){return currentLang==='en'&&sectorNamesEn[n]?sectorNamesEn[n]:n;}
 function sectors(){return Object.keys(groups).map(function(key){var syms=groups[key];var name=sectorName(key);var rows=syms.map(function(s){return markets.find(function(x){return x.symbol===s;});}).filter(Boolean);var avg=rows.length?rows.reduce(function(a,x){return a+x.change;},0)/rows.length:0;var up=rows.filter(function(x){return x.change>0;}).length;var vol=rows.reduce(function(a,x){return a+x.vol;},0);return{name:name,rows:rows,avg:avg,up:up,vol:vol};}).sort(function(a,b){return b.avg-a.avg;});}
@@ -732,6 +754,7 @@ if($('sectorTilesTag'))$('sectorTilesTag').textContent=t('sectorTilesTag');
 if($('summaryTitle'))$('summaryTitle').textContent=t('summaryTitle');
 if($('summaryTag'))$('summaryTag').textContent=t('summaryTag');
 if($('marketTitle'))$('marketTitle').textContent=t('marketTitle');
+ if($('marketIntro'))$('marketIntro').textContent=t('marketIntro');
 if($('marketSortLabel'))$('marketSortLabel').textContent=t('marketSort');
 if($('marketSort')){
 var mso=$('marketSort');
