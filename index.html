@@ -1102,7 +1102,7 @@ function klineRenderControls(){
 function klineSetStatus(s){
  var en=tideKlineLang==='en';
  if(en){
-  var historyFill=s.match(/^已显示最新\\s*(\\d+)\\s*根K线，正在后台补齐至少\\s*(\\d+)\\s*根历史…$/);
+  var historyFill=s.match(/^已显示最新\s*(\d+)\\s*根K线，正在后台补齐至少\s*(\\d+)\\s*根历史…$/);
   if(historyFill)s='Showing latest '+historyFill[1]+' candles; backfilling at least '+historyFill[2]+' historical candles in the background…';
   var map=[['正在显示本地缓存，后台更新行情…','Showing cached candles; refreshing market data…'],['正在启动图表并获取OKX行情…','Starting chart and loading OKX market data…'],['正在加载','Loading'],['更新','Updating'],['OKX 实时K线','Live OKX candles'],['缓存数据已显示 · 更新失败：','Cached candles shown · Update failed: '],['K线加载失败：','Candle load failed: '],['指标创建失败：','Indicator creation failed: '],['参数数量不符合该指标要求','Invalid number of parameters for this indicator'],['参数已应用：',' parameters applied: '],['根 · ',' candles · '],['正在后台更新 OKX 行情…','refreshing OKX data…'],['正在分页加载更早历史K线…','Loading older historical candles…'],['历史分页失败：','Historical pagination failed: '],['没有更早的历史K线了','No older candles available'],['已向前加载 ','Loaded older candles: '],[' 根历史K线 · 总计 ',' candles · total '],['参数无效：请输入 1–500 的整数，以逗号分隔','Invalid parameters: enter integers from 1 to 500, separated by commas'],['参数无效','Invalid parameters'],['应用结构参数','Apply structure parameters'],['结构参数已应用：笔周期 ','Structure parameters applied: pen period '],[' / 半分位 ',' / midpoint '],[' / ATR过滤 ',' / ATR filter '],[' / 收盘确认 ',' / closed-bar confirmation '],['更早历史','Load older']];
   map.forEach(function(pair){s=s.split(pair[0]).join(pair[1]);});
