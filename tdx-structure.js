@@ -84,8 +84,9 @@ function computeMultiTimeframe(data,htf,daily,opts,tf){
   const direction=s.direction==='long'?'bull':'bear',hAligned=h===direction,dAligned=d===direction,maAligned=local===direction;
   const opposed=(h!=='neutral'&&h!==direction)||(d!=='neutral'&&d!==direction);
   const alignment=maAligned&&!opposed&&(hAligned||dAligned)?'aligned':maAligned&&opposed?'countertrend':maAligned?'transition':'mixed';
-  const bonus=(maAligned?12:local==='neutral'?0:-8)+(hAligned?8:h==='neutral'?0:-6)+(dAligned?5:d==='neutral'?0:-4);
-  return Object.assign({},s,{htfTrend:h,dailyTrend:d,maTrend:local,maCross:out.maCrossSeries[s.index]||'none',alignment,aligned:alignment==='aligned',tradable:true,filterReason:'',score:clamp(s.score+bonus,0,100)});
+  const cross=out.maCrossSeries[s.index]||'none',crossBonus=(cross==='golden'&&direction==='bull')||(cross==='death'&&direction==='bear')?4:0;
+  const bonus=(maAligned?12:local==='neutral'?0:-8)+(hAligned?8:h==='neutral'?0:-6)+(dAligned?5:d==='neutral'?0:-4)+crossBonus;
+  return Object.assign({},s,{htfTrend:h,dailyTrend:d,maTrend:local,maCross:cross,alignment,aligned:alignment==='aligned',tradable:true,filterReason:'',score:clamp(s.score+bonus,0,100)});
  });
  out.directionGate={mode:'soft-score',blocked:0};
  return out;
