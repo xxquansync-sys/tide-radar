@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>潮汐 RADAR V2｜加密市场情报终端</title>
+<title>TIDELINE — Crypto Market Intelligence</title>
 <style>
 :root{--bg:#080e18;--p:#111c2a;--p2:#0c1521;--line:#213146;--muted:#8496ad;--txt:#eaf0f8;--cyan:#5bd8d0;--green:#39ca91;--red:#ff6c80;--amber:#eabd69}
 *{box-sizing:border-box}
@@ -174,7 +174,7 @@ table th{color:#788698;border-color:#e8edf2}td{border-color:#edf0f4}tbody tr:hov
 </head>
 <body>
 <header>
-<div class="brand"><span class="logo">潮</span>潮汐 RADAR<small>CRYPTO MARKET INTELLIGENCE · V2</small></div>
+<div class="brand"><span class="logo" aria-hidden="true"><svg viewBox="0 0 32 32" width="22" height="22" fill="none"><circle cx="16" cy="16" r="11.5" stroke="currentColor" stroke-width="1.6" opacity=".45"/><circle cx="16" cy="16" r="7" stroke="currentColor" stroke-width="1.6" opacity=".7"/><path d="M16 16 26 7" stroke="#63D6C7" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="16" r="2.3" fill="#63D6C7"/></svg></span>TIDELINE<small>CRYPTO MARKET INTELLIGENCE</small></div>
 <div style="display:flex;align-items:center;gap:15px;flex-wrap:wrap;flex:1">
 <nav class="main-nav">
 <button class="active" data-page="overview">首页</button><button data-page="radar">异动雷达</button><button data-page="dragon">资金行为</button><button data-page="watch">自选观察</button>
@@ -210,10 +210,10 @@ table th{color:#788698;border-color:#e8edf2}td{border-color:#edf0f4}tbody tr:hov
 </div>
 <section class="page active" id="overview">
 <section class="home-market-hero" aria-label="ETH interactive market chart">
-<div class="home-chart-panel"><div class="home-chart-head"><div class="home-chart-title"><div class="home-symbol-mark">Ξ</div><div><div class="home-chart-name">ETH / USDT <span class="home-market-tag">永续合约</span></div><div class="home-chart-sub">OKX · ETH-USDT-SWAP</div></div><div class="home-eth-price"><strong id="home-eth-price">—</strong><span id="home-eth-change">—</span></div></div><div class="home-chart-actions"><span class="home-live-dot"></span><span>自动更新</span><button class="home-expand" onclick="openKlineChart('ETH')">专业图表 ↗</button></div></div>
+<div class="home-chart-panel"><div class="home-chart-head"><div class="home-chart-title"><div class="home-symbol-mark">₿</div><div><div class="home-chart-name">BTC / USDT <span class="home-market-tag">永续合约</span></div><div class="home-chart-sub">OKX · BTC-USDT-SWAP</div></div><div class="home-eth-price"><strong id="home-btc-price">—</strong><span id="home-btc-change">—</span></div></div><div class="home-chart-actions"><span class="home-live-dot"></span><span>自动更新</span><button class="home-expand" onclick="openKlineChart('BTC')">专业图表 ↗</button></div></div>
 <div class="home-chart-toolbar"><div class="home-timeframes" id="home-chart-periods"><button data-period="1H">1H</button><button class="active" data-period="4H">4H</button><button data-period="1D">1D</button><button data-period="15m">15m</button><button data-period="5m">5m</button></div><span class="home-chart-hint">滚轮缩放 · 拖动浏览 · 点击查看单根K线</span></div>
 <div id="tide-home-kline-canvas"></div><div class="home-chart-foot"><span id="home-chart-status">正在连接 OKX 行情…</span><span>数据来源：OKX 公共行情</span></div><div class="home-selected-candle" id="home-selected-candle">点击图表中的任意一根 K 线，查看该时段 OHLC 数据</div></div>
-<aside class="home-market-side"><div class="home-side-heading"><span>市场速览</span><span>24H</span></div><div class="home-side-stat"><span>ETH 最新价格</span><strong id="home-side-price">—</strong></div><div class="home-side-stat"><span>24H 涨跌幅</span><strong id="home-side-change">—</strong></div><div class="home-side-stat"><span>24H 成交额</span><strong id="home-side-volume">—</strong></div><div class="home-side-stat"><span>24H 振幅</span><strong id="home-side-range">—</strong></div><div class="home-side-divider"></div><div class="home-side-heading"><span>重点观察</span><span class="home-side-muted">ETH · WLD</span></div><div class="home-watch-item"><span>ETH</span><span id="home-eth-watch" class="home-watch-state">行情加载中</span><button onclick="openKlineChart('ETH')">查看</button></div><div class="home-watch-item"><span>WLD</span><span id="home-wld-watch" class="home-watch-state">行情加载中</span><button onclick="openKlineChart('WLD')">查看</button></div><div class="home-side-note">方向观察仅作市场筛选，不构成交易信号。</div></aside></section>
+<aside class="home-market-side"><div class="home-side-heading"><span>市场速览</span><span>24H</span></div><div class="home-side-stat"><span>BTC 最新价格</span><strong id="home-side-price">—</strong></div><div class="home-side-stat"><span>24H 涨跌幅</span><strong id="home-side-change">—</strong></div><div class="home-side-stat"><span>24H 成交额</span><strong id="home-side-volume">—</strong></div><div class="home-side-stat"><span>24H 振幅</span><strong id="home-side-range">—</strong></div><div class="home-side-divider"></div><div class="home-side-heading"><span>重点观察</span><span class="home-side-muted">BTC · ETH</span></div><div class="home-watch-item"><span>BTC</span><span id="home-btc-watch" class="home-watch-state">行情加载中</span><button onclick="openKlineChart('BTC')">查看</button></div><div class="home-watch-item"><span>ETH</span><span id="home-eth-watch" class="home-watch-state">行情加载中</span><button onclick="openKlineChart('ETH')">查看</button></div><div class="home-side-note">方向观察仅作市场筛选，不构成交易信号。</div></aside></section>
 <div class="grid kpis">
 <div class="panel"><div class="klabel" id="kpiCoins">USDT 永续覆盖标的</div><div class="kvalue" id="count">—</div><div class="muted" id="kpiNote1">OKX SWAP 合约</div></div>
 <div class="panel"><div class="klabel" id="kpiBreadth">市场上涨占比</div><div class="kvalue" id="breadth">—</div><div class="muted" id="kpiNote2">24H 涨跌家数</div></div>
@@ -272,7 +272,7 @@ table th{color:#788698;border-color:#e8edf2}td{border-color:#edf0f4}tbody tr:hov
 <div class="panel">
 <div class="head"><h2 id="radarTitle">异常波动雷达</h2><span class="tag" id="radarTag">规则型观察</span></div>
 <div class="controls">
-<input id="search" placeholder="搜索币种,例如 ETH / WLD">
+<input id="search" placeholder="搜索币种,例如 BTC / ETH">
 <select id="filter">
 <option value="all">全部标的</option>
 <option value="up">上涨标的</option>
@@ -310,7 +310,7 @@ table th{color:#788698;border-color:#e8edf2}td{border-color:#edf0f4}tbody tr:hov
 <section class="page" id="signals">
 <div class="grid layout">
 <div class="panel">
-<div class="head"><h2 data-i18n="signalsTitle">ETH / WLD 多周期方向观察</h2><span class="tag" data-i18n="signalsTag">优先关注</span></div>
+<div class="head"><h2 data-i18n="signalsTitle">BTC / ETH 多周期方向观察</h2><span class="tag" data-i18n="signalsTag">优先关注</span></div>
 <p class="sub" data-i18n="signalsNote">使用已完成 K 线收盘价相对 EMA20 的位置作为简化方向代理。</p>
 <div id="focus">等待 K 线数据…</div>
 </div>
@@ -355,7 +355,7 @@ var currentLang='zh';
 var dragonTigerData={todayList:[],history:{},lastUpdate:null};
 var translations={
 zh:{
-brand:'潮汐 RADAR',tagline:'加密市场情报终端 · V2',
+brand:'TIDELINE',tagline:'CRYPTO MARKET INTELLIGENCE',
 navOverview:'市场全景',navSectors:'板块轮动',navRadar:'异动雷达',navDragon:'主力资金',navSignals:'多空观察',navBrief:'市场简报',navWatch:'自选观察',navMethod:'研究框架',
 eyebrow:'市场脉搏 / 实时监控',headline:'看见市场正在发生什么',subheadline:'从市场广度、板块轮动到异常波动,寻找值得进一步研究的信号。',
 connecting:'正在连接行情...',connected:'行情已连接',failed:'连接失败',waitingData:'等待数据',updatedAt:'更新于',refreshBtn:'刷新 ↻',
@@ -377,7 +377,7 @@ reasonVolatility:'振幅异常',reasonVolume:'成交活跃',reasonOI:'持仓剧�
 dragonTitle:'⚡ 主流合约资金流向',crossExchangeTitle:'跨交易所资金对照（近15分钟）',eventArchiveTitle:'资金行为档案（云端累计）',eventArchiveNote:'记录多交易所同步信号及 OKX 单笔大额成交；后续刷新时补充 15 分钟、60 分钟价格表现。数据同步至云端，可跨设备查看；仅在看盘数据刷新时采集，不是后台不间断监控。',eventCloudSynced:'云端档案已同步',eventCloudChecking:'正在检查云端档案',eventLocalOnly:'当前仅保存在本机',eventFilterSymbol:'全部币种',eventFilterType:'全部行为',eventFilterPeriod:'全部时间',eventPeriod24h:'最近24小时',eventPeriod7d:'最近7天',eventCount:'匹配记录',eventPatternTitle:'重复行为模式（近7天）',eventPatternNote:'按币种与行为类型聚合公开成交事件；不代表同一账户或同一资金主体。',eventPatternCount:'出现次数',eventPatternTotal:'累计样本金额',eventPatternLatest:'最近出现',eventPatternVenues:'涉及来源',eventPatternEmpty:'近7天暂无重复行为样本。',eventOutcomeTitle:'行为后续表现（已成熟样本）',eventOutcomeNote:'多买/大额买入以价格上涨为有利，多卖/大额卖出以价格下跌为有利；仅统计已达到观察窗口的事件。',eventOutcomeWindow:'观察窗口',eventOutcomeN:'样本数',eventOutcomeWin:'有利比例',eventOutcomeAvg:'平均有利方向变动',eventOutcomeEmpty:'尚无足够成熟的15分钟或60分钟样本。',eventReturnNote:'收益按达到观察时长后的首次行情刷新计算，非精确到秒的定时快照。',eventEmpty:'暂未捕捉到符合条件的资金行为。',eventTime:'出现时间',eventType:'行为类型',eventAmount:'规模',eventVenues:'来源/交易所',eventReturn15:'≥15分钟表现',eventReturn60:'≥60分钟表现',event_multiBuy:'多所同步买入',event_multiSell:'多所同步卖出',event_largeBuy:'大额主动买入',event_largeSell:'大额主动卖出',crossSync:'多交易所同步信号',sync_multiBuy:'多所同步净买入',sync_multiSell:'多所同步净卖出',sync_mixed:'方向分歧',sync_noConsensus:'暂未形成共识',syncBuyVenues:'买入交易所',syncSellVenues:'卖出交易所',rotationTitle:'主流币种资金轮动（近15分钟）',rotationAsset:'合约',rotationNet:'跨所净主动流',rotationSync:'同步方向',rotationVenues:'可用交易所',rotationNote:'仅对本次返回的公开成交样本进行比较；每个交易所净主动流绝对值至少 $50,000 且至少两个交易所同向，才标记为同步信号。',crossExchangeNote:'Binance 与 Bybit 公共逐笔成交样本；仅统计最近15分钟内返回的成交，主动方向按交易所 taker side 统一。不同接口返回条数不同，不能视为全市场完整成交。',crossHealth:'数据状态',crossLive:'正常',crossStale:'数据延迟',crossNoRecent:'暂无近15分钟成交',crossError:'请求失败',crossRows:'返回样本',crossRecentRows:'有效成交',crossAge:'最新样本延迟',crossLiveNote:'状态正常：最新样本在3分钟内',crossExchange:'交易所',crossBuy15m:'主动买入',crossSell15m:'主动卖出',crossNet15m:'净主动流',crossBigBuy:'大额买入 ≥ $100K',crossBigSell:'大额卖出 ≥ $100K',crossTrades:'成交笔数',crossAvailable:'个交易所可用',crossUnavailable:'跨交易所成交数据暂不可用。',dragonToday:'今日上榜',dragonLoading:'正在加载主流合约资金数据...',dragonCriteria:'重点观察合约：BTC · ETH · SOL · BNB · XRP',
 criteriaChange:'主动买卖方向',criteriaVolume:'大额成交追踪',criteriaOI:'持仓量变化',criteriaFunding:'大户多空比',
 dragonOI:'持仓量(万U)',dragonFunding:'资金费率',detailsBtn:'查看详情',detailsComingSoon:'详情页开发中...',
-signalsTitle:'ETH / WLD 多周期方向观察',signalsTag:'优先关注',signalsNote:'使用已完成 K 线收盘价相对 EMA20 的位置作为简化方向代理。',
+signalsTitle:'BTC / ETH 多周期方向观察',signalsTag:'优先关注',signalsNote:'使用已完成 K 线收盘价相对 EMA20 的位置作为简化方向代理。',
 signalsExplainTitle:'信号解释',signal1Title:'多周期偏多',signal1Desc:'日线、4小时、1小时方向一致向上',
 signal2Title:'多周期偏空',signal2Desc:'日线、4小时、1小时方向一致向下',signal3Title:'方向分歧',signal3Desc:'周期不一致,优先等待,不强行交易',
 signalsDisclaimer:'EMA 方向不等于完整交易信号。本页不提供未经验证的入场价、止损价或收益承诺。',
@@ -389,7 +389,7 @@ step2:'02 / 板块轮动',step2Desc:'识别相对强势板块,观察热点扩散
 step3:'03 / 异动发现',step3Desc:'筛选涨跌、振幅、成交额异常的合约。',
 step4:'04 / 多周期验证',step4Desc:'日线定大势、4H定方向、15m看形态、3–5m找时机。',
 methodDisclaimer:'数据口径与限制:',methodDisclaimerText:'行情来自 OKX 公共 API;成交额不等于净流入,持仓量变化不等于多头资金流入。板块为预设样本,不代表完整市场分类。自选数据仅保存在本机浏览器。',
-footerText:'潮汐 RADAR · 加密市场情报终端 · 数据仅供研究参考 · 不构成投资建议',
+footerText:'TIDELINE · CRYPTO MARKET INTELLIGENCE · For research only · Not investment advice',
 perpContract:'USDT 永续',noResults:'没有匹配结果',
 dailyText:'日线',fourHText:'4H',oneHText:'1H',bullText:'多',bearText:'空',waitText:'等待',
 liveTrackingTag:'实时追踪',fixedSampleTag:'固定样本追踪',realTimeScanTag:'实时扫描',simpleAverageTag:'样本简单均值',ruleBased:'规则型观察',
@@ -416,7 +416,7 @@ focusLoadingK:'正在获取 K 线数据…',focusDiverged:'方向分歧 / 等待
 watchWaiting:'等待行情',loadFail:'行情未能加载,请刷新重试。',updating:'正在更新行情…'
 },
 en:{
-brand:'Tide RADAR',tagline:'CRYPTO MARKET INTELLIGENCE · V2',
+brand:'TIDELINE',tagline:'CRYPTO MARKET INTELLIGENCE',
 navOverview:'Overview',navSectors:'Sectors',navRadar:'Radar',navDragon:'Hot Money',navSignals:'Signals',navBrief:'Brief',navWatch:'Watchlist',navMethod:'Method',
 eyebrow:'MARKET PULSE / LIVE MONITOR',headline:'See what\'s happening in the market',subheadline:'From breadth to rotation to anomalies, find signals worth deeper research.',
 connecting:'Connecting...',connected:'Connected',failed:'Connection failed',waitingData:'Waiting for data',updatedAt:'Updated',refreshBtn:'Refresh ↻',
@@ -438,7 +438,7 @@ reasonVolatility:'High volatility',reasonVolume:'High volume',reasonOI:'OI surge
 dragonTitle:'⚡ Hot Money Board',crossExchangeTitle:'Cross-exchange flow (last 15 min)',eventArchiveTitle:'Flow behavior archive (cloud)',eventArchiveNote:'Stores cross-venue consensus signals and large single OKX trades; later refreshes fill in 15m and 60m price performance. Data syncs to the cloud across devices. Collection runs when market data refreshes, not as a continuous background monitor.',eventCloudSynced:'Cloud archive synced',eventCloudChecking:'Checking cloud archive',eventLocalOnly:'Stored on this device only',eventFilterSymbol:'All assets',eventFilterType:'All behaviors',eventFilterPeriod:'All time',eventPeriod24h:'Last 24 hours',eventPeriod7d:'Last 7 days',eventCount:'Matching events',eventPatternTitle:'Recurring behavior patterns (7d)',eventPatternNote:'Public trade events grouped by asset and behavior type; this does not identify a shared account or capital owner.',eventPatternCount:'Occurrences',eventPatternTotal:'Sample amount',eventPatternLatest:'Last seen',eventPatternVenues:'Sources',eventPatternEmpty:'No recurring patterns in the last 7 days.',eventOutcomeTitle:'Post-event performance (matured samples)',eventOutcomeNote:'Rising prices are favorable after buy events; falling prices are favorable after sell events. Only matured observation windows are included.',eventOutcomeWindow:'Window',eventOutcomeN:'Samples',eventOutcomeWin:'Favorable rate',eventOutcomeAvg:'Avg. direction-adjusted move',eventOutcomeEmpty:'Not enough matured 15m or 60m samples yet.',eventReturnNote:'Returns use the first market refresh after each observation threshold, not an exact timed snapshot.',eventEmpty:'No qualifying flow events captured yet.',eventTime:'Detected',eventType:'Behavior',eventAmount:'Size',eventVenues:'Source / venues',eventReturn15:'Return at ≥15m',eventReturn60:'Return at ≥60m',event_multiBuy:'Multi-venue buying',event_multiSell:'Multi-venue selling',event_largeBuy:'Large taker buy',event_largeSell:'Large taker sell',crossSync:'Cross-exchange consensus',sync_multiBuy:'Multi-venue net buying',sync_multiSell:'Multi-venue net selling',sync_mixed:'Mixed directions',sync_noConsensus:'No clear consensus',syncBuyVenues:'buy venues',syncSellVenues:'sell venues',rotationTitle:'Major-asset flow rotation (15 min)',rotationAsset:'Contract',rotationNet:'Cross-venue net taker flow',rotationSync:'Consensus',rotationVenues:'Venues available',rotationNote:'Compares only returned public trade samples. A venue needs at least $50,000 absolute net taker flow and at least two venues must align to trigger a consensus label.',crossExchangeNote:'Public trade samples from Binance and Bybit. Only returned trades within the last 15 minutes are counted; taker side is normalized. API sample sizes differ, so this is not complete market-wide volume.',crossHealth:'Data status',crossLive:'Live',crossStale:'Delayed',crossNoRecent:'No trades in last 15m',crossError:'Request failed',crossRows:'Returned samples',crossRecentRows:'Valid trades',crossAge:'Latest sample age',crossLiveNote:'Healthy: latest sample within 3 minutes',crossExchange:'Exchange',crossBuy15m:'Taker buys',crossSell15m:'Taker sells',crossNet15m:'Net taker flow',crossBigBuy:'Large buys ≥ $100K',crossBigSell:'Large sells ≥ $100K',crossTrades:'Trades',crossAvailable:'exchanges available',crossUnavailable:'Cross-exchange trade data is currently unavailable.',dragonToday:'Today',dragonLoading:'Loading Hot Money Board...',dragonCriteria:'Criteria (any):',
 criteriaChange:'24H Change > 8%',criteriaVolume:'Volume Top 20',criteriaOI:'OI Change > 30%',criteriaFunding:'Funding Skew > 0.1%',
 dragonOI:'OI (10k$)',dragonFunding:'Funding',detailsBtn:'Details',detailsComingSoon:'Detail page coming soon...',
-signalsTitle:'ETH / WLD Multi-TF Direction',signalsTag:'Priority Watch',signalsNote:'Using closed candle price relative to EMA20 as simplified directional proxy.',
+signalsTitle:'BTC / ETH Multi-TF Direction',signalsTag:'Priority Watch',signalsNote:'Using closed candle price relative to EMA20 as simplified directional proxy.',
 signalsExplainTitle:'Signal Explanation',signal1Title:'Multi-TF Bullish',signal1Desc:'Daily, 4H, 1H aligned upward',
 signal2Title:'Multi-TF Bearish',signal2Desc:'Daily, 4H, 1H aligned downward',signal3Title:'Divergence',signal3Desc:'Timeframes disagree, wait, don\'t force',
 signalsDisclaimer:'EMA direction is not a complete trade signal. This page does not provide unverified entry prices, stop losses, or profit promises.',
@@ -562,7 +562,7 @@ $('copy-brief').onclick=function(){var txt=$('brief-content').textContent;if(nav
 function t(key){return translations[currentLang][key]||key;}
 function switchLang(lang){currentLang=lang;localStorage.setItem('tide_lang',lang);document.querySelectorAll('.lang-switch button').forEach(function(b){b.classList.toggle('active',b.dataset.lang===lang);});updateUI();}
 function updateUI(){
-document.querySelector('.brand').innerHTML='<span class="logo">潮</span>'+t('brand')+'<small>'+t('tagline')+'</small>';
+document.querySelector('.brand').innerHTML="<span class=\"logo\" aria-hidden=\"true\"><svg viewBox=\"0 0 32 32\" width=\"22\" height=\"22\" fill=\"none\"><circle cx=\"16\" cy=\"16\" r=\"11.5\" stroke=\"currentColor\" stroke-width=\"1.6\" opacity=\".45\"/><circle cx=\"16\" cy=\"16\" r=\"7\" stroke=\"currentColor\" stroke-width=\"1.6\" opacity=\".7\"/><path d=\"M16 16 26 7\" stroke=\"#63D6C7\" stroke-width=\"2\" stroke-linecap=\"round\"/><circle cx=\"16\" cy=\"16\" r=\"2.3\" fill=\"#63D6C7\"/></svg></span>"+t('brand')+'<small>'+t('tagline')+'</small>';
 document.querySelector('[data-page="overview"]').textContent=t('navOverview');
 document.querySelector('[data-page="sectors"]').textContent=t('navSectors');
 document.querySelector('[data-page="radar"]').textContent=t('navRadar');
@@ -954,17 +954,17 @@ setInterval(refresh,60000);
 
 
 /* Homepage ETH interactive chart */
-var tideHomeChart={chart:null,data:[],period:'4H',timer:null,controller:null,requestId:0,clickHandler:null};
+var tideHomeChart={chart:null,data:[],symbol:'BTC',period:'4H',timer:null,controller:null,requestId:0,clickHandler:null};
 function homeChartStatus(v){var el=$('home-chart-status');if(el)el.textContent=v;}
 function homeChartRenderPeriods(){var el=$('home-chart-periods');if(el)el.querySelectorAll('button').forEach(function(b){b.classList.toggle('active',b.dataset.period===tideHomeChart.period);});}
 function homeChartUpdateStats(){
- var eth=markets.find(function(x){return x.symbol==='ETH';}),wld=markets.find(function(x){return x.symbol==='WLD';});
- if(eth){var price='$'+fmt(eth.last,eth.last<1?6:2),change=pct(eth.change),color=cls(eth.change);
- ['home-eth-price','home-side-price'].forEach(function(id){var e=$(id);if(e)e.textContent=price;});
- ['home-eth-change','home-side-change'].forEach(function(id){var e=$(id);if(e){e.textContent=change;e.className=color;}});
- var v=$('home-side-volume');if(v)v.textContent=compact(eth.vol);var r=$('home-side-range');if(r)r.textContent=fmt(eth.range,2)+'%';
- var w=$('home-eth-watch');if(w){w.textContent=change;w.className='home-watch-state '+color;}}
- if(wld){var e=$('home-wld-watch');if(e){e.textContent=pct(wld.change);e.className='home-watch-state '+cls(wld.change);}}
+ var btc=markets.find(function(x){return x.symbol==='BTC';}),eth=markets.find(function(x){return x.symbol==='ETH';});
+ if(btc){var price='$'+fmt(btc.last,2),change=pct(btc.change),color=cls(btc.change);
+ ['home-btc-price','home-side-price'].forEach(function(id){var e=$(id);if(e)e.textContent=price;});
+ ['home-btc-change','home-side-change'].forEach(function(id){var e=$(id);if(e){e.textContent=change;e.className=color;}});
+ var v=$('home-side-volume');if(v)v.textContent=compact(btc.vol);var r=$('home-side-range');if(r)r.textContent=fmt(btc.range,2)+'%';
+ var w=$('home-btc-watch');if(w){w.textContent=change;w.className='home-watch-state '+color;}}
+ if(eth){var e=$('home-eth-watch');if(e){e.textContent=pct(eth.change);e.className='home-watch-state '+cls(eth.change);}}
 }
 function homeChartSelectCandle(payload){
  var candidate=null,seen=[];function walk(o,d){if(!o||typeof o!=='object'||d>4||seen.indexOf(o)>=0)return;seen.push(o);if(Number.isFinite(Number(o.timestamp))&&Number(o.timestamp)>0&&Number.isFinite(Number(o.open))&&Number.isFinite(Number(o.close))){candidate=o;return;}['data','kLineData','klineData','candle','bar','current','item'].forEach(function(k){if(!candidate&&o[k]&&typeof o[k]==='object')walk(o[k],d+1);});}
@@ -974,8 +974,8 @@ function homeChartSelectCandle(payload){
 }
 function homeChartLoad(){
  if(!tideHomeChart.chart)return;if(tideHomeChart.controller){try{tideHomeChart.controller.abort();}catch(e){}}
- var ctl=new AbortController();tideHomeChart.controller=ctl;var req=++tideHomeChart.requestId,period=tideHomeChart.period;homeChartStatus('正在获取 ETH '+period+' K线 · OKX');
- klineFetch(300,'ETH',period,ctl.signal).then(function(rows){if(req!==tideHomeChart.requestId||!tideHomeChart.chart)return;tideHomeChart.data=rows;tideHomeChart.chart.applyNewData(rows);homeChartStatus('OKX · '+rows.length+' 根K线 · '+new Date().toLocaleTimeString(currentLang==='zh'?'zh-CN':'en-US',{hour12:false}));var last=rows[rows.length-1];if(last){var e=$('home-eth-price');if(e)e.textContent='$'+fmt(last.close,last.close<1?6:2);}}).catch(function(e){if(e.name!=='AbortError'&&req===tideHomeChart.requestId)homeChartStatus('K线暂不可用：'+e.message);});
+ var ctl=new AbortController();tideHomeChart.controller=ctl;var req=++tideHomeChart.requestId,period=tideHomeChart.period;homeChartStatus('正在获取 BTC '+period+' K线 · OKX');
+ klineFetch(300,'BTC',period,ctl.signal).then(function(rows){if(req!==tideHomeChart.requestId||!tideHomeChart.chart)return;tideHomeChart.data=rows;tideHomeChart.chart.applyNewData(rows);homeChartStatus('OKX · '+rows.length+' 根K线 · '+new Date().toLocaleTimeString(currentLang==='zh'?'zh-CN':'en-US',{hour12:false}));var last=rows[rows.length-1];if(last){var e=$('home-btc-price');if(e)e.textContent='$'+fmt(last.close,2);}}).catch(function(e){if(e.name!=='AbortError'&&req===tideHomeChart.requestId)homeChartStatus('K线暂不可用：'+e.message);});
 }
 function homeChartChangePeriod(p){if(tideKlinePeriods.indexOf(p)<0||p===tideHomeChart.period)return;tideHomeChart.period=p;homeChartRenderPeriods();homeChartLoad();}
 function homeChartInit(){
