@@ -2,7 +2,7 @@ module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, max-age=0');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   const base = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!base || !key) { res.statusCode = 503; return res.end(JSON.stringify({ enabled: false, error: 'Archive database is not configured' })); }
   const headers = { apikey: key, Authorization: 'Bearer ' + key, 'Content-Type': 'application/json', Prefer: 'return=representation' };
   const endpoint = base.replace(/\/$/, '') + '/rest/v1/flow_events';
