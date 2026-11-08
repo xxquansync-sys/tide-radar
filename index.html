@@ -1708,7 +1708,7 @@ function klineEnsureEventModal(){
  document.body.appendChild(el);return el;
 }
 function klineCloseEventModal(){var el=$('tide-kline-event-modal');if(el)el.style.display='none';}
-function klineMoney(v){if(!Number.isFinite(Number(v)))return '—';var n=Number(v),a=Math.abs(n),sign=n<0?'-':'';return sign+'
+function klineMoney(v){if(!Number.isFinite(Number(v)))return '—';var n=Number(v),a=Math.abs(n),sign=n<0?'-':'';return sign+'$'+(a>=1e9?(a/1e9).toFixed(2)+'B':a>=1e6?(a/1e6).toFixed(2)+'M':a>=1e3?(a/1e3).toFixed(1)+'K':a.toFixed(0));}
 function klineEventDuration(){return ({'1m':60000,'3m':180000,'5m':300000,'15m':900000,'30m':1800000,'1H':3600000,'2H':7200000,'4H':14400000,'6H':21600000,'12H':43200000,'1D':86400000})[tideKline.period]||3600000;}
 function klineShowAnomalyDetail(e){
  window.__tideSelectedCandleEvent=e;window.__tideSelectedCandleTs=Number(e.timestamp)||0;
