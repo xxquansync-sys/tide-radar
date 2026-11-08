@@ -692,6 +692,7 @@ if($('watchInput'))$('watchInput').placeholder=t('watchInputPlaceholder');
 if($('addWatch'))$('addWatch').textContent=t('watchAddBtn');
 if($('refresh'))$('refresh').textContent=t('refreshBtn');
 document.querySelectorAll('[data-i18n]').forEach(function(el){el.textContent=t(el.dataset.i18n);});
+ if($('more-nav-toggle'))$('more-nav-toggle').textContent=t('navMore')+'⌄';
 var thMap={thSymbol:'thContract',thPrice2:'thPrice',thChange2:'thChange',thRange2:'thRange',thVolume2:'thVolume',thReason2:'thReason',thAction2:'thAction'};
 Object.keys(thMap).forEach(function(id){if($(id))$(id).textContent=t(thMap[id]);});
 if(typeof renderFocusSignals==='function'&&focusResults)renderFocusSignals();
@@ -1465,7 +1466,7 @@ function klineLoad(force){
  });
 }
 function openKlineChart(symbol){
- try{tideKlineLang=localStorage.getItem('tide_kline_lang')||'zh';}catch(e){}
+ tideKlineLang=currentLang;try{localStorage.setItem('tide_kline_lang',tideKlineLang);}catch(e){}
  tideKline.symbol=String(symbol||'BTC').toUpperCase().replace(/[^A-Z0-9]/g,'');klineWsStop();tideKline.hasMoreHistory=true;
  tideKline.htfData=[];tideKline.htfFetchedAt=0;tideKline.htfRequestedAt=0;
  var modal=klineModal();modal.style.display='flex';
