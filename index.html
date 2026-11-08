@@ -454,6 +454,84 @@ th{position:static!important;top:auto!important;z-index:auto!important}
 #dragon [style*="background:#0f1621"],#dragon [style*="background:#101c2a"]{background:linear-gradient(135deg,rgba(48,75,91,.20),rgba(35,57,72,.12))!important;border:1px solid rgba(112,151,168,.22)!important;border-radius:10px}
 #dragon [style*="background:#0d1621"],#dragon [style*="background:#1a2d3f"],#dragon [style*="background:#1b2b3e"]{background:rgba(95,141,157,.10)!important;border-color:rgba(113,163,177,.22)!important}
 
+
+/* TIDELINE editorial intelligence redesign — light surfaces, live data hierarchy */
+.home-intelligence{background:linear-gradient(180deg,#fff 0%,#fbfdfd 100%);border:1px solid #dce8e9;border-radius:18px;padding:24px 26px 18px;box-shadow:0 12px 34px rgba(21,55,67,.055);position:relative}
+.home-intelligence:before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,#087f78 0%,#48b9a8 42%,rgba(72,185,168,0) 100%)}
+.home-intel-head{border-bottom:1px solid #e9eff0;padding-bottom:18px}
+.home-intel-kicker{color:#13877e}
+.home-intel-head h2{color:#173443;font-size:20px;letter-spacing:-.025em}
+.home-intel-head p{color:#718391;font-size:12px}
+.home-intel-updated{color:#728894}
+.home-intel-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:17px 0 2px;border:1px solid #e6eeee;border-radius:12px;background:linear-gradient(100deg,#f7fbfa,#fff);overflow:hidden}
+.home-intel-stat{min-width:0;padding:12px 16px;border-right:1px solid #e7eeee;display:flex;flex-direction:column;gap:5px}
+.home-intel-stat:last-child{border-right:0}
+.home-intel-stat>span{font-size:9px;letter-spacing:.1em;color:#84949c;font-weight:750}
+.home-intel-stat>b{font-size:18px;line-height:1.2;color:#193b48;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home-intel-stat>small{font-size:10px;color:#87969e}
+.home-intel-stat-note>b{font-size:13px;color:#17847b}
+.home-intel-grid{grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);gap:22px}
+.home-intel-flow,.home-intel-market{padding:18px 0 12px}
+.home-intel-market{padding-left:22px;border-left:1px solid #e8eeee}
+.home-intel-section-head b{color:#213c49;font-size:13px}
+.home-intel-index{color:#14877d}
+.home-intel-source{color:#8999a1}
+.home-flow-row,.home-move-row{color:#243e49;border-top:1px solid #edf1f1;padding:12px 8px;border-radius:7px}
+.home-flow-row:hover,.home-move-row:hover{background:#f2f9f8;transform:translateX(2px)}
+.home-flow-direction{width:48px;flex-basis:48px;font-size:9px}
+.home-flow-direction.is-buy{color:#07866e}.home-flow-direction.is-sell{color:#cf5967}
+.home-flow-main b{color:#1b3946;font-size:12px}
+.home-flow-main b small{color:#7d9099}
+.home-flow-main>span{color:#87969d}
+.home-flow-row>strong{color:#1c3945;font-size:12px}
+.home-flow-amount-track{display:block;height:3px;width:100%;max-width:150px;background:#edf2f2;border-radius:5px;overflow:hidden}
+.home-flow-amount-track em{display:block;height:100%;background:linear-gradient(90deg,#70c7b8,#188c80);border-radius:5px}
+.home-flow-arrow{color:#7ca39f}
+.home-intel-empty{color:#84949b}
+.home-intel-empty b{color:#38515c}
+.home-intel-filters button{color:#7b8c94}
+.home-intel-filters button:hover,.home-intel-filters button.active{color:#087f76;background:#edf8f6;border-color:#d5ece8}
+.home-move-rank{color:#98a6ac}
+.home-move-asset b{color:#213c49}
+.home-move-asset small,.home-move-volume{color:#89989e}
+.home-move-track{background:#edf2f2}
+.home-intel-link{color:#16877d;font-weight:650}
+.home-intel-link:hover{color:#075f5a}
+.home-intel-foot{border-color:#e8eeee;color:#84939a}
+.reason-badge{background:#f1f6f6!important;border:1px solid #dce8e8!important;color:#536c76!important}
+.dragon-badge{background:#edf7f5!important;border:1px solid #d5eae6!important;color:#187e75!important}
+.dragon-reasons .reason-tag,#dragon .reason-tag{background:#f1f7f6!important;border:1px solid #dceae7!important;color:#55736f!important}
+.dragon-table tbody tr{border-color:#e8eeee!important}
+.dragon-table tbody tr:hover{background:#f4f9f8!important}
+.dragon-table tbody td{color:#314b56}
+.dragon-table thead th{color:#7a8d95;border-color:#e4ecec}
+.flow-surface,.flow-alert-surface{background:#fff!important;border:1px solid #e0e9e9!important;border-radius:12px;box-shadow:0 4px 16px rgba(28,64,75,.035)}
+.flow-surface-title,.flow-alert-head b{color:#23414c!important}
+.flow-surface .dragon-table tbody tr{border-color:#e9eeee!important}
+.flow-surface .dragon-table tbody tr:hover{background:#f3f9f8!important}
+.flow-surface .dragon-table thead th{color:#71868f;border-color:#e4ecec}
+.flow-surface .dragon-table tbody td{color:#304a55}
+.flow-surface .muted,.flow-alert-surface .muted{color:#7f9098}
+#dragon .dt-tabs .btn.active{background:#eaf6f4!important;border-color:#cfe8e3!important;color:#147d73!important}
+#dragon .dt-tabs .btn{background:#f8fbfb;border-color:#e2ebeb;color:#667d85}
+#dragon .dt-card{background:#f8fbfb;border-color:#e3eceb}
+#dragon .dt-card small{color:#7e9097}
+@media(max-width:760px){
+ .home-intelligence{padding:20px 15px 15px}
+ .home-intel-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .home-intel-stat:nth-child(2){border-right:0}
+ .home-intel-stat:nth-child(-n+2){border-bottom:1px solid #e7eeee}
+ .home-intel-grid{grid-template-columns:1fr;gap:0}
+ .home-intel-market{padding:16px 0 8px;border-left:0;border-top:1px solid #e8eeee}
+ .home-intel-flow{padding:15px 0}
+}
+@media(prefers-reduced-motion:no-preference){
+ .home-intel-stat b{animation:tdStatIn .45s ease both}
+ .home-flow-row{animation:tdRowIn .35s ease both}
+}
+@keyframes tdStatIn{from{opacity:.45;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes tdRowIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
 </style>
 </head>
 <body>
@@ -490,6 +568,7 @@ th{position:static!important;top:auto!important;z-index:auto!important}
 <aside class="home-market-side"><div class="home-side-heading"><span data-i18n="homeMarketOverview">市场速览</span><span>24H</span></div><div class="home-side-stat"><span data-i18n="homeLatestPrice">BTC 最新价格</span><strong id="home-side-price">—</strong></div><div class="home-side-stat"><span data-i18n="home24hChange">24H 涨跌幅</span><strong id="home-side-change">—</strong></div><div class="home-side-stat"><span data-i18n="home24hVolume">24H 成交额</span><strong id="home-side-volume">—</strong></div><div class="home-side-stat"><span data-i18n="home24hRange">24H 振幅</span><strong id="home-side-range">—</strong></div><div class="home-side-divider"></div><div class="home-side-heading"><span data-i18n="homePriorityWatch">重点观察</span><span class="home-side-muted">BTC · ETH</span></div><div class="home-watch-item"><span>BTC</span><span id="home-btc-watch" class="home-watch-state" data-i18n="homeLoading">行情加载中</span><button onclick="openKlineChart('BTC')" data-i18n="homeView">查看</button></div><div class="home-watch-item"><span>ETH</span><span id="home-eth-watch" class="home-watch-state" data-i18n="homeLoading">行情加载中</span><button onclick="openKlineChart('ETH')" data-i18n="homeView">查看</button></div><div class="home-side-note" data-i18n="homeDisclaimer">方向观察仅作市场筛选，不构成交易信号。</div></aside></section>
 <section class="home-intelligence" data-reveal aria-label="Live market intelligence">
 <div class="home-intel-head"><div><div class="home-intel-kicker">LIVE INTELLIGENCE / 24H</div><h2>资金脉冲与市场异动</h2><p>把捕捉到的资金行为，与全市场价格异动放在同一观察视图。</p></div><span class="home-intel-updated" id="home-intel-updated">等待行情更新</span></div>
+<div class="home-intel-summary" id="home-intel-summary" aria-live="polite"><div class="home-intel-stat"><span>捕捉事件</span><b>—</b><small>近24小时</small></div><div class="home-intel-stat"><span>买卖方向</span><b>—</b><small>公开成交样本</small></div><div class="home-intel-stat"><span>市场脉冲</span><b>—</b><small>实时行情扫描</small></div><div class="home-intel-stat home-intel-stat-note"><span>市场观察</span><b>等待行情更新</b><small>不是账户级资金流</small></div></div>
 <div class="home-intel-grid">
 <div class="home-intel-flow"><div class="home-intel-section-head"><div><span class="home-intel-index">01</span><b>资金行为</b></div><span class="home-intel-source">公开成交 / 跨所样本</span></div><div id="home-flow-stream" class="home-flow-stream"><div class="home-intel-empty">正在汇总已捕捉的资金行为…</div></div><button class="home-intel-link" onclick="document.querySelector('[data-page=dragon]').click()">查看完整资金行为档案 <span>↗</span></button></div>
 <div class="home-intel-market"><div class="home-intel-section-head"><div><span class="home-intel-index">02</span><b>市场异动队列</b></div><div class="home-intel-filters" id="home-move-filters"><button class="active" data-filter="all" onclick="setHomePulseFilter('all')">全部</button><button data-filter="up" onclick="setHomePulseFilter('up')">偏强</button><button data-filter="down" onclick="setHomePulseFilter('down')">偏弱</button><button data-filter="volume" onclick="setHomePulseFilter('volume')">成交额</button></div></div><div id="home-move-stream" class="home-move-stream"><div class="home-intel-empty">等待市场数据…</div></div><button class="home-intel-link" onclick="document.querySelector('[data-page=radar]').click()">进入异动雷达 <span>↗</span></button></div>
@@ -842,7 +921,10 @@ function setHomePulseFilter(filter){homePulseFilter=filter;document.querySelecto
 function renderHomeIntelligence(){
  var flowBox=$('home-flow-stream'),moveBox=$('home-move-stream');if(!flowBox||!moveBox)return;
  var en=currentLang!=='zh',now=Date.now(),events=loadFlowEvents().filter(function(e){return Number.isFinite(e.ts)&&now-e.ts<=24*3600000;}).sort(function(a,b){return b.ts-a.ts;}).slice(0,5);
- flowBox.innerHTML=events.length?events.map(function(e){var buy=e.kind==='multiBuy'||e.kind==='largeBuy',age=Math.max(0,Math.floor((now-e.ts)/60000)),time=age<1?(en?'just now':'刚刚'):age<60?(age+(en?'m ago':'分钟前')):(Math.floor(age/60)+(en?'h ago':'小时前'));return '<button class="home-flow-row" onclick="openKlineChart(\''+e.symbol+'\')" type="button"><span class="home-flow-direction '+(buy?'is-buy':'is-sell')+'">'+(buy?(en?'BUY':'买入'):(en?'SELL':'卖出'))+'</span><span class="home-flow-main"><b>'+e.symbol+' <small>'+t('event_'+e.kind)+'</small></b><span>'+escHtml(e.venues||e.source||'—')+' · '+time+'</span></span><strong>'+compact(e.amount)+'</strong><span class="home-flow-arrow">↗</span></button>';}).join(''):'<div class="home-intel-empty"><b>'+(en?'No qualifying flow events yet':'暂无已捕捉的资金行为')+'</b><span>'+(en?'Events appear here after public trade samples meet the detection rules.':'当公开成交样本达到识别条件后，会在这里出现。')+'</span></div>';
+ var buyEvents=events.filter(function(e){return e.kind==='multiBuy'||e.kind==='largeBuy';}),sellEvents=events.length-buyEvents.length,maxAmount=Math.max.apply(null,events.map(function(e){return Number(e.amount)||0;}).concat([1]));
+ flowBox.innerHTML=events.length?events.map(function(e){var buy=e.kind==='multiBuy'||e.kind==='largeBuy',age=Math.max(0,Math.floor((now-e.ts)/60000)),time=age<1?(en?'just now':'刚刚'):age<60?(age+(en?'m ago':'分钟前')):(Math.floor(age/60)+(en?'h ago':'小时前')),amount=Number(e.amount)||0,bar=Math.max(4,Math.round(amount/maxAmount*100));return '<button class="home-flow-row" onclick="openKlineChart(\\''+e.symbol+'\\')" type="button"><span class="home-flow-direction '+(buy?'is-buy':'is-sell')+'">'+(buy?(en?'BUY':'主动买'):(en?'SELL':'主动卖'))+'</span><span class="home-flow-main"><b>'+e.symbol+' <small>'+t('event_'+e.kind)+'</small></b><span>'+escHtml(e.venues||e.source||'—')+' · '+time+'</span><i class="home-flow-amount-track"><em style="width:'+bar+'%"></em></i></span><strong>'+compact(amount)+'</strong><span class="home-flow-arrow">↗</span></button>';}).join(''):'<div class="home-intel-empty"><b>'+(en?'No qualifying flow events yet':'暂无已捕捉的资金行为')+'</b><span>'+(en?'Events appear here after public trade samples meet the detection rules.':'当公开成交样本达到识别条件后，会在这里出现。')+'</span></div>';
+ var pulse=markets.slice().sort(function(a,b){return Math.max(Math.abs(b.change),b.range*.35)-Math.max(Math.abs(a.change),a.range*.35);})[0],summary=$('home-intel-summary');
+ if(summary){var stats=[{label:en?'DETECTED EVENTS':'捕捉事件',value:String(events.length),note:en?'Last 24 hours':'近24小时'},{label:en?'BUY / SELL SAMPLES':'买卖方向样本',value:buyEvents.length+' / '+sellEvents,note:en?'Observed trade events':'公开成交事件数量'},{label:en?'MARKET PULSE':'市场脉冲',value:pulse?pulse.symbol+' '+pct(pulse.change):'—',note:pulse?(en?'Largest current move':'当前异动较突出标的'):(en?'Waiting for quotes':'等待行情')},{label:en?'READ THE TAPE':'观察提示',value:events.length?(en?'Flow samples active':'资金样本已捕捉'):(en?'No trigger yet':'暂未触发识别'),note:en?'Not account-level flows':'不是账户级资金净流入'}];summary.innerHTML=stats.map(function(x,i){return '<div class="home-intel-stat '+(i===3?'home-intel-stat-note':'')+'"><span>'+x.label+'</span><b>'+x.value+'</b><small>'+x.note+'</small></div>';}).join('');}
  var rows=markets.slice();if(homePulseFilter==='up')rows=rows.filter(function(x){return x.change>0;}).sort(function(a,b){return b.change-a.change;});else if(homePulseFilter==='down')rows=rows.filter(function(x){return x.change<0;}).sort(function(a,b){return a.change-b.change;});else if(homePulseFilter==='volume')rows.sort(function(a,b){return b.vol-a.vol;});else rows.sort(function(a,b){return Math.max(Math.abs(b.change),b.range*.35)-Math.max(Math.abs(a.change),a.range*.35);});
  rows=rows.slice(0,6);
  moveBox.innerHTML=rows.length?rows.map(function(x,i){var strength=Math.min(100,Math.max(6,Math.abs(x.change)*7+x.range*1.5));return '<button class="home-move-row" onclick="openKlineChart(\''+x.symbol+'\')" type="button"><span class="home-move-rank">'+String(i+1).padStart(2,'0')+'</span><span class="home-move-asset"><b>'+x.symbol+'</b><small>'+(en?'24H range ':'24H 振幅 ')+fmt(x.range,2)+'%</small></span><span class="home-move-track"><i class="'+(x.change>=0?'is-up':'is-down')+'" style="width:'+strength+'%"></i></span><strong class="'+cls(x.change)+'">'+pct(x.change)+'</strong><span class="home-move-volume">'+compact(x.vol)+'</span></button>';}).join(''):'<div class="home-intel-empty">'+(en?'Waiting for market data…':'等待市场数据…')+'</div>';
