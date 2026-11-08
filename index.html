@@ -1679,7 +1679,7 @@ function klineRenderTdx(){
  var fmt=function(v){return Number.isFinite(v)?(v<1?v.toFixed(6):v.toLocaleString('en-US',{maximumFractionDigits:2})):'—';};
  var set=function(id,v){var el=$(id);if(el)el.textContent=v;};
  set('tdx-label-regime',en?'Structure':'结构状态');set('tdx-label-htf',result.executionOnly?(en?'Execution context':'执行周期规则'):(en?'1D / 4H bias':'日线 / 4H方向'));set('tdx-label-signal',result.executionOnly?(en?'Setup status':'信号状态'):(en?'Latest signal':'最新信号'));set('tdx-label-entry',en?'Entry / Stop':'入场 / 止损');set('tdx-label-target',en?'Target / R:R':'目标 / R:R');
- set('tdx-value-regime',result.regime.toUpperCase()+' · ADX '+(result.adx||0).toFixed(0));
+ var regimeLabel=result.regime==='structure-conflict'?(en?'STRUCTURE CONFLICT':'结构冲突'):result.regime.toUpperCase();set('tdx-value-regime',regimeLabel+' · ADX '+(result.adx||0).toFixed(0));
  set('tdx-value-htf',result.executionOnly?(en?'5M · 15M setup required':'5M仅辅助入场 · 15M确认方向'):result.htf?('1D '+(result.daily?result.daily.trend:'neutral')+' · 4H '+result.htf.trend).toUpperCase():(en?'Local TF':'本周期'));
  set('tdx-value-signal',result.executionOnly?(en?'5M does not generate standalone trade signals':'5M不独立生成交易信号'):last?(last.text+' '+last.direction.toUpperCase()+' · '+(en?'Quality ':'质量 ')+last.score+'/100'+(last.tradable===false?' · '+(en?'BLOCKED':'已过滤')+' · '+last.filterReason:'')):(en?'No confirmed signal':'暂无已确认信号'));
  set('tdx-value-entry',result.executionOnly?'—':last?(last.tradable===false?(en?'Blocked by 1D / 4H filter':'日线 / 4H 方向过滤未通过'):fmt(last.entry)+' / '+fmt(last.stop)):'—');
