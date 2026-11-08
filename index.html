@@ -1164,8 +1164,8 @@ function klineSetLanguage(lang){
  if(tideKline.chart&&tideKline.data.length)klineRenderTdx();
 }
 function klineToggleLanguage(){klineSetLanguage(tideKlineLang==='zh'?'en':'zh');if(tideKline.tdxEnabled)klineRenderTdx();}
-function klineThemeStyles(theme){
- var light=theme==='light',fg=light?'#526174':'#9aabc0',axis=light?'#d7dee7':'#304258',en=tideKlineLang==='en';
+function klineThemeStyles(theme,language){
+ var light=theme==='light',fg=light?'#526174':'#9aabc0',axis=light?'#d7dee7':'#304258',en=(language||tideKlineLang)==='en';
  var candleTooltip=en?[
   {title:'Time',value:'{time}'},
   {title:'Open',value:'{open}'},
