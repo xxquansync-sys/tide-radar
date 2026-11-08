@@ -831,7 +831,7 @@ function klineLoadOlder(){
  function page(){if(pages>=10)return Promise.resolve();return klineFetch(100,symbol,period,controller.signal,oldest).then(function(rows){var older=rows.filter(function(c){return c.timestamp<oldest;});if(!older.length){tideKline.hasMoreHistory=false;return;}pages++;collected=older.concat(collected);oldest=older[0].timestamp;if(pages<10)return klineDelay(120).then(page);});}
  page().then(function(){if(!collected.length){klineSetStatus('没有更早的历史K线了');return;}var by={};collected.concat(tideKline.data).forEach(function(c){by[c.timestamp]=c;});var merged=Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){return a.timestamp-b.timestamp;}).slice(-TIDE_KLINE_MAX_CACHE);var older=merged.filter(function(c){return c.timestamp<tideKline.data[0].timestamp;});tideKline.data=merged;if(tideKline.chart){try{tideKline.chart.applyMoreData(older,true);}catch(e){tideKline.chart.applyNewData(merged);}}klineWriteCache();klineRenderTdx();klineSetStatus('已向前加载 '+older.length+' 根历史K线 · 总计 '+merged.length+' 根');}).catch(function(e){if(e.name!=='AbortError')klineSetStatus('历史分页失败：'+e.message);}).then(function(){tideKline.olderLoading=false;});
 }
-var tideIndicatorDefaults=var tideIndicatorDefaults={MA:[5,10,30,60],EMA:[6,12,20],VOL:[5,10,20],MACD:[12,26,9],RSI:[6,12,24]};
+var tideIndicatorDefaults={MA:[5,10,30,60],EMA:[6,12,20],VOL:[5,10,20],MACD:[12,26,9],RSI:[6,12,24]};
 var tideIndicatorPanes={};
 var tideKlineTheme='light';
 var tideKlineLang='zh';
@@ -1015,12 +1015,12 @@ function klineLoad(force){
  if(tideKline.loading&&!force)return;
  if(tideKline.controller){try{tideKline.controller.abort();}catch(e){}}
  var controller=new AbortController();tideKline.controller=controller;
- var req=++tideKline.requestId,symbol=tideKline.symbol,period=tideKline.period,incremental=tideKline.data.length>0;
+ var req=++tideKline.requestId,symbol=tideKline.symbol,period=tideKline.period,incremental=tideKline.data.length>=TIDE_KLINE_MIN_HISTORY;
  tideKline.loading=true;klineSetStatus((incremental?'更新':'加载')+' '+symbol+' '+period+' · OKX');
  (incremental?klineFetch(2,symbol,period,controller.signal):klineFetchInitial(symbol,period,controller.signal)).then(function(data){
   if(req!==tideKline.requestId||!tideKline.chart||symbol!==tideKline.symbol||period!==tideKline.period)return;
-  klineMergeData(data);tideKline.chart.applyNewData(tideKline.data);klineWriteCache();klineUpdatePrice();
-  var needHtf=period==='15m'&&Date.now()-Math.max(tideKline.htfFetchedAt,tideKline.htfRequestedAt)>60000;if(needHtf)tideKline.htfRequestedAt=Date.now();var htfTask=needHtf?klineFetchInitial(symbol,'4H',controller.signal).then(function(higher){if(req===tideKline.requestId){tideKline.htfData=higher;tideKline.htfFetchedAt=Date.now();}}).catch(function(){ }):Promise.resolve();
+  klineMergeData(data);if(incremental){try{tideKline.chart.updateData(data[data.length-1]);}catch(e){tideKline.chart.applyNewData(tideKline.data);}}else{tideKline.chart.applyNewData(tideKline.data);}klineWriteCache();klineUpdatePrice();
+  var needHtf=period==='15m'&&Date.now()-Math.max(tideKline.htfFetchedAt,tideKline.htfRequestedAt)>60000;if(needHtf)tideKline.htfRequestedAt=Date.now();var htfTask=needHtf?klineFetch(300,symbol,'4H',controller.signal).then(function(higher){if(req===tideKline.requestId){tideKline.htfData=higher;tideKline.htfFetchedAt=Date.now();}}).catch(function(){ }):Promise.resolve();
   htfTask.then(function(){if(req===tideKline.requestId)klineRenderTdx();});
   klineSetStatus('OKX 行情 · '+tideKline.data.length+' 根 · '+(tideKline.data.length>=TIDE_KLINE_MIN_HISTORY?'历史已加载':'该交易对可用历史不足3000根')+' · '+new Date().toLocaleTimeString());
  }).catch(function(e){
