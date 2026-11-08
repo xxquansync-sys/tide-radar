@@ -1163,7 +1163,7 @@ function klineSetStatus(s){
  var en=tideKlineLang==='en';
  if(en){
   var historyFill=s.match(/^已显示最新\s*(\d+)\s*根K线，正在后台补齐至少\s*(\d+)\s*根历史…$/);
-  var loadedStatus=s.match(/^OKX 行情 · ([\\d,]+) 根 · (历史已加载|当前可获取历史不足3000根|历史分页异常：.*) · (.+)$/);
+  var loadedStatus=s.match(/^OKX 行情 · ([\d,]+) 根 · (历史已加载|当前可获取历史不足3000根|历史分页异常：.*) · (.+)$/);
   if(loadedStatus){
    var historyLabel=loadedStatus[2]==='历史已加载'?'History loaded':(loadedStatus[2]==='当前可获取历史不足3000根'?'Available history below 3,000 candles':'History pagination error: '+loadedStatus[2].replace('历史分页异常：',''));
    s='OKX market data · '+loadedStatus[1]+' candles · '+historyLabel+' · '+loadedStatus[3];
