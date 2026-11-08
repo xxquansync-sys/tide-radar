@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>TIDELINE — Crypto Market Intelligence</title>
 <style>
 :root{--bg:#080e18;--p:#111c2a;--p2:#0c1521;--line:#213146;--muted:#8496ad;--txt:#eaf0f8;--cyan:#5bd8d0;--green:#39ca91;--red:#ff6c80;--amber:#eabd69}
@@ -517,7 +518,21 @@ function fmt(n,d){d=d||2;return Number.isFinite(n)?n.toLocaleString('en-US',{max
 function pct(n){return (n>0?'+':'')+fmt(n,2)+'%';}
 function cls(n){return n>0?'pos':n<0?'neg':'neu';}
 function compact(n){if(!Number.isFinite(n))return '—';if(n>=1e9)return '$'+(n/1e9).toFixed(2)+'B';if(n>=1e6)return '$'+(n/1e6).toFixed(1)+'M';return '$'+(n/1e3).toFixed(1)+'K';}
-function apiCall(path,cb){fetch(API+path).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}).then(function(j){if(j.code!=='0')throw new Error(j.msg||'API error');cb(null,j.data||[]);}).catch(function(e){cb(e,null);});}
+function okxRequest(path,signal){
+ var bases=[API,'https://www.okx.com','https://aws.okx.com'],errors=[];
+ function one(base){
+  if(signal&&signal.aborted)return Promise.reject(new DOMException('Aborted','AbortError'));
+  var ctl=new AbortController(),timer=setTimeout(function(){ctl.abort();},6500),aborter=function(){ctl.abort();};
+  if(signal)signal.addEventListener('abort',aborter,{once:true});
+  return fetch(base+path,{signal:ctl.signal}).then(function(r){if(!r.ok)throw new Error(base+' HTTP '+r.status);return r.json();}).then(function(j){if(!j||j.code!=='0')throw new Error(base+' '+(j&&j.msg||'Invalid OKX response'));return j;}).finally(function(){clearTimeout(timer);if(signal)signal.removeEventListener('abort',aborter);});
+ }
+ function next(i){
+  if(signal&&signal.aborted)return Promise.reject(new DOMException('Aborted','AbortError'));
+  return one(bases[i]).catch(function(e){if(signal&&signal.aborted)throw new DOMException('Aborted','AbortError');errors.push(e.message||String(e));if(i+1<bases.length)return next(i+1);throw new Error('OKX 数据源均不可用：'+errors.join('；'));});
+ }
+ return next(0);
+}
+function apiCall(path,cb){okxRequest(path).then(function(j){cb(null,j.data||[]);}).catch(function(e){cb(e,null);});}
 function normalize(t){var p=+t.last,o=+t.open24h,h=+t.high24h,l=+t.low24h;return{symbol:t.instId.replace('-USDT-SWAP',''),id:t.instId,last:p,change:o?(p/o-1)*100:0,vol:(+t.volCcy24h||0)*p,range:l?(h/l-1)*100:0};}
 function refresh(){$('connection').textContent=t('updating');apiCall('/api/v5/market/tickers?instType=SWAP',function(err,data){if(err){$('connection').textContent=t('failed')+': '+err.message;if(!markets.length)$('market').innerHTML='<tr><td colspan="7" style="color:var(--red)">'+t('loadFail')+'</td></tr>';return;}markets=data.filter(function(t){return t.instId.endsWith('-USDT-SWAP');}).map(normalize).filter(function(x){return x.last>0;});render();$('connection').textContent=t('connected');$('updated').textContent=t('updatedAt')+' '+new Date().toLocaleTimeString(currentLang==='zh'?'zh-CN':'en-US',{hour12:false});loadFocus();});}
 function row(x){var reason=getReason(x);return '<tr><td class="coin" data-label="">'+x.symbol+'<small>'+t('perpContract')+'</small></td><td data-label="'+t('thPrice')+'">'+fmt(x.last,x.last<1?6:2)+'</td><td data-label="'+t('thChange')+'" class="'+cls(x.change)+'">'+pct(x.change)+'</td><td data-label="'+t('thVolume')+'">'+compact(x.vol)+'</td><td data-label="'+t('thRange')+'">'+fmt(x.range,2)+'%</td><td data-label="'+t('thReason')+'"><span class="reason-badge">'+reason+'</span></td><td data-label="'+t('thAction')+'"><button class="btn" onclick="openKlineChart(\''+x.symbol+'\')">'+(currentLang==='zh'?'图表':'Chart')+'</button> <button class="btn" onclick="addWatch(\''+x.symbol+'\')">'+t('addBtn')+'</button></td></tr>';}
@@ -672,7 +687,7 @@ var dragonState={tab:'today',loading:false,progress:0,total:0,histDate:null,hist
 var instCtVal={};
 var apiQueue=Promise.resolve();
 function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
-function fetchApi(path,tries){return fetch(API+path).then(function(r){if(r.status===429)return {code:'50011'};if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}).then(function(j){if(j.code==='50011'&&tries<3)return sleep(1500*(tries+1)).then(function(){return fetchApi(path,tries+1);});if(j.code!=='0')throw new Error(j.msg||('API '+j.code));return j.data||[];});}
+function fetchApi(path,tries){return okxRequest(path).then(function(j){return j.data||[];}).catch(function(e){if(tries<2&&/rate limit|429|50011/i.test(e.message||''))return sleep(1500*(tries+1)).then(function(){return fetchApi(path,tries+1);});throw e;});}
 function api(path){var gap=path.indexOf('/rubik/')>=0?420:120;var p=apiQueue.then(function(){return fetchApi(path,0);});apiQueue=p.catch(function(){}).then(function(){return sleep(gap);});return p;}
 function dayKey(d){d=d||new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
 function fmtTime(ts,withDate){var o={hour12:false,hour:'2-digit',minute:'2-digit'};if(withDate){o.month='2-digit';o.day='2-digit';}return new Date(+ts).toLocaleString(currentLang==='zh'?'zh-CN':'en-US',o);}
@@ -1036,15 +1051,11 @@ function klineFetch(limit,symbol,period,signal,before){
  var path=endpoint+'?instId='+encodeURIComponent(inst)+'&bar='+encodeURIComponent(bar)+'&limit='+Math.min(before?100:300,limit)+(before?'&after='+encodeURIComponent(before):'');
  function request(attempt){
   if(signal&&signal.aborted)return Promise.reject(new DOMException('Aborted','AbortError'));
-  return fetch(API+path,{signal:signal}).then(function(r){
-   if(!r.ok){var e=new Error('HTTP '+r.status);e.status=r.status;throw e;}
-   return r.json();
-  }).then(function(j){
-   if(j.code!=='0'){var e=new Error(j.msg||('API '+j.code));e.apiCode=j.code;throw e;}
-   var data=klineRowsToData(j.data);if(!data.length)throw new Error('No candle data');return data;
+  return okxRequest(path,signal).then(function(j){
+   var data=klineRowsToData(j.data);if(!data.length)throw new Error('OKX 返回空 K 线数据');return data;
   }).catch(function(e){
-   var limited=e.status===429||e.status===418||e.apiCode==='50011'||/too many requests|rate limit/i.test(e.message||'');
-   if(!limited||attempt>=3||(signal&&signal.aborted))throw e;
+   var limited=/too many requests|rate limit|429|50011/i.test(e.message||'');
+   if(!limited||attempt>=2||(signal&&signal.aborted))throw e;
    return klineDelay(1200*Math.pow(2,attempt)).then(function(){return request(attempt+1);});
   });
  }
