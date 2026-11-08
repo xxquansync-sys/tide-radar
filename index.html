@@ -702,7 +702,10 @@ function makeRecord(c,prev){var f=c.flow||{};var now=Date.now();return{s:c.symbo
 function saveDragonRecord(c){var h=loadHist();var day=dayKey();h[day]=h[day]||{};h[day][c.symbol]=makeRecord(c,h[day][c.symbol]);saveHist(h);}
 var TIDE_FLOW_EVENTS_KEY='tide_flow_events_v1';
 function loadFlowEvents(){try{return JSON.parse(localStorage.getItem(TIDE_FLOW_EVENTS_KEY)||'[]')||[];}catch(e){return [];}}
-function saveFlowEvents(a){try{localStorage.setItem(TIDE_FLOW_EVENTS_KEY,JSON.stringify(a.slice(0,300)));}catch(e){}}
+var flowArchiveRemote={state:'checking',lastSync:0,error:''},flowArchiveSyncTimer=null;
+function saveFlowEvents(a){try{localStorage.setItem(TIDE_FLOW_EVENTS_KEY,JSON.stringify(a.slice(0,300)));}catch(e){}if(flowArchiveSyncTimer)clearTimeout(flowArchiveSyncTimer);flowArchiveSyncTimer=setTimeout(function(){pushFlowEvents(a.slice(0,100));},900);}
+async function pushFlowEvents(a){try{var r=await fetch('/api/flow-events',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({events:a})});var j=await r.json();if(!r.ok||!j.enabled)throw new Error(j.error||'Archive not configured');flowArchiveRemote={state:'synced',lastSync:Date.now(),error:''};}catch(e){flowArchiveRemote={state:'local',lastSync:flowArchiveRemote.lastSync,error:String(e.message||e)};}}
+async function syncFlowEvents(){try{var r=await fetch('/api/flow-events');var j=await r.json();if(!r.ok||!j.enabled)throw new Error(j.error||'Archive not configured');var remote=(j.events||[]).map(function(e){return{key:e.event_key,symbol:e.symbol,kind:e.kind,source:e.source,amount:Number(e.amount)||0,venues:e.venues,tradeId:e.trade_id,ts:Date.parse(e.ts),price:Number(e.price),return15:e.return15===null?null:Number(e.return15),return60:e.return60===null?null:Number(e.return60),observedAt:Date.parse(e.observed_at)};}).filter(function(e){return e.key&&Number.isFinite(e.ts);});var merged=remote.concat(loadFlowEvents()).reduce(function(a,e){if(!a.some(function(v){return v.key===e.key;}))a.push(e);return a;},[]).sort(function(a,b){return b.ts-a.ts;}).slice(0,300);try{localStorage.setItem(TIDE_FLOW_EVENTS_KEY,JSON.stringify(merged));}catch(e){}flowArchiveRemote={state:'synced',lastSync:Date.now(),error:''};}catch(e){flowArchiveRemote={state:'local',lastSync:flowArchiveRemote.lastSync,error:String(e.message||e)};}}
 function recordFlowEvents(c){
  var f=c.flow||{},x=f.cross||{},events=loadFlowEvents(),now=Date.now(),bucket=Math.floor(now/900000),candidates=[];
  if(x.sync==='multiBuy'||x.sync==='multiSell')candidates.push({kind:x.sync,source:'cross',amount:Math.abs(x.net||0),venues:(x.syncExchanges||[]).join(',')});
@@ -714,8 +717,8 @@ function recordFlowEvents(c){
  saveFlowEvents(events);
 }
 function flowEventBoard(){
- var a=loadFlowEvents().slice(0,15);if(!a.length)return '<div class="muted" style="padding:10px 0">'+t('eventEmpty')+'</div>';
- return '<div class="table-wrap"><table class="dragon-table"><thead><tr><th>'+t('eventTime')+'</th><th>'+t('rotationAsset')+'</th><th>'+t('eventType')+'</th><th>'+t('eventAmount')+'</th><th>'+t('eventVenues')+'</th><th>'+t('eventReturn15')+'</th><th>'+t('eventReturn60')+'</th></tr></thead><tbody>'+a.map(function(e){return '<tr><td>'+fmtTime(e.ts,true)+'</td><td><b>'+e.symbol+'</b></td><td>'+t('event_'+e.kind)+'</td><td>'+compact(e.amount)+'</td><td>'+escHtml(e.venues||'—')+'</td><td class="'+(e.return15===null?'muted':cls(e.return15))+'">'+(e.return15===null?'待观察':pct(e.return15))+'</td><td class="'+(e.return60===null?'muted':cls(e.return60))+'">'+(e.return60===null?'待观察':pct(e.return60))+'</td></tr>';}).join('')+'</tbody></table></div>';
+ var a=loadFlowEvents().slice(0,15),archiveLabel=flowArchiveRemote.state==='synced'?'云端档案已同步':flowArchiveRemote.state==='checking'?'正在检查云端档案':'当前仅保存在本机';if(!a.length)return '<div class="muted" style="padding:10px 0">'+t('eventEmpty')+' · '+archiveLabel+'</div>';
+ return '<div class="muted" style="font-size:10px;margin:0 0 8px">'+archiveLabel+(flowArchiveRemote.error?' · '+escHtml(flowArchiveRemote.error):'')+'</div><div class="table-wrap"><table class="dragon-table"><thead><tr><th>'+t('eventTime')+'</th><th>'+t('rotationAsset')+'</th><th>'+t('eventType')+'</th><th>'+t('eventAmount')+'</th><th>'+t('eventVenues')+'</th><th>'+t('eventReturn15')+'</th><th>'+t('eventReturn60')+'</th></tr></thead><tbody>'+a.map(function(e){return '<tr><td>'+fmtTime(e.ts,true)+'</td><td><b>'+e.symbol+'</b></td><td>'+t('event_'+e.kind)+'</td><td>'+compact(e.amount)+'</td><td>'+escHtml(e.venues||'—')+'</td><td class="'+(e.return15===null?'muted':cls(e.return15))+'">'+(e.return15===null?'待观察':pct(e.return15))+'</td><td class="'+(e.return60===null?'muted':cls(e.return60))+'">'+(e.return60===null?'待观察':pct(e.return60))+'</td></tr>';}).join('')+'</tbody></table></div>';
 }
 
 var TIDE_FLOW_WATCH=['BTC','ETH','SOL','BNB','XRP'];
@@ -1158,6 +1161,8 @@ window.addEventListener('resize',function(){if(tideKline.chart){try{tideKline.ch
 if('requestIdleCallback' in window)requestIdleCallback(function(){klineEnsureScript().catch(function(){});},{timeout:2500});
 else setTimeout(function(){klineEnsureScript().catch(function(){});},1200);
 </script>
-<script src="./tdx-structure.js"></script>
+<script src="./tdx-structure.js">
+setTimeout(syncFlowEvents,1200);
+</script>
 </body>
 </html>
