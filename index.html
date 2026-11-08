@@ -816,8 +816,8 @@ function klineWsStop(){tideKline.wsGeneration++;if(tideKline.wsRetry){clearTimeo
 function klineWsStart(){
  klineWsStop();var generation=tideKline.wsGeneration,symbol=tideKline.symbol,period=tideKline.period,ws;
  try{ws=new WebSocket('wss://ws.okx.com:8443/ws/v5/business');}catch(e){return;}tideKline.ws=ws;
- ws.onopen=function(){if(generation!==tideKline.wsGeneration)return;var wsBar=period==='1D'?'1D':period;var args=[{channel:'candle'+wsBar,instId:symbol+'-USDT-SWAP'}];if(period==='15m')args.push({channel:'candle4H',instId:symbol+'-USDT-SWAP'});ws.send(JSON.stringify({op:'subscribe',args:args}));};
- ws.onmessage=function(ev){if(generation!==tideKline.wsGeneration)return;var msg;try{msg=JSON.parse(ev.data);}catch(e){return;}if(!msg.arg||!msg.data)return;var rows=klineRowsToData(msg.data);if(!rows.length)return;
+ ws.onopen=function(){if(generation!==tideKline.wsGeneration)return;var wsBar=period==='1D'?'1D':period;var args=[{channel:'candle'+wsBar,instId:symbol+'-USDT-SWAP'}];if(period==='15m')args.push({channel:'candle4H',instId:symbol+'-USDT-SWAP'});ws.send(JSON.stringify({op:'subscribe',args:args}));tideKline.wsHeartbeat=setInterval(function(){if(ws.readyState===WebSocket.OPEN)try{ws.send('ping');}catch(e){}},20000);};
+ ws.onmessage=function(ev){if(generation!==tideKline.wsGeneration)return;if(ev.data==='ping'){try{ws.send('pong');}catch(e){}return;}var msg;try{msg=JSON.parse(ev.data);}catch(e){return;}if(!msg.arg||!msg.data)return;var rows=klineRowsToData(msg.data);if(!rows.length)return;
   if(msg.arg.channel==='candle4H'){var hm={};tideKline.htfData.forEach(function(c){hm[c.timestamp]=c;});rows.forEach(function(c){hm[c.timestamp]=c;});tideKline.htfData=Object.keys(hm).map(function(k){return hm[k];}).sort(function(a,b){return a.timestamp-b.timestamp;}).slice(-TIDE_KLINE_MAX_CACHE);tideKline.htfFetchedAt=Date.now();klineRenderTdx();return;}
   var candle=rows[rows.length-1];klineMergeData([candle]);if(tideKline.chart){try{tideKline.chart.updateData(candle);}catch(e){tideKline.chart.applyNewData(tideKline.data);}}klineWriteCache();klineUpdatePrice();
  };
