@@ -7,6 +7,25 @@ const DAYS = 90;
 const FEE_PER_SIDE = 0.0005;
 const MAX_HOLD_BARS = 96;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+let requestQueue = Promise.resolve(), lastRequestAt = 0;
+function okxFetch(url) {
+  const task = requestQueue.then(async () => {
+    const wait = Math.max(0, 150 - (Date.now() - lastRequestAt));
+    if (wait) await sleep(wait);
+    lastRequestAt = Date.now();
+    let error;
+    for (let attempt=0; attempt<3; attempt++) {
+      try {
+        const response = await fetch(url, { headers: { 'User-Agent': 'TIDELINE-historical-replay/1.0' }, signal: AbortSignal.timeout(15000) });
+        if (response.status === 429 || response.status >= 500) throw new Error('temporary OKX HTTP ' + response.status);
+        return response;
+      } catch (e) { error=e; await sleep(500*(attempt+1)); }
+    }
+    throw error || new Error('OKX request failed');
+  });
+  requestQueue = task.catch(() => {});
+  return task;
+}
 
 async function candles(instId, bar, days) {
   const since = Date.now() - days * 86400000;
@@ -17,7 +36,7 @@ async function candles(instId, bar, days) {
     u.searchParams.set('bar', bar);
     u.searchParams.set('limit', '100');
     if (after) u.searchParams.set('after', String(after));
-    const res = await fetch(u, { headers: { 'User-Agent': 'TIDELINE-historical-replay/1.0' } });
+    const res = await okxFetch(u);
     if (!res.ok) throw new Error(`OKX HTTP ${res.status}: ${instId} ${bar}`);
     const json = await res.json();
     if (json.code !== '0') throw new Error(`OKX API ${json.code}: ${json.msg}`);
@@ -28,7 +47,7 @@ async function candles(instId, bar, days) {
     if (oldest <= since || oldest >= lastOldest) break;
     lastOldest = oldest;
     after = oldest;
-    await sleep(115);
+    if (page % 20 === 0) console.log('Fetched', instId, bar, 'page', page + 1);
   }
   const unique = new Map();
   for (const x of all) {
