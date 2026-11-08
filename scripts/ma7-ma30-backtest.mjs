@@ -109,7 +109,7 @@ function simulate(data, signals, windowEnd=data.length-1) {
     const gross=(exit-entry)*dir;
     const fees=(entry+exit)*FEE_PER_SIDE;
     const netR=(gross-fees)/risk;
-    trades.push({index:s.index,dir,entry,exit,reason,netR,score:s.score||0,alignment:s.alignment||'legacy',maTrend:s.maTrend||'neutral',maCross:s.maCross||'none'});
+    trades.push({index:s.index,dir,direction:dir===1?'long':'short',signalType:s.text||'unknown',entry,exit,reason,netR,score:s.score||0,alignment:s.alignment||'legacy',maTrend:s.maTrend||'neutral',maCross:s.maCross||'none'});
   }
   return Object.assign(summarizeTrades(trades),{_trades:trades});
 }
@@ -135,6 +135,17 @@ for (const instId of SYMBOLS) {
   for (const key of ['bull','bear','neutral']) {
     byMaTrend[key] = summarizeTrades(newRun._trades.filter(t=>t.maTrend===key));
   }
+  const byDirection = {};
+  for (const key of ['long','short']) {
+    byDirection[key] = summarizeTrades(newRun._trades.filter(t=>t.direction===key));
+  }
+  const byMaTrendDirection = {};
+  for (const trend of ['bull','bear','neutral']) {
+    byMaTrendDirection[trend] = {};
+    for (const direction of ['long','short']) {
+      byMaTrendDirection[trend][direction] = summarizeTrades(newRun._trades.filter(t=>t.maTrend===trend&&t.direction===direction));
+    }
+  }
   const split = m15.length - 60*96;
   const recentSignals = fresh.signals.filter(s=>s.index>=split);
   const priorSignals = fresh.signals.filter(s=>s.index<split);
@@ -146,8 +157,11 @@ for (const instId of SYMBOLS) {
     newScore70:publicStats(new70),
     newByAlignment:byAlignment,
     newByMaTrend:byMaTrend,
+    newByDirection:byDirection,
+    newByMaTrendDirection:byMaTrendDirection,
     newPrior120Days:publicStats(simulate(m15,priorSignals,split-1)),
     newRecent60Days:publicStats(simulate(m15,recentSignals)),
+    newRecent60DaysByDirection:{long:summarizeTrades(simulate(m15,recentSignals)._trades.filter(t=>t.direction==='long')),short:summarizeTrades(simulate(m15,recentSignals)._trades.filter(t=>t.direction==='short'))},
     rawSignals:{old:old.signals.length,oldPassed:old.signals.filter(s=>s.tradable).length,new:fresh.signals.length}
   });
 }
