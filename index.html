@@ -1776,7 +1776,10 @@ function klineBuildCampaignHtml(selected,x,en){
  var c=x.campaign||{},oi=Array.isArray(c.oi)?c.oi:[],taker=Array.isArray(c.taker)?c.taker:[];
  var bars=Array.isArray(tideKline.data)?tideKline.data:[],idx=bars.findIndex(function(b){return Number(b.timestamp)===Number(selected.timestamp);});
  if(idx<0)return '';
- var from=Math.max(0,idx-3),to=Math.min(bars.length,idx+4),windowBars=bars.slice(from,to);
+ var from=Math.max(0,idx-12),to=Math.min(bars.length,idx+13),windowBars=bars.slice(from,to);
+ var keyEvents=(tideKline.anomalyEvents||[]).filter(function(ev){return ev.timestamp>=bars[from].timestamp&&ev.timestamp<=bars[to-1].timestamp;});
+ var keyTimes={};keyEvents.forEach(function(ev){keyTimes[ev.timestamp]=true;});
+ windowBars=windowBars.filter(function(b){return keyTimes[b.timestamp]||b.timestamp===Number(selected.timestamp);}).slice(-15);
  function nearest(list,ts){if(!list.length)return null;var best=null,dist=Infinity;list.forEach(function(v){var d=Math.abs(Number(v.ts)-ts);if(d<dist){dist=d;best=v;}});return dist<=Math.max(Number(c.periodMs)||300000,klineEventDuration())*.65?best:null;}
  function pct(v){return (v>=0?'+':'')+v.toFixed(2)+'%';}
  function phase(bar,oiChange,buyShare){
