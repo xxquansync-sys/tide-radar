@@ -25,5 +25,7 @@ jobs:
           node-version: 22
       - name: Check browser module syntax
         run: node --check scripts/momentum-exhaustion.js
+      - name: Check inline K-line application scripts
+        run: node scripts/test-index-inline-syntax.mjs
       - name: Test momentum exhaustion calculations
         run: node scripts/test-momentum-exhaustion.mjs
