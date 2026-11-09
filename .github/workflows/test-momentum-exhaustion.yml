@@ -1,0 +1,29 @@
+name: Tide Radar momentum exhaustion tests
+on:
+  push:
+    branches: [main, feature/momentum-exhaustion-macd]
+    paths:
+      - 'scripts/momentum-exhaustion.js'
+      - 'scripts/test-momentum-exhaustion.mjs'
+      - '.github/workflows/test-momentum-exhaustion.yml'
+      - 'index.html'
+  pull_request:
+    paths:
+      - 'scripts/momentum-exhaustion.js'
+      - 'scripts/test-momentum-exhaustion.mjs'
+      - '.github/workflows/test-momentum-exhaustion.yml'
+      - 'index.html'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check browser module syntax
+        run: node --check scripts/momentum-exhaustion.js
+      - name: Test momentum exhaustion calculations
+        run: node scripts/test-momentum-exhaustion.mjs
