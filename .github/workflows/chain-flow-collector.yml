@@ -1,0 +1,48 @@
+name: Tide Radar BTC and ETH exchange wallet flows
+on:
+  push:
+    branches:
+      - feature/btc-eth-exchange-chain-flows
+      - main
+    paths:
+      - 'scripts/collect-chain-flows.mjs'
+      - '.github/workflows/chain-flow-collector.yml'
+  pull_request:
+    paths:
+      - 'scripts/collect-chain-flows.mjs'
+      - '.github/workflows/chain-flow-collector.yml'
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: tide-radar-chain-flow-collector
+  cancel-in-progress: false
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check collector syntax
+        run: node --check scripts/collect-chain-flows.mjs
+      - name: Test BTC and ETH flow parsing
+        run: TIDE_CHAIN_FLOW_TEST=1 node scripts/collect-chain-flows.mjs
+  collect:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Collect bounded BTC and ETH OKX wallet flows
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: node scripts/collect-chain-flows.mjs
