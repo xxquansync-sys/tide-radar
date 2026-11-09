@@ -202,11 +202,13 @@ async function getCursors(network, wallets) {
 }
 
 function sortByScanAge(wallets, cursors) {
+  const priority = cursor => !cursor ? 2 : cursor.cursor_status === 'error' ? 0 : cursor.cursor_status === 'stale' ? 1 : 3;
   return wallets.slice().sort((a, b) => {
     const ac = cursors.get(a.account_ref), bc = cursors.get(b.account_ref);
+    const urgency = priority(ac) - priority(bc);
     const at = ac && ac.last_checked_at ? Date.parse(ac.last_checked_at) : 0;
     const bt = bc && bc.last_checked_at ? Date.parse(bc.last_checked_at) : 0;
-    return at - bt || Number(b.amount || 0) - Number(a.amount || 0);
+    return urgency || at - bt || Number(b.amount || 0) - Number(a.amount || 0);
   }).slice(0, PER_NETWORK_PER_RUN);
 }
 
@@ -335,10 +337,23 @@ function test() {
   if (missed.status !== 'stale' || missed.latestTx !== 'old-cursor' || missed.cursorSeen) throw new Error('Capped-page cursor must not advance past unseen history');
   const caughtUp = cursorDecision({ last_txid: 'old-cursor' }, { txs: [{ txid: 'newest' }, { txid: 'old-cursor' }], latestTx: 'newest', hasMore: true });
   if (caughtUp.status !== 'active' || caughtUp.latestTx !== 'newest' || !caughtUp.cursorSeen) throw new Error('Caught-up cursor test failed');
+  const scanWallets = [
+    { account_ref: 'active', amount: '900' },
+    { account_ref: 'error', amount: '800' },
+    { account_ref: 'stale', amount: '700' },
+    { account_ref: 'new', amount: '600' }
+  ];
+  const scanCursors = new Map([
+    ['active', { cursor_status: 'active', last_checked_at: '2026-11-10T00:00:00Z' }],
+    ['error', { cursor_status: 'error', last_checked_at: '2026-11-10T00:10:00Z' }],
+    ['stale', { cursor_status: 'stale', last_checked_at: '2026-11-10T00:20:00Z' }]
+  ]);
+  const scanOrder = sortByScanAge(scanWallets, scanCursors).map(x => x.account_ref);
+  if (scanOrder.join(',') !== 'error,stale,new,active') throw new Error('Error/stale wallet retry priority failed');
   const row = makeFlowRow('ETH', 'ETH', 'entity-id', { account_ref: '0xtracked', confidence: 0.95, snapshot_at: observedAt }, eth, 3000, observedAt);
   if (row.flow_type !== 'exchange_inflow' || row.usd_value !== 3000 || row.to_entity_id !== 'entity-id') throw new Error('Flow row mapping failed');
   if (decimalFromUnits('123456789012345678901', 18) !== '123.456789012345678901') throw new Error('Exact decimal conversion failed');
-  console.log('BTC/ETH chain flow tests passed: direction, exact units, pending status, attribution, USD valuation, and capped-page cursor safety.');
+  console.log('BTC/ETH chain flow tests passed: direction, exact units, pending status, attribution, USD valuation, capped-page cursor safety, and retry priority.');
 }
 
 if (process.env.TIDE_CHAIN_FLOW_TEST === '1') test();
