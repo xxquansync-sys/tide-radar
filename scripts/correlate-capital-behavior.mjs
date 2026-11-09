@@ -242,6 +242,12 @@ function test() {
   const result = analyzeEvent(event, observations, flows, now);
   if (!result.ready || result.promotion !== 'medium' || result.priceChangePct < 0.15 ||
       result.oiDeltaPct < 0.5 || result.matchingFlowCount !== 1) throw new Error('Aligned cross-source promotion test failed');
+  const oiEvidence = result.evidence.find(row => row.evidence_type === 'open_interest');
+  if (!oiEvidence || oiEvidence.direction !== 'neutral') throw new Error('Open interest must remain non-directional evidence');
+  const contextEvidence = result.evidence.find(row => row.evidence_type === 'other');
+  if (!contextEvidence || contextEvidence.metrics.reserve_trend_available !== false) throw new Error('Reserve trend must remain unavailable without snapshots');
+  const estimatedOnly = analyzeEvent(event, observations.map(row => ({ ...row, data_quality: 'estimated' })), flows, now);
+  if (estimatedOnly.promotion !== null) throw new Error('Estimated market observations must not promote events');
   const conflicting = analyzeEvent({ ...event, direction: 'sell' }, observations, flows, now);
   if (conflicting.promotion !== null) throw new Error('Conflicting price response must not promote event');
   const noLookahead = analyzeEvent(event, observations, flows, start + 10 * 60000);
