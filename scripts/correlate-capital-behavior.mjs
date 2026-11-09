@@ -75,11 +75,11 @@ function analyzeEvent(event, observations, flows, now = Date.now()) {
     priceAligned = observedDirection === event.direction;
     evidence.push({
       event_id: event.id, evidence_type: 'price_response',
-      source: 'OKX spot market observations · post-event 15m window',
+      source: 'OKX spot market observations · post-event follow-through window',
       observed_at: priceAfter.observed_at, window_seconds: Math.max(1, Math.round((Date.parse(priceAfter.observed_at) - start) / 1000)),
       direction: observedDirection, evidence_state: 'observed',
       metrics: { baseline_price: before, follow_through_price: after, return_pct: priceChangePct,
-        event_direction: event.direction, direction_aligned: priceAligned, horizon_minutes: 15 },
+        event_direction: event.direction, direction_aligned: priceAligned, observed_horizon_minutes: Math.round((Date.parse(priceAfter.observed_at) - start) / 60000) },
       explanation: priceAligned ? '事件发生后，现货价格在15分钟观察窗内沿事件主动成交方向延续。该价格响应不代表账户身份或净持仓。' :
         observedDirection === 'neutral' ? '事件后的现货价格变化未达到方向阈值，尚未形成明确跟随。' :
           '事件后的现货价格方向与主动成交方向不一致，记为冲突证据。'
@@ -87,7 +87,7 @@ function analyzeEvent(event, observations, flows, now = Date.now()) {
   } else if (now >= start + MAX_TARGET_MS) {
     evidence.push({
       event_id: event.id, evidence_type: 'price_response',
-      source: 'OKX spot market observations · post-event 15m window',
+      source: 'OKX spot market observations · post-event follow-through window',
       observed_at: iso(start + MIN_HORIZON_MS), window_seconds: 900,
       direction: 'neutral', evidence_state: 'missing',
       metrics: { event_direction: event.direction, reason: 'No valid baseline and follow-through pair' },
