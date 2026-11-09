@@ -12,6 +12,8 @@ vm.runInNewContext(html.slice(clientStart, clientEnd), ui, { filename: 'index.ht
 assert.equal(ui.okxReserveAmount('12345678901234567890.123456789012345678'), '12,345,678,901,234,567,890.123456789012345678');
 assert.equal(ui.okxReserveAmount('1200.500000'), '1,200.5');
 assert.equal(ui.okxReserveAmount('not-a-number'), '—');
+assert.equal(ui.okxReserveAgeLabel('2026-10-31T16:00:00Z', false, Date.parse('2026-11-10T00:00:00Z')), '报告于9天前');
+assert.equal(ui.okxReserveAgeLabel('2026-11-10T00:00:00Z', true, Date.parse('2026-11-10T00:30:00Z')), 'reported 30m ago');
 assert.ok(html.includes('id="okx-reserve-panel"'), 'Reserve panel mount point must be present');
 
 const source = fs.readFileSync('api/capital-reserves.js', 'utf8');
