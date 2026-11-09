@@ -20,7 +20,7 @@ module.exports = async function handler(req, res) {
       let payload = req.body;
       if (typeof payload === 'string') { if (payload.length > 128 * 1024) { res.statusCode = 413; return res.end(JSON.stringify({ enabled: false, error: 'Payload too large' })); } try { payload = JSON.parse(payload); } catch (_) { payload = null; } }
       const incoming = payload && Array.isArray(payload.alerts) ? payload.alerts.slice(0, 100) : [];
-      const types = new Set(['crossConsensus', 'largeCluster', 'topTraderShift']);
+      const types = new Set(['crossConsensus', 'largeCluster', 'topTraderShift', 'microstructureShift']);
       const rows = incoming.filter(a => {
         if (!a || !/^[A-Z0-9]{2,20}$/.test(String(a.symbol || ''))) return false;
         if (typeof a.key !== 'string' || a.key.length > 180 || a.key.indexOf(String(a.symbol) + '|') !== 0) return false;
