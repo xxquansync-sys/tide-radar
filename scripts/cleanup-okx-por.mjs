@@ -26,22 +26,15 @@ if (entities.length !== 1) throw new Error("Expected exactly one OKX entity");
 
 const entityId = entities[0].id;
 const filter = "entity_id=eq." + encodeURIComponent(entityId);
-const countRows = async () => {
-  const result = await fetch(
-    base + "/rest/v1/capital_entity_accounts?select=id&" + filter + "&limit=1",
-    { headers: { ...headers, Prefer: "count=exact", Range: "0-0" } },
-  );
-  const body = await result.text();
-  if (!result.ok) throw new Error("Count failed " + result.status + ": " + body);
-  const total = Number((result.headers.get("content-range") || "").split("/")[1]);
-  if (!Number.isFinite(total)) throw new Error("Could not read exact row count");
-  return total;
-};
-
-const initial = await countRows();
-console.log("OKX target rows:", initial);
 const batchSize = 500;
 let deleted = 0;
+
+const hasRemainingRows = async () => {
+  const rows = await req(
+    "capital_entity_accounts?select=id&" + filter + "&limit=1",
+  );
+  return rows.length > 0;
+};
 
 while (true) {
   const rows = await req(
@@ -52,39 +45,41 @@ while (true) {
   );
   if (rows.length === 0) break;
 
-  // The last selected UUID is the upper boundary of this ordered batch.
-  // Keeping entity_id in the DELETE filter prevents touching other entities.
-  const upperId = rows[rows.length - 1].id;
+  // Delete exactly the IDs selected for this batch. Keep the entity filter
+  // as a second guard so no account belonging to another entity can be touched.
+  const idList = rows.map((row) => row.id).join(",");
   const removed = await req(
-    "capital_entity_accounts?id=lte." +
-      encodeURIComponent(upperId) +
-      "&" +
+    "capital_entity_accounts?id=in.(" +
+      idList +
+      ")&" +
       filter +
       "&select=id",
     { method: "DELETE", headers: { Prefer: "return=representation" } },
   );
 
-  if (!Array.isArray(removed) || removed.length === 0) {
-    throw new Error("Deletion made no progress; stopping safely");
+  if (!Array.isArray(removed) || removed.length !== rows.length) {
+    throw new Error(
+      "Unexpected batch delete count: selected " +
+        rows.length +
+        ", deleted " +
+        (Array.isArray(removed) ? removed.length : "invalid response"),
+    );
   }
   deleted += removed.length;
-  console.log(
-    "Removed " + deleted + " of " + initial + " (last batch " + removed.length + ")",
-  );
+  console.log("Removed " + deleted + " OKX account rows (batch " + removed.length + ")");
 }
 
-const finalRemaining = await countRows();
-if (finalRemaining !== 0) {
-  throw new Error("Cleanup incomplete: " + finalRemaining + " rows remain");
+if (await hasRemainingRows()) {
+  throw new Error("Cleanup incomplete: OKX account rows remain");
 }
 
 console.log(
   JSON.stringify({
     ok: true,
     entity_key: "okx:exchange",
-    initial_rows: initial,
     deleted_rows: deleted,
-    remaining_rows: finalRemaining,
+    remaining_rows: 0,
+    batch_size: batchSize,
     scope: "Only capital_entity_accounts rows for the OKX exchange entity",
   }),
 );
