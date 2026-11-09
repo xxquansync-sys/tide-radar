@@ -1,0 +1,24 @@
+name: Test reserve intelligence API
+on:
+  push:
+    branches:
+      - feature/okx-reserve-intelligence-ui
+    paths:
+      - 'api/capital-reserves.js'
+      - 'scripts/test-capital-reserves.mjs'
+      - '.github/workflows/test-reserve-intelligence.yml'
+  pull_request:
+    paths:
+      - 'api/capital-reserves.js'
+      - 'scripts/test-capital-reserves.mjs'
+      - '.github/workflows/test-reserve-intelligence.yml'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node --check api/capital-reserves.js
+      - run: node scripts/test-capital-reserves.mjs
