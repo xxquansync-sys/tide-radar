@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
-const { compute, ema, macd, atr, findPivots } = require('./momentum-exhaustion.js');
+const { compute, ema, macd, atr, findPivots, comparePair, findTrigger, contextAssessment, trendBias } = require('./momentum-exhaustion.js');
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -33,7 +33,33 @@ const daily = Array.from({ length: 80 }, (_, i) => {
   const close = 200 - i * 0.8;
   return { timestamp: 1790000000000 + i * 86400000, open: close + 0.3, high: close + 1, low: close - 1, close };
 });
-const dailyBias = require('./momentum-exhaustion.js').trendBias(daily, '1D', daily[daily.length - 1].timestamp + 86400000);
+const dailyBias = trendBias(daily, '1D', daily[daily.length - 1].timestamp + 86400000);
 assert(dailyBias === 'down', 'Daily EMA trend context failed');
+const dailyOnly = compute(daily, { period: '1D', now: daily[daily.length - 1].timestamp + 86400000 });
+assert(dailyOnly.status === 'context_only' && dailyOnly.direction === 'short', 'Daily must remain context-only');
+const executionOnly = compute(candles, { period: '5m', now });
+assert(executionOnly.status === 'execution_only', '5m must not create standalone signals');
+
+const options = require('./momentum-exhaustion.js').defaults;
+assert(comparePair({ priceIndex: 10, price: 100, histogram: -3, atr: 2 },
+  { priceIndex: 20, price: 99, histogram: -2.5, atr: 2 }, 'long', options),
+  'Bullish divergence threshold failed');
+assert(!comparePair({ priceIndex: 10, price: 100, histogram: -3, atr: 2 },
+  { priceIndex: 20, price: 101, histogram: -2.5, atr: 2 }, 'long', options),
+  'Bullish divergence must require a lower price low');
+assert(comparePair({ priceIndex: 10, price: 100, histogram: 3, atr: 2 },
+  { priceIndex: 20, price: 101, histogram: 2.5, atr: 2 }, 'short', options),
+  'Bearish divergence threshold failed');
+assert(findTrigger([-1, -2, -3, -2.5], { confirmationIndex: 3 }, 'long', options, 3) === 3,
+  'First closed bullish histogram turn failed');
+assert(findTrigger([1, 2, 3, 2.5], { confirmationIndex: 3 }, 'short', options, 3) === 3,
+  'First closed bearish histogram turn failed');
+assert(contextAssessment('long', '15m', 'up', 'up').state === 'aligned',
+  '15m requires 4H and daily resonance');
+assert(contextAssessment('long', '15m', 'down', 'down').state === 'blocked',
+  'Opposing 4H and daily trends must block the setup');
+assert(contextAssessment('long', '15m', 'unavailable', 'up').state === 'pending',
+  'Missing higher-timeframe data must not create a signal');
+
 
 console.log('Momentum exhaustion tests passed: EMA, MACD 13/34/9, ATR(13), confirmed pivots, closed-bar guard, and higher-timeframe bias.');
