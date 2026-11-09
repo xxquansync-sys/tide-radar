@@ -1767,10 +1767,41 @@ function klineLoadSelectedCandleFlow(e,seq){
    var candleUp=Number(e.close)>=Number(e.open);
    var phase=candleUp?(buyShare>=0.58?(en?'UP MOVE · BUY-LED':'上涨推进 · 主动买盘推动'):buyShare<=0.42?(en?'UP MOVE · SELLING INTO STRENGTH':'上涨但主动卖盘占优 · 留意兑现/换手'):(en?'UP MOVE · MIXED FLOW':'上涨但买卖力量分歧')):(buyShare<=0.42?(en?'DOWN MOVE · SELL-LED':'下跌推进 · 主动卖盘主导'):buyShare>=0.58?(en?'DOWN MOVE · BUYERS ABSORBING':'下跌但主动买盘占优 · 观察承接是否有效'):(en?'DOWN MOVE · MIXED FLOW':'下跌但买卖力量分歧'));
    var coverage=x.matchedRows===0?(en?'no trades in returned sample':'返回样本中没有该时段成交'):(en?(x.matchedRows+' matched trades'):(x.matchedRows+' 笔匹配成交'));
-   return '<div style="padding:10px 0;border-bottom:1px solid #26364a"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>'+x.name+'</b><b style="color:'+(net>=0?'#18b88a':'#f06478')+'">'+(net>=0?'+':'')+klineMoney(net)+'</b></div><div style="font-size:12px;font-weight:700;margin-top:6px;color:'+(buyShare>=0.58?'#18b88a':buyShare<=0.42?'#f06478':'#eabd69')+'">'+phase+'</div><div style="height:7px;background:#26364a;border-radius:8px;overflow:hidden;display:flex;margin:7px 0 5px"><span style="width:'+(buyShare*100).toFixed(1)+'%;background:#18b88a"></span><span style="flex:1;background:#f06478"></span></div><div style="display:flex;justify-content:space-between;color:#9fb1c5;font-size:11px"><span>'+(en?'Aggressive buys ':'主动买入 ')+klineMoney(buy)+' ('+(buyShare*100).toFixed(1)+'%)</span><span>'+(en?'Sells ':'主动卖出 ')+klineMoney(sell)+' ('+((1-buyShare)*100).toFixed(1)+'%)</span></div><div style="color:#8297ad;font-size:10px;margin-top:5px">'+stance+' · '+coverage+' · '+(en?'Size mix <10K / 10–100K / 100K+ ':'成交规模 <1万 / 1–10万 / 10万+ ')+klineMoney(small)+' / '+klineMoney(medium)+' / '+klineMoney(large)+' · '+(en?'small-size turnover ':'小额成交额占样本 ')+(smallShare*100).toFixed(1)+'%'+' · '+(x.complete?(en?'time window covered':'时间窗口已覆盖'):(en?'partial history coverage':'历史成交覆盖不完整'))+(x.capped?' · '+(en?'page limit reached':'达到分页上限'):'')+'</div></div>';
+   return '<div style="padding:10px 0;border-bottom:1px solid #26364a"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>'+x.name+'</b><b style="color:'+(net>=0?'#18b88a':'#f06478')+'">'+(net>=0?'+':'')+klineMoney(net)+'</b></div><div style="font-size:12px;font-weight:700;margin-top:6px;color:'+(buyShare>=0.58?'#18b88a':buyShare<=0.42?'#f06478':'#eabd69')+'">'+phase+'</div><div style="height:7px;background:#26364a;border-radius:8px;overflow:hidden;display:flex;margin:7px 0 5px"><span style="width:'+(buyShare*100).toFixed(1)+'%;background:#18b88a"></span><span style="flex:1;background:#f06478"></span></div><div style="display:flex;justify-content:space-between;color:#9fb1c5;font-size:11px"><span>'+(en?'Aggressive buys ':'主动买入 ')+klineMoney(buy)+' ('+(buyShare*100).toFixed(1)+'%)</span><span>'+(en?'Sells ':'主动卖出 ')+klineMoney(sell)+' ('+((1-buyShare)*100).toFixed(1)+'%)</span></div><div style="color:#8297ad;font-size:10px;margin-top:5px">'+stance+' · '+coverage+' · '+(en?'Size mix <10K / 10–100K / 100K+ ':'成交规模 <1万 / 1–10万 / 10万+ ')+klineMoney(small)+' / '+klineMoney(medium)+' / '+klineMoney(large)+' · '+(en?'small-size turnover ':'小额成交额占样本 ')+(smallShare*100).toFixed(1)+'%'+' · '+(x.complete?(en?'time window covered':'时间窗口已覆盖'):(en?'partial history coverage':'历史成交覆盖不完整'))+(x.capped?' · '+(en?'page limit reached':'达到分页上限'):'')+'</div></div>'+klineBuildCampaignHtml(e,x,en);
   }).join('');
   el.innerHTML=html|| (en?'No exchange trade samples returned for this candle.':'没有获取到这根K线对应时段的交易所成交样本。');
  }).catch(function(err){if(seq!==tideKline.eventRequestId)return;el.textContent=(en?'Historical candle trades unavailable: ':'该K线历史成交暂不可用：')+String(err.message||err);});
+}
+function klineBuildCampaignHtml(selected,x,en){
+ var c=x.campaign||{},oi=Array.isArray(c.oi)?c.oi:[],taker=Array.isArray(c.taker)?c.taker:[];
+ var bars=Array.isArray(tideKline.data)?tideKline.data:[],idx=bars.findIndex(function(b){return Number(b.timestamp)===Number(selected.timestamp);});
+ if(idx<0)return '';
+ var from=Math.max(0,idx-3),to=Math.min(bars.length,idx+4),windowBars=bars.slice(from,to);
+ function nearest(list,ts){if(!list.length)return null;var best=null,dist=Infinity;list.forEach(function(v){var d=Math.abs(Number(v.ts)-ts);if(d<dist){dist=d;best=v;}});return dist<=Math.max(Number(c.periodMs)||300000,klineEventDuration())*.65?best:null;}
+ function pct(v){return (v>=0?'+':'')+v.toFixed(2)+'%';}
+ function phase(bar,oiChange,buyShare){
+  var up=bar.close>=bar.open,oiUp=oiChange!==null&&oiChange>0.3,oiDown=oiChange!==null&&oiChange<-.3;
+  if(up&&oiUp&&buyShare!==null&&buyShare>=.58)return en?'Expansion · buy-led':'增仓推进 · 主动买盘占优';
+  if(up&&oiDown)return en?'Advance with position reduction · possible short covering':'上涨伴随减仓 · 可能包含空头回补';
+  if(!up&&oiUp&&buyShare!==null&&buyShare<=.42)return en?'Downward expansion · sell-led':'增仓下行 · 主动卖盘占优';
+  if(!up&&oiDown)return en?'Decline with position reduction · possible long unwind':'下跌伴随减仓 · 可能包含多头撤退';
+  if(!up&&buyShare!==null&&buyShare>=.58)return en?'Buy-side absorption attempt':'主动买盘承接迹象';
+  if(up&&buyShare!==null&&buyShare<=.42)return en?'Selling into strength / possible distribution':'上涨中卖压增强 · 留意兑现换手';
+  if(oiUp)return en?'Positions expanding · direction mixed':'持仓扩张 · 方向仍有分歧';
+  if(oiDown)return en?'Positions reducing':'持仓收缩';
+  return en?'Mixed / insufficient confirmation':'多空分歧 / 暂无明确确认';
+ }
+ var rows=windowBars.map(function(b){
+  var o=nearest(oi,b.timestamp),t=nearest(taker,b.timestamp),oiIndex=o?oi.indexOf(o):-1,prev=oiIndex>0?oi[oiIndex-1]:null;
+  var oiChange=o&&prev&&prev.usd>0?(o.usd/prev.usd-1)*100:null;
+  var buyShare=t&&t.buy+t.sell>0?t.buy/(t.buy+t.sell):null;
+  var move=(b.close/b.open-1)*100,label=phase(b,oiChange,buyShare),color=move>=0?'#18b88a':'#f06478';
+  return '<div style="display:grid;grid-template-columns:90px 72px 82px 1fr;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #223247;font-size:11px"><span style="color:#9fb1c5">'+new Date(b.timestamp).toLocaleString(en?'en-SG':'zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})+'</span><b style="color:'+color+'">'+pct(move)+'</b><span style="color:'+(oiChange===null?'#8496ad':oiChange>=0?'#eabd69':'#8496ad')+'">'+(oiChange===null?'OI —':'OI '+pct(oiChange))+'</span><span style="color:'+(buyShare===null?'#8496ad':buyShare>=.58?'#18b88a':buyShare<=.42?'#f06478':'#eabd69')+'">'+(buyShare===null?(en?'Taker —':'主动买卖 —'):(en?'Buy ':'主动买 ')+(buyShare*100).toFixed(0)+'%')+' · '+label+'</span></div>';
+ }).join('');
+ if(!rows)return '';
+ var oiNote=c.oiError?(en?'OI unavailable: ':'持仓量数据不可用：')+String(c.oiError).replace(/[<>]/g,''):oi.length?(en?'OKX contract OI (USD)':'OKX 合约持仓量（USD）'):(en?'No OI series returned':'未返回持仓量序列');
+ var takerNote=c.takerError?(en?'Taker flow unavailable: ':'主动买卖数据不可用：')+String(c.takerError).replace(/[<>]/g,''):taker.length?(en?'OKX contract taker buy/sell':'OKX 合约主动买入/卖出'):(en?'No taker series returned':'未返回主动买卖序列');
+ return '<div style="margin-top:15px;padding-top:12px;border-top:1px solid #2c3d51"><div style="font-weight:700;margin-bottom:5px">'+(en?'Capital campaign · surrounding candles':'连续资金轨迹 · 前后关键时段')+'</div><div style="font-size:10px;color:#8297ad;margin-bottom:8px">'+oiNote+' · '+takerNote+' · '+(en?'Period ':'周期 ')+(c.period||'—')+'</div>'+rows+'<div style="font-size:10px;color:#71869d;margin-top:8px;line-height:1.6">'+(en?'OI change shows aggregate position expansion or reduction, not whether new positions are long or short. Taker flow is an aggressor-side proxy; phase labels are interpretations, not verified identities.':'OI变化只说明全市场仓位扩张或收缩，不能单独识别新增多仓还是空仓。主动买卖是成交方向代理指标；阶段标签是综合推断，不代表已识别具体资金主体。')+'</div></div>';
 }
 function klineShowTradeBehaviorProfile(encodedKey){
  var key;try{key=decodeURIComponent(encodedKey);}catch(e){key=encodedKey;}
