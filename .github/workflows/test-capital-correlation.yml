@@ -1,0 +1,41 @@
+name: Tide Radar cross-source capital correlation tests
+on:
+  push:
+    branches: [main, feature/cross-market-capital-correlation]
+    paths:
+      - 'scripts/correlate-capital-behavior.mjs'
+      - 'scripts/test-capital-correlation.mjs'
+      - 'scripts/test-capital-behavior-api.mjs'
+      - 'scripts/test-index-inline-syntax.mjs'
+      - 'api/capital-behavior.js'
+      - 'index.html'
+      - '.github/workflows/test-capital-correlation.yml'
+  pull_request:
+    paths:
+      - 'scripts/correlate-capital-behavior.mjs'
+      - 'scripts/test-capital-correlation.mjs'
+      - 'scripts/test-capital-behavior-api.mjs'
+      - 'scripts/test-index-inline-syntax.mjs'
+      - 'api/capital-behavior.js'
+      - 'index.html'
+      - '.github/workflows/test-capital-correlation.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check correlator syntax
+        run: node --check scripts/correlate-capital-behavior.mjs
+      - name: Check read-only API syntax
+        run: node --check api/capital-behavior.js
+      - name: Validate inline UI JavaScript
+        run: node scripts/test-index-inline-syntax.mjs
+      - name: Test cross-source correlation logic
+        run: node scripts/test-capital-correlation.mjs
+      - name: Test capital behavior API
+        run: node scripts/test-capital-behavior-api.mjs
