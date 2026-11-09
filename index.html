@@ -1127,7 +1127,7 @@ whDisclaimer:'Note: this is public on-chain and disclosed data. It does not cove
 
 var okxReserveState={loading:false,loadedAt:0,data:null,error:'',requestId:0};
 function okxReserveEsc(value){return String(value===null||value===undefined?'':value).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);});}
-function okxReserveAmount(value){var s=String(value===null||value===undefined?'':value).trim();if(!/^\\d+(?:\\.\\d+)?$/.test(s))return '—';var p=s.split('.'),whole=p[0].replace(/\\B(?=(\\d{3})+(?!\\d))/g,','),fraction=(p[1]||'').replace(/0+$/,'');return whole+(fraction?'.'+fraction:'');}
+function okxReserveAmount(value){var s=String(value===null||value===undefined?'':value).trim();if(!/^\d+(?:\.\d+)?$/.test(s))return '—';var p=s.split('.'),whole=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,','),fraction=(p[1]||'').replace(/0+$/,'');return whole+(fraction?'.'+fraction:'');}
 function okxReserveShortRef(value){var s=String(value||'');return s.length>25?s.slice(0,10)+'…'+s.slice(-9):s||'—';}
 function renderOkxReserves(){
  var box=$('okx-reserve-panel');if(!box)return;
@@ -1142,7 +1142,7 @@ function renderOkxReserves(){
  h+='<div class="table-wrap"><table class="okx-reserve-table"><thead><tr><th>'+(en?'Asset':'资产')+'</th><th>'+(en?'Entity reserve (native units)':'实体储备总额（原生单位）')+'</th><th>'+(en?'Data basis':'数据依据')+'</th><th>'+(en?'Tracked sample':'钱包样本')+'</th><th>'+(en?'Largest published wallet samples':'公开钱包样本（前5）')+'</th></tr></thead><tbody>';
  h+=d.assets.map(function(x){
   var quality=x.dataQuality==='observed'?'observed':'partial',label=quality==='observed'?(en?'Official summary':'官方汇总'):(en?'Published-wallet fallback':'公开钱包求和');
-  var sourceLink=/^https:\\/\\/[^\\s<>\"']+$/i.test(String(x.sourceUrl||''))?'<a href=\"'+okxReserveEsc(x.sourceUrl)+'\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"display:inline-block;margin-top:4px;font-size:9px;color:#287e78\">'+(en?'Source ↗':'来源 ↗')+'</a>':'';
+  var sourceLink=/^https:\/\/[^\s<>"']+$/i.test(String(x.sourceUrl||''))?'<a href="'+okxReserveEsc(x.sourceUrl)+'" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:4px;font-size:9px;color:#287e78">'+(en?'Source ↗':'来源 ↗')+'</a>':'';
   var wallets=(x.topWallets||[]).map(function(w){return '<div class="okx-wallet"><code title="'+okxReserveEsc(w.accountRef)+'">'+okxReserveEsc(w.network)+' · '+okxReserveShortRef(w.accountRef)+'</code><span>'+okxReserveAmount(w.amount)+' '+okxReserveEsc(x.asset)+'</span></div>';}).join('')||'<span class="okx-reserve-status">—</span>';
   return '<tr><td data-label="'+(en?'Asset':'资产')+'"><b>'+okxReserveEsc(x.asset)+'</b></td><td data-label="'+(en?'Entity reserve':'实体储备总额')+'"><b>'+okxReserveAmount(x.reserveAmount)+'</b></td><td data-label="'+(en?'Data basis':'数据依据')+'"><span class="okx-quality '+quality+'">'+label+'</span>'+sourceLink+'</td><td data-label="'+(en?'Tracked sample':'钱包样本')+'">'+Number(x.trackedWalletCount||0).toLocaleString('en-US')+'</td><td data-label="'+(en?'Top wallet samples':'钱包样本')+'"><div class="okx-wallet-list">'+wallets+'</div></td></tr>';
  }).join('');
