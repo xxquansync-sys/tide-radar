@@ -170,15 +170,15 @@ function evidenceKey(row) {
   return [row.evidence_type, row.source, row.observed_at].join('|');
 }
 
-async function processEvent(event, observations, flows, now) {
+async function processEvent(event, observations, flows, now, existingByEvent) {
   const analysis = analyzeEvent(event, observations, flows, now);
   if (!analysis.ready || !analysis.evidence.length) return { eventKey: event.event_key, status: 'waiting' };
-  const existing = await db('capital_behavior_evidence',
-    'select=evidence_type,source,observed_at&event_id=eq.' + encodeURIComponent(event.id) + '&limit=500');
+  const existing = existingByEvent.get(event.id) || [];
   const seen = new Set(existing.map(evidenceKey));
   const fresh = analysis.evidence.filter(row => !seen.has(evidenceKey(row)));
   if (fresh.length) {
     await db('capital_behavior_evidence', '', { method: 'POST', body: fresh, prefer: 'return=minimal' });
+    existingByEvent.set(event.id, existing.concat(fresh));
   }
   let promoted = false;
   if (analysis.promotion === 'medium' && event.status === 'forming' && event.evidence_strength !== 'strong') {
@@ -211,8 +211,19 @@ async function main() {
       'select=asset,flow_type,usd_value,block_height,occurred_at,observed_at,metadata&network=eq.' +
       network + '&occurred_at=gte.' + encodeURIComponent(iso(now - 8 * 3600000)) +
       '&order=occurred_at.asc&limit=2000') : [];
-    for (const event of eligible.filter(item => item.symbol === symbol)) {
-      try { results.push(await processEvent(event, observations, flows, now)); }
+    const symbolEvents = eligible.filter(item => item.symbol === symbol);
+    const eventIds = symbolEvents.map(event => event.id);
+    const evidenceRows = eventIds.length ? await db('capital_behavior_evidence',
+      'select=event_id,evidence_type,source,observed_at&event_id=' +
+      encodeURIComponent('in.(' + eventIds.join(',') + ')') + '&limit=2000') : [];
+    const existingByEvent = new Map();
+    evidenceRows.forEach(row => {
+      const list = existingByEvent.get(row.event_id) || [];
+      list.push(row);
+      existingByEvent.set(row.event_id, list);
+    });
+    for (const event of symbolEvents) {
+      try { results.push(await processEvent(event, observations, flows, now, existingByEvent)); }
       catch (error) { results.push({ eventKey: event.event_key, status: 'error', error: String(error.message || error).slice(0, 180) }); }
     }
   }
