@@ -55,6 +55,7 @@ function parseBtcTransaction(tx, address, observedAt) {
     metadata: {
       provider: 'mempool.space',
       confirmation_status: confirmed ? 'confirmed' : 'mempool_or_unconfirmed',
+      time_basis: confirmed ? 'block_time' : 'first_observed',
       received_sats: received.toString(),
       spent_sats: spent.toString(),
       net_sats: net.toString(),
@@ -68,16 +69,17 @@ function parseEthTransaction(tx, address, observedAt) {
   const from = String((tx.from && tx.from.hash) || tx.from || '').toLowerCase();
   const to = String((tx.to && tx.to.hash) || tx.to || '').toLowerCase();
   const target = address.toLowerCase();
+  const txHash = String(tx.hash || tx.transaction_hash || '');
   const value = BigInt(String(tx.value || '0'));
-  if (value <= 0n || from === to || (from !== target && to !== target)) return null;
+  if (!txHash || value <= 0n || from === to || (from !== target && to !== target)) return null;
   const direction = to === target ? 'in' : 'out';
   const timestamp = tx.timestamp && Number.isFinite(Date.parse(tx.timestamp))
     ? new Date(tx.timestamp).toISOString()
     : observedAt;
   const block = Number(tx.block);
   return {
-    flowKey: 'ETH:' + String(tx.hash || tx.transaction_hash || '') + ':' + target,
-    txHash: String(tx.hash || tx.transaction_hash || ''),
+    flowKey: 'ETH:' + txHash + ':' + target,
+    txHash: txHash,
     direction,
     amount: decimalFromUnits(value, 18),
     occurredAt: timestamp,
@@ -88,6 +90,7 @@ function parseEthTransaction(tx, address, observedAt) {
     metadata: {
       provider: 'Blockscout',
       confirmation_status: Number.isSafeInteger(block) ? 'indexed' : 'pending_or_unconfirmed',
+      time_basis: tx.timestamp ? 'explorer_timestamp' : 'first_observed',
       transaction_type: tx.method || tx.type || null,
       address_scope: 'single_tracked_address',
       asset_scope: 'native_ETH_only',
@@ -115,7 +118,7 @@ function makeFlowRow(network, asset, entityId, wallet, parsed, price, observedAt
     block_height: parsed.blockHeight,
     occurred_at: parsed.occurredAt,
     observed_at: observedAt,
-    attribution_confidence: Number(wallet.confidence) || 0.95,
+    attribution_confidence: Number.isFinite(Number(wallet.confidence)) ? Math.max(0, Math.min(1, Number(wallet.confidence))) : 0.95,
     source: network === 'BTC' ? 'mempool.space public API' : 'Blockscout public API',
     source_url: network === 'BTC'
       ? 'https://mempool.space/tx/' + parsed.txHash
@@ -254,7 +257,7 @@ async function scanWallet(networkConfig, entityId, wallet, previous, price) {
   }
   const cursor = previous && previous.last_txid;
   const cursorSeen = !cursor || result.txs.some(tx => String(tx.txid || tx.hash || tx.transaction_hash || '') === cursor);
-  const status = result.hasMore && !cursorSeen ? 'stale' : 'active';
+  const status = result.hasMore && (!cursor || !cursorSeen) ? 'stale' : 'active';
   await saveCursor(networkConfig.network, wallet, previous, result, status);
   return { address: wallet.account_ref, transactions: result.txs.length, flows: rows.length, capped: result.hasMore, cursorSeen, status };
 }
