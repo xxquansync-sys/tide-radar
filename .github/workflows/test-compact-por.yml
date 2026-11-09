@@ -7,6 +7,7 @@ on:
       - 'scripts/import-okx-por.mjs'
       - 'supabase/migrations/20261109043109_compact_okx_por_snapshots.sql'
       - '.github/workflows/test-compact-por.yml'
+      - '.github/workflows/capital-entity-sync.yml'
 permissions:
   contents: read
 jobs:
