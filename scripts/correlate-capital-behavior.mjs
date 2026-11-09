@@ -5,7 +5,7 @@ const MIN_HORIZON_MS = 60 * 60000;
 const MAX_TARGET_MS = 90 * 60000;
 const BASELINE_LOOKBACK_MS = 60 * 60000;
 const PRICE_THRESHOLD_PCT = 0.15;
-const OI_EXPANSION_THRESHOLD_PCT = 0.5;
+const OI_MATERIAL_CHANGE_THRESHOLD_PCT = 0.5;
 
 async function db(table, query, options = {}) {
   const response = await fetch(BASE + '/rest/v1/' + table + (query ? '?' + query : ''), {
@@ -133,18 +133,18 @@ function analyzeEvent(event, observations, flows, outcomes = [], now = Date.now(
   if (oiBefore && oiAfter) {
     const before = Number(oiBefore.metric_value), after = Number(oiAfter.metric_value);
     oiDeltaPct = before > 0 ? (after / before - 1) * 100 : null;
-    oiMaterialChange = Number.isFinite(oiDeltaPct) && Math.abs(oiDeltaPct) >= OI_EXPANSION_THRESHOLD_PCT;
+    oiMaterialChange = Number.isFinite(oiDeltaPct) && Math.abs(oiDeltaPct) >= OI_MATERIAL_CHANGE_THRESHOLD_PCT;
     evidence.push({
       event_id: event.id, evidence_type: 'open_interest',
       source: 'OKX swap open-interest observations · 60–90m window',
       observed_at: oiAfter.observed_at, window_seconds: Math.max(1, Math.round((Date.parse(oiAfter.observed_at) - start) / 1000)),
       direction: 'neutral', evidence_state: 'observed',
       metrics: { open_interest_before_usd: before, open_interest_after_usd: after,
-        delta_pct: oiDeltaPct, material_change_threshold_pct: OI_EXPANSION_THRESHOLD_PCT,
+        delta_pct: oiDeltaPct, material_change_threshold_pct: OI_MATERIAL_CHANGE_THRESHOLD_PCT,
         interpretation: 'aggregate_open_interest_is_not_directional' },
-      explanation: oiDeltaPct >= OI_EXPANSION_THRESHOLD_PCT ?
+      explanation: oiDeltaPct >= OI_MATERIAL_CHANGE_THRESHOLD_PCT ?
         '60–90分钟内未平仓合约名义价值增加，说明总风险敞口扩张；OI本身不区分新增多头与新增空头。' :
-        oiDeltaPct <= -OI_EXPANSION_THRESHOLD_PCT ?
+        oiDeltaPct <= -OI_MATERIAL_CHANGE_THRESHOLD_PCT ?
           '60–90分钟内未平仓合约名义价值下降，说明总风险敞口收缩，可能涉及去杠杆或平仓；不能据此判断是哪一侧账户在平仓。' :
           '60–90分钟内未平仓合约名义价值变化较小，暂不构成明显持仓扩张或收缩证据。'
     });
