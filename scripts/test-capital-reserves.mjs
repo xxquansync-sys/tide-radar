@@ -7,6 +7,11 @@ const clientStart = html.indexOf('function okxReserveEsc(');
 const clientEnd = html.indexOf('var dragonState=', clientStart);
 assert.ok(clientStart >= 0 && clientEnd > clientStart, 'Reserve UI code must be present in the capital page');
 new vm.Script(html.slice(clientStart, clientEnd), { filename: 'index.html#reserve-ui' });
+const ui = {};
+vm.runInNewContext(html.slice(clientStart, clientEnd), ui, { filename: 'index.html#reserve-ui' });
+assert.equal(ui.okxReserveAmount('12345678901234567890.123456789012345678'), '12,345,678,901,234,567,890.123456789012345678');
+assert.equal(ui.okxReserveAmount('1200.500000'), '1,200.5');
+assert.equal(ui.okxReserveAmount('not-a-number'), '—');
 assert.ok(html.includes('id="okx-reserve-panel"'), 'Reserve panel mount point must be present');
 
 const source = fs.readFileSync('api/capital-reserves.js', 'utf8');
