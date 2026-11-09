@@ -3,6 +3,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'scripts/cleanup-okx-por.mjs'
       - '.github/workflows/cleanup-failed-okx-por.yml'
 permissions:
   contents: read
@@ -11,56 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Delete only failed OKX exchange wallet rows in bounded batches
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Remove only failed OKX PoR wallet rows
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-        run: |
-          node --input-type=module <<'NODE'
-          const base = process.env.SUPABASE_URL.replace(/\\/$/, '');
-          const key = process.env.SUPABASE_SECRET_KEY;
-          if (!base || !key) throw new Error('Missing Supabase secrets');
-          const headers = { apikey: key, Authorization: 'Bearer ' + key, Accept: 'application/json' };
-          async function request(path, init = {}) {
-            const r = await fetch(base + '/rest/v1/' + path, { ...init, headers: { ...headers, ...(init.headers || {}) } });
-            const body = await r.text();
-            if (!r.ok) throw new Error('Supabase ' + r.status + ': ' + body.slice(0, 500));
-            return { body, range: r.headers.get('content-range') };
-          }
-          const entity = await request('capital_entities?entity_key=eq.okx%3Aexchange&select=id&limit=2');
-          const entities = JSON.parse(entity.body);
-          if (entities.length !== 1) throw new Error('Expected exactly one OKX entity; found ' + entities.length);
-          const id = entities[0].id;
-          const filter = 'entity_id=eq.' + encodeURIComponent(id);
-          const initial = await request('capital_entity_accounts?select=id&' + filter + '&limit=1', { headers: { Range: '0-0', Prefer: 'count=exact' } });
-          const total = Number((initial.range || '').split('/')[1]);
-          if (!Number.isFinite(total)) throw new Error('Could not verify initial OKX account count: ' + initial.range);
-          console.log('Target entity:', id, 'initial address rows:', total);
-          let deleted = 0;
-          while (true) {
-            const boundary = await request('capital_entity_accounts?select=id&' + filter + '&order=id.asc&limit=1&offset=4999', { headers: { Prefer: 'count=exact' } });
-            const rows = JSON.parse(boundary.body);
-            if (!rows.length) break;
-            const upper = rows[0].id;
-            const del = await request('capital_entity_accounts?id=lte.' + encodeURIComponent(upper) + '&' + filter, {
-              method: 'DELETE',
-              headers: { Prefer: 'return=minimal' }
-            });
-            const remaining = await request('capital_entity_accounts?select=id&' + filter + '&limit=1', {
-              headers: { Range: '0-0', Prefer: 'count=exact' }
-            });
-            const n = Number((remaining.range || '').split('/')[1]);
-            if (!Number.isFinite(n)) throw new Error('Could not verify remaining rows: ' + remaining.range);
-            const removedNow = Math.max(0, total - deleted - n);
-            deleted += removedNow;
-            console.log('Deleted batch; cumulative:', deleted, 'remaining:', n);
-            if (n === 0) break;
-            if (removedNow === 0) throw new Error('Delete made no progress; stopping safely');
-          }
-          const final = await request('capital_entity_accounts?select=id&' + filter + '&limit=1', {
-            headers: { Range: '0-0', Prefer: 'count=exact' }
-          });
-          const remaining = Number((final.range || '').split('/')[1]);
-          if (remaining !== 0) throw new Error('Cleanup incomplete; remaining rows: ' + remaining);
-          console.log(JSON.stringify({ ok: true, entity_key: 'okx:exchange', initial_rows: total, remaining_rows: remaining, deleted_rows: deleted }));
-          NODE
+        run: node scripts/cleanup-okx-por.mjs
