@@ -151,9 +151,7 @@ function analyzeEvent(event, observations, flows, now = Date.now()) {
     attribution_scope: 'published_exchange_wallet_sample_only',
     reserve_trend_available: false
   };
-  const contextTime = [fundingRow && fundingRow.observed_at, basisRow && basisRow.observed_at,
-    matchingFlows.length && matchingFlows[matchingFlows.length - 1].observed_at].filter(Boolean)
-    .sort((a, b) => Date.parse(a) - Date.parse(b)).pop() || iso(start + MIN_HORIZON_MS);
+  const contextTime = iso(start + MIN_HORIZON_MS);
   evidence.push({
     event_id: event.id, evidence_type: 'other',
     source: 'OKX funding/basis and confirmed public PoR wallet sample',
@@ -183,7 +181,7 @@ async function processEvent(event, observations, flows, now) {
     await db('capital_behavior_evidence', '', { method: 'POST', body: fresh, prefer: 'return=minimal' });
   }
   let promoted = false;
-  if (analysis.promotion === 'medium' && event.evidence_strength !== 'strong') {
+  if (analysis.promotion === 'medium' && event.status === 'forming' && event.evidence_strength !== 'strong') {
     await db('capital_behavior_events', 'id=eq.' + encodeURIComponent(event.id), {
       method: 'PATCH', body: { evidence_strength: 'medium', status: 'confirmed' }, prefer: 'return=minimal'
     });
