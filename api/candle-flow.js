@@ -48,8 +48,8 @@ module.exports = async function handler(req, res) {
   // Add a compact surrounding campaign context from OKX contract OI and taker-volume series.
   // These are aggregate market statistics, not account-level positioning.
   const candleMs = end - start;
-  const period = candleMs >= 86400000 ? '1D' : candleMs >= 14400000 ? '4H' : candleMs >= 3600000 ? '1H' : candleMs >= 900000 ? '15m' : '5m';
-  const periodMs = ({ '5m': 300000, '15m': 900000, '1H': 3600000, '4H': 14400000, '1D': 86400000 })[period];
+  const period = candleMs >= 86400000 ? '1D' : candleMs >= 43200000 ? '12H' : candleMs >= 21600000 ? '6H' : candleMs >= 14400000 ? '4H' : candleMs >= 7200000 ? '2H' : candleMs >= 3600000 ? '1H' : candleMs >= 1800000 ? '30m' : candleMs >= 900000 ? '15m' : '5m';
+  const periodMs = ({ '5m': 300000, '15m': 900000, '30m': 1800000, '1H': 3600000, '2H': 7200000, '4H': 14400000, '6H': 21600000, '12H': 43200000, '1D': 86400000 })[period];
   const contextBegin = Math.max(0, start - periodMs * 12);
   const contextEnd = end + periodMs * 12;
   async function readSeries(path, extra) {
