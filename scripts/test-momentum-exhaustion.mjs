@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
-const { compute, ema, macd, atr, findPivots, comparePair, findTrigger, contextAssessment, trendBias } = require('./momentum-exhaustion.js');
+const { compute, ema, macd, atr, findPivots, comparePair, detectDivergence, findTrigger, contextAssessment, trendBias } = require('./momentum-exhaustion.js');
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -52,8 +52,32 @@ assert(comparePair({ priceIndex: 10, price: 100, histogram: 3, atr: 2 },
   'Bearish divergence threshold failed');
 assert(findTrigger([-1, -2, -3, -2.5], { confirmationIndex: 3 }, 'long', options, 3) === 3,
   'First closed bullish histogram turn failed');
+
 assert(findTrigger([1, 2, 3, 2.5], { confirmationIndex: 3 }, 'short', options, 3) === 3,
   'First closed bearish histogram turn failed');
+
+const synthetic = Array.from({ length: 80 }, (_, i) => ({
+  timestamp: 1790000000000 + i * 900000,
+  open: 100, high: 101, low: 95, close: 100
+}));
+const syntheticHistogram = Array(80).fill(-1);
+const syntheticAtr = Array(80).fill(2);
+[20, 40, 60].forEach((i, n) => {
+  synthetic[i].low = 90 - n;
+  syntheticHistogram[i - 2] = -1.2;
+  syntheticHistogram[i - 1] = -1.5;
+  syntheticHistogram[i] = -3 + n * 0.5;
+  syntheticHistogram[i + 1] = -1.5;
+  syntheticHistogram[i + 2] = -1.2;
+});
+syntheticHistogram[61] = -2.3;
+syntheticHistogram[62] = -2.5;
+syntheticHistogram[63] = -2.2;
+const triple = detectDivergence(synthetic, syntheticHistogram, syntheticAtr, 'long', options);
+assert(triple && triple.divergenceCount === 3 && triple.confirmationIndex === 62,
+  'Three-swing bullish divergence sequence failed');
+assert(findTrigger(syntheticHistogram, triple, 'long', options, 79) === 63,
+  'Divergence must wait for the first post-confirmation histogram turn');
 assert(contextAssessment('long', '15m', 'up', 'up').state === 'aligned',
   '15m requires 4H and daily resonance');
 assert(contextAssessment('long', '15m', 'down', 'down').state === 'blocked',
