@@ -226,12 +226,12 @@ function test() {
     event_type: 'aggressive_execution', direction: 'buy', evidence_strength: 'weak',
     started_at: iso(start) };
   const observations = [
-    { market_type: 'spot', metric: 'last_price', metric_value: 3000, observed_at: iso(start - 600000), data_quality: 'complete' },
-    { market_type: 'spot', metric: 'last_price', metric_value: 3010, observed_at: iso(start + 900000), data_quality: 'complete' },
-    { market_type: 'swap', metric: 'open_interest_usd', metric_value: 100000000, observed_at: iso(start - 600000), data_quality: 'complete' },
-    { market_type: 'swap', metric: 'open_interest_usd', metric_value: 101000000, observed_at: iso(start + 900000), data_quality: 'complete' },
-    { market_type: 'swap', metric: 'funding_rate', metric_value: 0.0001, observed_at: iso(start + 900000), data_quality: 'complete' },
-    { market_type: 'aggregate', metric: 'spot_swap_basis_pct', metric_value: 0.03, observed_at: iso(start + 900000), data_quality: 'complete' }
+    { market_type: 'spot', metric: 'last_price', metric_value: 3000, observed_at: iso(start - 600000), data_quality: 'observed' },
+    { market_type: 'spot', metric: 'last_price', metric_value: 3010, observed_at: iso(start + 900000), data_quality: 'observed' },
+    { market_type: 'swap', metric: 'open_interest_usd', metric_value: 100000000, observed_at: iso(start - 600000), data_quality: 'observed' },
+    { market_type: 'swap', metric: 'open_interest_usd', metric_value: 101000000, observed_at: iso(start + 900000), data_quality: 'observed' },
+    { market_type: 'swap', metric: 'funding_rate', metric_value: 0.0001, observed_at: iso(start + 900000), data_quality: 'observed' },
+    { market_type: 'aggregate', metric: 'spot_swap_basis_pct', metric_value: 0.03, observed_at: iso(start + 900000), data_quality: 'observed' }
   ];
   const flows = [
     { flow_type: 'exchange_inflow', usd_value: 100000, block_height: 200, occurred_at: iso(start + 300000),
