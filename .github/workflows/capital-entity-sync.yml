@@ -10,19 +10,22 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: tide-radar-okx-por-sync
+  cancel-in-progress: false
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Test OKX PoR importer
+      - name: Test compact OKX PoR importer
         run: TIDE_POR_IMPORT_TEST=1 node scripts/import-okx-por.mjs
-      - name: Import latest official OKX reserve wallet snapshot
+      - name: Import compact official OKX reserve snapshot
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_URL: https://gkgvvljxmrbwmqzgyykn.supabase.co
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: node scripts/import-okx-por.mjs

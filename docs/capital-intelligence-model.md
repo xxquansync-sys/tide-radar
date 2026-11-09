@@ -7,7 +7,8 @@ Build a probabilistic map of capital participants and capital movement across on
 ## Core layers
 
 - \`capital_entities\`: exchanges, mining pools, miners, foundations, treasuries, funds, custodians, market makers, and inferred whale clusters.
-- \`capital_entity_accounts\`: wallet/account references attached to an entity, including hot/cold/deposit/withdrawal/treasury roles, attribution basis, source, and confidence.
+- \`capital_entity_accounts\`: selected wallet/account references attached to an entity, including hot/cold/deposit/withdrawal/treasury roles, attribution basis, source, and confidence.
+- \`capital_entity_asset_snapshots\`: entity-level reserve totals by asset and report timestamp, kept separately from the tracked-wallet sample.
 - \`capital_flows\`: transfers and exchange/bridge flows with optional entity attribution and a confidence score.
 - \`capital_relationships\`: ownership, custody, operational-wallet, funding, counterparty, and behavioral-correlation edges between entities.
 - \`capital_market_observations\`: time-stamped spot and derivatives measurements used to align market behavior with capital flows.
@@ -36,4 +37,4 @@ The scheduled collector archives OKX public spot and swap prices, swap open inte
 
 ## OKX PoR wallet ingestion
 
-A daily workflow imports the latest official OKX reserve-address ZIP. The entity is represented as one exchange-level pool. Addresses are stored as exchange wallets with role \`unknown\`; the public PoR file does not reliably classify hot versus cold wallets. Per-address and per-asset balances are archived at the report snapshot timestamp. Signature payloads are retained, but cryptographic verification is explicitly not claimed by the importer. This periodic reserve snapshot is not a live wallet-balance feed and is not a complete record of exchange user positions or trading activity.
+A daily workflow reads the latest official OKX reserve ZIP. The exchange is represented as one entity-level pool; we do not attempt to identify individual exchange customers. The official per-asset reserve total is stored in \`capital_entity_asset_snapshots\`. To keep the database focused on meaningful reserve concentration, only the top 500 published wallet addresses per asset are retained in \`capital_entity_accounts\`, with corresponding per-address balance snapshots. Addresses remain role \`unknown\`; the public PoR file does not reliably classify hot versus cold wallets. Signature payloads are retained, but cryptographic verification is explicitly not claimed by the importer. This periodic reserve snapshot is not a live wallet-balance feed and is not a complete record of exchange user positions or trading activity. The top-wallet sample is a monitoring subset, not a claim that smaller addresses are unimportant or that all reserves are represented by the tracked addresses.
