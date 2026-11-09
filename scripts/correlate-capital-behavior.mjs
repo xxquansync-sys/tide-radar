@@ -24,7 +24,7 @@ async function db(table, query, options = {}) {
 
 function metricRows(observations, marketType, metric) {
   return observations.filter(row => row.market_type === marketType && row.metric === metric &&
-    Number.isFinite(Number(row.metric_value)) && row.data_quality !== 'invalid')
+    Number.isFinite(Number(row.metric_value)) && row.data_quality === 'observed')
     .sort((a, b) => Date.parse(a.observed_at) - Date.parse(b.observed_at));
 }
 
