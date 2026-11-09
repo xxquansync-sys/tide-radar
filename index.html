@@ -1524,12 +1524,12 @@ function capitalBehaviorLabels(){
  };
 }
 function capitalEvidenceMetric(row){
- var m=row.metrics||{},parts=[];
- if(Number.isFinite(Number(m.return_pct)))parts.push((currentLang==='zh'?'价格变化 ':'Price ')+(Number(m.return_pct)>=0?'+':'')+Number(m.return_pct).toFixed(2)+'%');
- if(Number.isFinite(Number(m.delta_pct)))parts.push((currentLang==='zh'?'OI变化 ':'OI ')+(Number(m.delta_pct)>=0?'+':'')+Number(m.delta_pct).toFixed(2)+'%');
- if(Number.isFinite(Number(m.confirmed_exchange_wallet_flows)))parts.push((currentLang==='zh'?'已确认钱包样本 ':'Confirmed wallet flows ')+Number(m.confirmed_exchange_wallet_flows));
- if(Number.isFinite(Number(m.funding_rate)))parts.push('Funding '+(Number(m.funding_rate)*100).toFixed(4)+'%');
- if(Number.isFinite(Number(m.spot_swap_basis_pct)))parts.push((currentLang==='zh'?'基差 ':'Basis ')+Number(m.spot_swap_basis_pct).toFixed(3)+'%');
+ var m=row.metrics||{},parts=[],valid=function(v){return v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));};
+ if(valid(m.return_pct))parts.push((currentLang==='zh'?'价格变化 ':'Price ')+(Number(m.return_pct)>=0?'+':'')+Number(m.return_pct).toFixed(2)+'%');
+ if(valid(m.delta_pct))parts.push((currentLang==='zh'?'OI变化 ':'OI ')+(Number(m.delta_pct)>=0?'+':'')+Number(m.delta_pct).toFixed(2)+'%');
+ if(valid(m.confirmed_exchange_wallet_flows))parts.push((currentLang==='zh'?'已确认钱包样本 ':'Confirmed wallet flows ')+Number(m.confirmed_exchange_wallet_flows));
+ if(valid(m.funding_rate))parts.push('Funding '+(Number(m.funding_rate)*100).toFixed(4)+'%');
+ if(valid(m.spot_swap_basis_pct))parts.push((currentLang==='zh'?'基差 ':'Basis ')+Number(m.spot_swap_basis_pct).toFixed(3)+'%');
  return parts.join(' · ');
 }
 function renderCapitalBehaviorPanel(){
