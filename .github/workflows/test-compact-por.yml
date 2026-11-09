@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - feature/okx-por-compact-snapshots
+      - fix/okx-por-large-fallback-sum
     paths:
       - 'scripts/import-okx-por.mjs'
       - 'supabase/migrations/20261109043109_compact_okx_por_snapshots.sql'

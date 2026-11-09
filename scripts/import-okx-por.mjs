@@ -90,7 +90,13 @@ function compareAmount(a, b) {
 }
 
 function addAmounts(values) {
-  const scale = Math.max(0, ...values.map(v => (String(v).split('.')[1] || '').length));
+  // Wallet CSVs can contain hundreds of thousands of rows for one asset.
+  // Avoid spreading a large array into Math.max(), which exceeds V8's argument limit.
+  let scale = 0;
+  for (const value of values) {
+    const fraction = String(value).split('.')[1] || '';
+    if (fraction.length > scale) scale = fraction.length;
+  }
   const factor = 10n ** BigInt(scale);
   let total = 0n;
   for (const value of values) {
@@ -373,6 +379,8 @@ function test() {
   if (unzipCsv(zipFixture('report.csv', csv)) !== csv) throw Error('ZIP extraction test failed');
   if (compareAmount('100.0001', '99.9999') >= 0) throw Error('Exact decimal ranking test failed');
   if (addAmounts(['1.25', '2.5', '0.005']) !== '3.755') throw Error('Exact decimal summary test failed');
+  const largeFallbackTotal = addAmounts(Array(150000).fill('0.00000001'));
+  if (largeFallbackTotal !== '0.0015') throw Error('Large published-wallet fallback sum test failed');
   const ranked = selectTopWallets(parsed.wallets, 1);
   if (ranked.length !== 2 || !ranked.some(x => x.address === 'bc1qtest2')) throw Error('Top wallet selection test failed');
   console.log('OKX compact PoR tests passed: summary parsing, wallet parsing, exact decimal ranking/sum, top-N filtering, ZIP extraction.');
