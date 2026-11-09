@@ -16,78 +16,66 @@ async function req(path, init = {}) {
   });
   const body = await r.text();
   if (!r.ok) throw new Error("Supabase " + r.status + ": " + body.slice(0, 500));
-  return { body, range: r.headers.get("content-range") };
+  return body ? JSON.parse(body) : [];
 }
 
-const entityResponse = await req(
+const entities = await req(
   "capital_entities?entity_key=eq.okx%3Aexchange&select=id&limit=2",
 );
-const entities = JSON.parse(entityResponse.body);
 if (entities.length !== 1) throw new Error("Expected exactly one OKX entity");
 
 const entityId = entities[0].id;
 const filter = "entity_id=eq." + encodeURIComponent(entityId);
-
-async function countRemaining() {
-  const result = await req(
-    "capital_entity_accounts?select=id&" + filter + "&limit=1",
-    { headers: { Range: "0-0", Prefer: "count=exact" } },
+const countRows = async () => {
+  const result = await fetch(
+    base + "/rest/v1/capital_entity_accounts?select=id&" + filter + "&limit=1",
+    { headers: { ...headers, Prefer: "count=exact", Range: "0-0" } },
   );
-  const total = Number((result.range || "").split("/")[1]);
-  if (!Number.isFinite(total)) {
-    throw new Error("Could not read exact remaining count: " + result.range);
-  }
+  const body = await result.text();
+  if (!result.ok) throw new Error("Count failed " + result.status + ": " + body);
+  const total = Number((result.headers.get("content-range") || "").split("/")[1]);
+  if (!Number.isFinite(total)) throw new Error("Could not read exact row count");
   return total;
-}
+};
 
-const initial = await countRemaining();
+const initial = await countRows();
 console.log("OKX target rows:", initial);
-
-const batchSize = 1000;
+const batchSize = 500;
 let deleted = 0;
 
 while (true) {
-  const remainingBefore = await countRemaining();
-  if (remainingBefore === 0) break;
-
-  const offset = Math.min(batchSize - 1, remainingBefore - 1);
-  const page = await req(
+  const rows = await req(
     "capital_entity_accounts?select=id&" +
       filter +
-      "&order=id.asc&limit=1&offset=" +
-      offset,
+      "&order=id.asc&limit=" +
+      batchSize,
   );
-  const rows = JSON.parse(page.body);
-  if (rows.length !== 1) {
-    throw new Error(
-      "Could not determine safe deletion boundary; remaining=" + remainingBefore,
-    );
-  }
+  if (rows.length === 0) break;
 
-  const upperId = rows[0].id;
-  await req(
+  // The last selected UUID is the upper boundary of this ordered batch.
+  // Keeping entity_id in the DELETE filter prevents touching other entities.
+  const upperId = rows[rows.length - 1].id;
+  const removed = await req(
     "capital_entity_accounts?id=lte." +
       encodeURIComponent(upperId) +
       "&" +
-      filter,
-    { method: "DELETE", headers: { Prefer: "return=minimal" } },
+      filter +
+      "&select=id",
+    { method: "DELETE", headers: { Prefer: "return=representation" } },
   );
 
-  const remainingAfter = await countRemaining();
-  const removed = remainingBefore - remainingAfter;
-  if (removed <= 0) {
-    throw new Error("Deletion made no progress; remaining=" + remainingAfter);
+  if (!Array.isArray(removed) || removed.length === 0) {
+    throw new Error("Deletion made no progress; stopping safely");
   }
-
-  deleted += removed;
+  deleted += removed.length;
   console.log(
-    "Removed " + deleted + " of " + initial + "; remaining=" + remainingAfter,
+    "Removed " + deleted + " of " + initial + " (last batch " + removed.length + ")",
   );
 }
 
-const finalRemaining = await countRemaining();
+const finalRemaining = await countRows();
 if (finalRemaining !== 0) {
-  throw new Error("Cleanup incomplete: " + finalRemaining);
+  throw new Error("Cleanup incomplete: " + finalRemaining + " rows remain");
 }
 
 console.log(
