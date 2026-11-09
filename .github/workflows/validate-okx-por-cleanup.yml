@@ -6,6 +6,7 @@ on:
     paths:
       - 'scripts/cleanup-okx-por.mjs'
       - '.github/workflows/validate-okx-por-cleanup.yml'
+      - '.github/workflows/cleanup-failed-okx-por.yml'
 permissions:
   contents: read
 jobs:
