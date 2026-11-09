@@ -1759,6 +1759,19 @@ function klineLoadSelectedCandleFlow(e,seq){
   var ct=Number(instCtVal[symbol+'-USDT-SWAP'])||0;
   var html=(data.exchanges||[]).map(function(x){
    if(!x.ok)return '<div style="padding:7px 0;border-bottom:1px solid #26364a"><b>'+x.name+'</b> <span style="color:#f0a3a9">'+(en?'unavailable':'数据不可用')+'</span> · '+String(x.error||'').replace(/[<>]/g,'')+'</div>';
+   var campaign=x.campaign||{};
+   if(Number(x.matchedRows)===0){
+    var candleTs=Number(e.timestamp),takerRows=Array.isArray(campaign.taker)?campaign.taker:[],oiRows=Array.isArray(campaign.oi)?campaign.oi:[];
+    function nearestFlow(list){var best=null,dist=Infinity;list.forEach(function(v){var d=Math.abs(Number(v.ts)-candleTs);if(d<dist){dist=d;best=v;}});return best&&dist<=Math.max(Number(campaign.periodMs)||klineEventDuration(),klineEventDuration())*.65?best:null;}
+    var takerPoint=nearestFlow(takerRows),oiPoint=nearestFlow(oiRows);
+    if(!takerPoint)return '<div style="padding:10px 0;border-bottom:1px solid #26364a"><b>OKX</b><div style="font-size:12px;color:#d9a96a;margin-top:5px">'+(en?'No matching contract taker bucket for this candle.':'没有找到与这根K线时间匹配的合约主动买卖数据。')+'</div><div style="font-size:10px;color:#8297ad;margin-top:4px">'+(en?'No unrelated latest trades are substituted.':'不会用当前最新成交冒充这根历史K线的成交。')+'</div></div>'+klineBuildCampaignHtml(e,x,en);
+    var buy=Number(takerPoint.buy)||0,sell=Number(takerPoint.sell)||0,total=buy+sell,buyShare=total>0?buy/total:.5,net=buy-sell;
+    var oiIndex=oiPoint?oiRows.indexOf(oiPoint):-1,priorOi=oiIndex>0?oiRows[oiIndex-1]:null;
+    var oiChange=oiPoint&&priorOi&&Number(priorOi.usd)>0?(Number(oiPoint.usd)/Number(priorOi.usd)-1)*100:null;
+    var up=Number(e.close)>=Number(e.open),phase=up?(buyShare>=.58?(en?'UP MOVE · BUY-LED':'上涨推进 · 主动买盘占优'):buyShare<=.42?(en?'UP MOVE · SELLING INTO STRENGTH':'上涨中主动卖盘占优 · 留意兑现'): (en?'UP MOVE · MIXED FLOW':'上涨但买卖力量分歧')):(buyShare<=.42?(en?'DOWN MOVE · SELL-LED':'下跌推进 · 主动卖盘占优'):buyShare>=.58?(en?'DOWN MOVE · BUYERS ABSORBING':'下跌中主动买盘占优 · 观察承接'):(en?'DOWN MOVE · MIXED FLOW':'下跌但买卖力量分歧'));
+    var oiLabel=oiChange===null?(en?'OI unavailable':'OI 暂不可用'):(en?'OI ':'OI ')+(oiChange>=0?'+':'')+oiChange.toFixed(2)+'%';
+    return '<div style="padding:10px 0;border-bottom:1px solid #26364a"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>OKX · '+(en?'Contract taker flow':'合约主动买卖')+'</b><b style="color:'+(net>=0?'#18b88a':'#f06478')+'">'+(net>=0?'+':'')+klineMoney(net)+' U</b></div><div style="font-size:12px;font-weight:700;margin-top:6px;color:'+(buyShare>=.58?'#18b88a':buyShare<=.42?'#f06478':'#eabd69')+'">'+phase+'</div><div style="height:7px;background:#26364a;border-radius:8px;overflow:hidden;display:flex;margin:7px 0 5px"><span style="width:'+(buyShare*100).toFixed(1)+'%;background:#18b88a"></span><span style="flex:1;background:#f06478"></span></div><div style="display:flex;justify-content:space-between;color:#9fb1c5;font-size:11px"><span>'+(en?'Taker buys ':'主动买入 ')+klineMoney(buy)+' U ('+(buyShare*100).toFixed(1)+'%)</span><span>'+(en?'Taker sells ':'主动卖出 ')+klineMoney(sell)+' U ('+((1-buyShare)*100).toFixed(1)+'%)</span></div><div style="font-size:10px;color:#8297ad;margin-top:6px">'+oiLabel+' · '+(en?'Time-bucketed OKX aggregate data; no account identity.':'OKX 时间分桶汇总数据，无法识别账户身份。')+'</div></div>'+klineBuildCampaignHtml(e,x,en);
+   }
    var buy=0,sell=0,bigBuy=0,bigSell=0,small=0,medium=0,large=0,smallN=0,mediumN=0,largeN=0;
    (x.rows||[]).forEach(function(t){var qty=t.q*(x.name==='OKX'?ct:1),usd=t.p*qty;if(!Number.isFinite(usd)||usd<=0)return;if(t.side==='buy'){buy+=usd;if(usd>=100000)bigBuy+=usd;}else{sell+=usd;if(usd>=100000)bigSell+=usd;}if(usd<10000){small+=usd;smallN++;}else if(usd<100000){medium+=usd;mediumN++;}else{large+=usd;largeN++;}});
    var net=buy-sell,total=buy+sell,buyShare=total>0?buy/total:0.5;
