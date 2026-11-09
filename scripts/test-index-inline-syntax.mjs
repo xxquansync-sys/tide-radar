@@ -19,3 +19,5 @@ if (!html.includes('tideKline.countdownTimer=null')) throw new Error('K-line cou
 
 if (!html.includes('convertToPixel({value:last.close})')) throw new Error('Candle countdown must follow the latest price marker on the right axis');
 if (!html.includes('right:3px;transform:translateY(-50%)')) throw new Error('Candle countdown must be positioned at the right price scale');
+
+if (!html.includes('el.textContent=clock;')) throw new Error('Countdown must display digits only without explanatory text');
