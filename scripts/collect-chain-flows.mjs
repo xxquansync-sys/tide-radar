@@ -22,6 +22,7 @@ function decimalFromUnits(value, decimals) {
 }
 
 function parseBtcTransaction(tx, address, observedAt) {
+  if (!tx || !tx.txid) return null;
   let received = 0n;
   let spent = 0n;
   (tx.vout || []).forEach(output => {
@@ -258,7 +259,11 @@ async function scanWallet(networkConfig, entityId, wallet, previous, price) {
   const cursor = previous && previous.last_txid;
   const cursorSeen = !cursor || result.txs.some(tx => String(tx.txid || tx.hash || tx.transaction_hash || '') === cursor);
   const status = result.hasMore && (!cursor || !cursorSeen) ? 'stale' : 'active';
-  await saveCursor(networkConfig.network, wallet, previous, result, status);
+  // If the previous cursor fell outside the explorer's capped first page, do not advance it silently.
+  const cursorResult = cursor && result.hasMore && !cursorSeen
+    ? Object.assign({}, result, { latestTx: cursor })
+    : result;
+  await saveCursor(networkConfig.network, wallet, previous, cursorResult, status);
   return { address: wallet.account_ref, transactions: result.txs.length, flows: rows.length, capped: result.hasMore, cursorSeen, status };
 }
 
