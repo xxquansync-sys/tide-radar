@@ -1,5 +1,10 @@
 name: Tide Radar OKX proof of reserves sync
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/import-okx-por.mjs'
+      - '.github/workflows/capital-entity-sync.yml'
   schedule:
     - cron: '17 2 * * *'
   workflow_dispatch:
