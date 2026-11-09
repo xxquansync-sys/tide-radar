@@ -19,6 +19,8 @@ jobs:
           node-version: 22
       - name: Test market context mapping
         run: TIDE_MARKET_CONTEXT_TEST=1 node scripts/collect-market-context.mjs
+      - name: Test capital behavior detector
+        run: TIDE_DETECTOR_TEST=1 node scripts/detect-capital-behavior.mjs
       - name: Collect OKX ETH and WLD trades and order books
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

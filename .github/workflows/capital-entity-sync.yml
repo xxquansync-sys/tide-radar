@@ -1,0 +1,23 @@
+name: Tide Radar OKX proof of reserves sync
+on:
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test OKX PoR importer
+        run: TIDE_POR_IMPORT_TEST=1 node scripts/import-okx-por.mjs
+      - name: Import latest official OKX reserve wallet snapshot
+        env:
+          SUPABASE_URL: \${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: \${{ secrets.SUPABASE_SECRET_KEY }}
+        run: node scripts/import-okx-por.mjs

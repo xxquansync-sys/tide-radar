@@ -32,3 +32,8 @@ The scheduled collector archives OKX public spot and swap prices, swap open inte
 2. Add public-chain transfer ingestion and exchange-wallet flow classification.
 3. Add cross-market correlation features and confidence scoring.
 4. Build the Capital Intelligence interface and historical case review.
+
+
+## OKX PoR wallet ingestion
+
+A daily workflow imports the latest official OKX reserve-address ZIP. The entity is represented as one exchange-level pool. Addresses are stored as exchange wallets with role \`unknown\`; the public PoR file does not reliably classify hot versus cold wallets. Per-address and per-asset balances are archived at the report snapshot timestamp. Signature payloads are retained, but cryptographic verification is explicitly not claimed by the importer. This periodic reserve snapshot is not a live wallet-balance feed and is not a complete record of exchange user positions or trading activity.

@@ -38,6 +38,26 @@ create table if not exists public.capital_entity_accounts (
   unique(network, account_ref, account_kind)
 );
 
+create table if not exists public.capital_entity_account_balances (
+  id uuid primary key default gen_random_uuid(),
+  balance_key text not null unique,
+  entity_account_id uuid not null references public.capital_entity_accounts(id) on delete cascade,
+  asset text not null,
+  amount numeric(38,18) not null check (amount >= 0),
+  usd_value numeric(24,4),
+  snapshot_at timestamptz not null,
+  snapshot_height text,
+  source text not null,
+  source_url text,
+  data_quality text not null default 'observed' check (data_quality in ('observed','partial','estimated','inferred')),
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  unique(entity_account_id, asset, snapshot_at)
+);
+
+create index if not exists idx_capital_entity_balances_account_time on public.capital_entity_account_balances(entity_account_id, snapshot_at desc);
+create index if not exists idx_capital_entity_balances_asset_time on public.capital_entity_account_balances(asset, snapshot_at desc);
+
 create table if not exists public.capital_flows (
   id uuid primary key default gen_random_uuid(),
   flow_key text not null unique,
@@ -110,9 +130,10 @@ create index if not exists idx_capital_market_observations_venue_metric on publi
 
 alter table public.capital_entities enable row level security;
 alter table public.capital_entity_accounts enable row level security;
+alter table public.capital_entity_account_balances enable row level security;
 alter table public.capital_flows enable row level security;
 alter table public.capital_relationships enable row level security;
 alter table public.capital_market_observations enable row level security;
 
-revoke all on public.capital_entities, public.capital_entity_accounts, public.capital_flows, public.capital_relationships, public.capital_market_observations from anon, authenticated;
-grant all on public.capital_entities, public.capital_entity_accounts, public.capital_flows, public.capital_relationships, public.capital_market_observations to service_role;
+revoke all on public.capital_entities, public.capital_entity_accounts, public.capital_entity_account_balances, public.capital_flows, public.capital_relationships, public.capital_market_observations from anon, authenticated;
+grant all on public.capital_entities, public.capital_entity_accounts, public.capital_entity_account_balances, public.capital_flows, public.capital_relationships, public.capital_market_observations to service_role;
