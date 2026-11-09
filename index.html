@@ -563,6 +563,8 @@ th{position:static!important;top:auto!important;z-index:auto!important}
 .okx-reserve-actions{display:flex;gap:8px;align-items:center}.okx-reserve-actions button{border:1px solid #dce7e8;background:#fff;color:#45616a;border-radius:7px;padding:6px 9px;font-size:10px;cursor:pointer}.okx-reserve-status{font-size:10px;color:#84939d}
 @media(max-width:700px){.okx-reserve-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.okx-reserve-table thead{display:none}.okx-reserve-table,.okx-reserve-table tbody,.okx-reserve-table tr,.okx-reserve-table td{display:block;width:100%;box-sizing:border-box}.okx-reserve-table tr{border:1px solid #e8eeee;border-radius:9px;margin:8px 0;padding:7px}.okx-reserve-table td{display:flex;justify-content:space-between;gap:12px;border:0;padding:6px 3px}.okx-reserve-table td:before{content:attr(data-label);color:#87949d;font-size:10px;flex-shrink:0}.okx-wallet-list{min-width:0;max-width:70%}}
 
+
+.capital-correlation-panel{margin:14px 0;padding:15px;border:1px solid #243448;border-radius:12px;background:#0c1622;color:#dbe7f4}.capital-correlation-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}.capital-correlation-head h3{font-size:14px;margin:0 0 4px}.capital-correlation-head p{font-size:10px;color:#8da0b3;margin:0;line-height:1.5}.capital-correlation-meta{font-size:10px;color:#7f91a4;white-space:nowrap}.capital-correlation-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:9px}.capital-event-card{padding:12px;border:1px solid #223449;border-radius:9px;background:#101d2b;min-width:0}.capital-event-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}.capital-event-symbol{font-weight:800;font-size:13px;color:#f1f5f9}.capital-event-tags{display:flex;gap:5px;align-items:center;flex-wrap:wrap}.capital-event-tag{font-size:9px;padding:3px 6px;border-radius:4px;background:#1b2c3e;color:#b8c7d6}.capital-event-tag[data-strength=medium]{background:#173d3a;color:#8ce2cc}.capital-event-tag[data-strength=strong]{background:#3c3218;color:#f1d58c}.capital-event-tag[data-direction=buy]{color:#8ce2cc}.capital-event-tag[data-direction=sell]{color:#f0a4a4}.capital-event-summary{font-size:11px;line-height:1.55;color:#d0dbe6;margin:8px 0}.capital-event-time{font-size:9px;color:#7e91a5}.capital-evidence-list{display:grid;gap:6px;margin-top:9px}.capital-evidence-row{border-top:1px solid #1d2c3e;padding-top:6px}.capital-evidence-row b{font-size:10px;color:#cbd7e3}.capital-evidence-row span{font-size:9px;color:#91a2b4;margin-left:6px}.capital-evidence-row p{font-size:10px;line-height:1.45;color:#aab9c8;margin:3px 0 0}.capital-event-limits{font-size:9px;color:#7f91a4;margin-top:8px;line-height:1.45}.capital-correlation-empty{padding:16px;text-align:center;color:#8da0b3;font-size:11px;background:#101d2b;border-radius:8px}@media(max-width:700px){.capital-correlation-head{display:block}.capital-correlation-meta{display:block;margin-top:6px}.capital-correlation-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -1164,6 +1166,7 @@ async function loadOkxReserves(force){
 }
 
 var dragonState={tab:'today',loading:false,progress:0,total:0,histDate:null,histQuery:'',error:''};
+var capitalBehaviorState={loading:false,data:null,loadedAt:0,error:''};
 var instCtVal={};
 var apiQueue=Promise.resolve();
 function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
@@ -1509,14 +1512,77 @@ function dtSetTab(tab){dragonState.tab=tab;renderDragonTiger();}
 function dtRowCells(r,day,showDate){var td=function(label,v,c){return '<td data-label="'+label+'"'+(c?' class="'+c+'"':'')+'>'+v+'</td>';};var pending=!r.oiContractBasis||r.type===undefined;var h='';if(showDate)h+=td(t('dtDate'),day);h+='<td class="coin" data-label="">'+r.s+'<small>'+t('perpContract')+'</small></td>';h+=td(t('thPrice'),'$'+fmt(r.px,r.px<1?6:2));h+=td(t('thChange'),pct(r.chg),cls(r.chg));h+=td(t('dragonOI'),r.oiUsd?compact(r.oiUsd):'—');h+=td(t('dtOIChg'),r.oiContractBasis&&Number.isFinite(r.oiChg)?pct(r.oiChg):(pending?t('dtPending'):'—'),r.oiContractBasis&&Number.isFinite(r.oiChg)?cls(r.oiChg):'muted');h+=td(t('dragonFunding'),r.fr?(r.fr*100).toFixed(4)+'%':'—',r.fr>0.0005?'pos':r.fr<-0.0005?'neg':'');h+=td(t('dtNetFlow'),Number.isFinite(r.net)?signedUsd(r.net):(pending?t('dtPending'):'—'),Number.isFinite(r.net)?cls(r.net):'muted');h+=td(t('dtFlowType'),pending?'<span class="muted">'+t('dtPending')+'</span>':flowTag(r.type,r.whale));h+='<td data-label="'+t('thReason')+'" class="dragon-reasons">'+(r.reasons||[]).map(function(k){return '<span class="reason-tag">'+t(k)+'</span>';}).join('')+'</td>';h+=td(t('dtFirstSeen'),r.first?fmtTime(r.first):'—');h+=td(t('thAction'),'<button class="btn" onclick="showDragonDetail(\''+r.s+'\',\''+day+'\')">'+t('detailsBtn')+'</button>');return h;}
 function dtTableHead(showDate){var cols=['thContract','thPrice','thChange','dragonOI','dtOIChg','dragonFunding','dtNetFlow','dtFlowType','thReason','dtFirstSeen','thAction'];if(showDate)cols.unshift('dtDate');return '<div class="table-wrap"><table class="dragon-table card-table"><thead><tr>'+cols.map(function(k){return '<th>'+t(k)+'</th>';}).join('')+'</tr></thead><tbody>';}
 function coinToRow(c,rec){if(rec&&c.flow)return rec;var r={s:c.symbol,px:c.last,chg:c.change,oiUsd:c.oiUsd,oiChg:c.oiChange,oiDelta:c.oiUsdDelta24,oiContractsDelta24:c.oiContractsDelta24,oiContractBasis:!!c.oiContractBasis,fr:c.fundingRate,reasons:c.dragonTigerReasons,first:rec?rec.first:null};if(rec){r.type=rec.type;r.whale=rec.whale;r.net=rec.net;r.oiChg=rec.oiChg;}return r;}
+
+function capitalBehaviorLabels(){
+ var en=currentLang!=='zh';
+ return {
+  types:{aggressive_execution:en?'Aggressive execution':'主动成交集中',liquidity_withdrawal:en?'Visible liquidity change':'可见挂单变化',position_unwind:en?'Position contraction':'持仓收缩',position_building:en?'Position expansion':'持仓扩张',crowd_whale_divergence:en?'Whale / crowd divergence':'大户与整体账户分歧',breakout_follow_through:en?'Breakout follow-through':'突破跟随',absorption:en?'Absorption':'主动成交吸收'},
+  evidence:{large_trade_cluster:en?'Large trade cluster':'大额成交簇',repeated_execution_sizes:en?'Repeated execution sizes':'重复执行手数',taker_flow:en?'Taker flow':'主动买卖流',order_book_wall:en?'Order-book wall':'盘口挂单',liquidity_change:en?'Liquidity change':'可见流动性变化',open_interest:en?'Open interest':'未平仓合约',top_trader_accounts:en?'Top-trader accounts':'大户账户样本',all_accounts_positioning:en?'All-account positioning':'整体账户样本',price_response:en?'Price response':'价格响应',cross_venue_confirmation:en?'Cross-venue confirmation':'跨交易所验证',other:en?'Other context':'其他背景证据'},
+  strength:{weak:en?'Weak':'弱',medium:en?'Medium':'中',strong:en?'Strong':'强'},
+  status:{forming:en?'Forming':'形成中',confirmed:en?'Confirmed':'多源确认',invalidated:en?'Invalidated':'已失效',closed:en?'Closed':'已结束'},
+  states:{observed:en?'Observed':'已观测',inferred:en?'Inferred':'推断',missing:en?'Missing':'缺失',stale:en?'Stale':'过期',conflicting:en?'Conflicting':'冲突'}
+ };
+}
+function capitalEvidenceMetric(row){
+ var m=row.metrics||{},parts=[];
+ if(Number.isFinite(Number(m.return_pct)))parts.push((currentLang==='zh'?'价格变化 ':'Price ')+(Number(m.return_pct)>=0?'+':'')+Number(m.return_pct).toFixed(2)+'%');
+ if(Number.isFinite(Number(m.delta_pct)))parts.push((currentLang==='zh'?'OI变化 ':'OI ')+(Number(m.delta_pct)>=0?'+':'')+Number(m.delta_pct).toFixed(2)+'%');
+ if(Number.isFinite(Number(m.confirmed_exchange_wallet_flows)))parts.push((currentLang==='zh'?'已确认钱包样本 ':'Confirmed wallet flows ')+Number(m.confirmed_exchange_wallet_flows));
+ if(Number.isFinite(Number(m.funding_rate)))parts.push('Funding '+(Number(m.funding_rate)*100).toFixed(4)+'%');
+ if(Number.isFinite(Number(m.spot_swap_basis_pct)))parts.push((currentLang==='zh'?'基差 ':'Basis ')+Number(m.spot_swap_basis_pct).toFixed(3)+'%');
+ return parts.join(' · ');
+}
+function renderCapitalBehaviorPanel(){
+ var box=$('capital-behavior-intelligence');if(!box)return;
+ var en=currentLang!=='zh',labels=capitalBehaviorLabels(),data=capitalBehaviorState.data;
+ if(capitalBehaviorState.loading&&!data){box.innerHTML='<div class="capital-correlation-empty">'+(en?'Loading multi-source evidence…':'正在读取多源资金证据…')+'</div>';return;}
+ if(capitalBehaviorState.error&&!data){box.innerHTML='<div class="capital-correlation-empty">'+(en?'Capital behavior archive unavailable: ':'资金行为档案暂不可用：')+escHtml(capitalBehaviorState.error)+'</div>';return;}
+ var events=data&&Array.isArray(data.events)?data.events.filter(function(e){return Date.now()-Date.parse(e.startedAt)<24*3600000;}):[];
+ var confirmed=events.filter(function(e){return e.evidenceStrength==='medium'||e.evidenceStrength==='strong';}).length;
+ var title=en?'Cross-source capital behavior':'跨源资金行为验证';
+ var note=en?'Trade execution, spot follow-through, derivatives positioning and confirmed public wallet samples. Independent evidence is shown separately.':'将主动成交、现货价格跟随、衍生品持仓与已确认的公开钱包样本分开核验；每条证据单独展示。';
+ var h='<div class="capital-correlation-panel"><div class="capital-correlation-head"><div><h3>'+title+' <span class="capital-event-tag">'+events.length+(en?' recent events':' 条近24小时事件')+'</span></h3><p>'+note+'</p></div><span class="capital-correlation-meta">'+(data&&data.updatedAt?new Date(data.updatedAt).toLocaleTimeString(en?'en-US':'zh-CN',{hour12:false}):'—')+(en?' refreshed':' 更新')+'</span></div>';
+ if(!events.length){h+='<div class="capital-correlation-empty">'+(en?'No qualifying multi-source behavior events in the last 24 hours.':'近24小时暂无达到展示条件的资金行为事件；没有信号不代表没有资金活动。')+'</div>';}
+ else{
+  h+='<div class="capital-correlation-grid">'+events.slice(0,12).map(function(e){
+   var direction=e.direction==='buy'?(en?'BUY':'主动买入'):e.direction==='sell'?(en?'SELL':'主动卖出'):(en?'NEUTRAL':'中性');
+   var strength=labels.strength[e.evidenceStrength]||e.evidenceStrength||'—';
+   var status=labels.status[e.status]||e.status||'—';
+   var evidence=(e.evidence||[]).slice(0,5).map(function(ev){
+    var type=labels.evidence[ev.type]||ev.type;
+    var state=labels.states[ev.state]||ev.state;
+    var metric=capitalEvidenceMetric(ev);
+    return '<div class="capital-evidence-row"><b>'+escHtml(type)+'</b><span>'+escHtml(state)+'</span><p>'+escHtml(ev.explanation||'')+(metric?' · '+escHtml(metric):'')+'</p></div>';
+   }).join('');
+   var limits=(e.limitations||[]).slice(0,2).map(escHtml).join(' · ');
+   var time=e.startedAt?new Date(e.startedAt).toLocaleString(en?'en-US':'zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}):'—';
+   var price=Number(e.referencePrice);
+   return '<article class="capital-event-card"><div class="capital-event-top"><span class="capital-event-symbol">'+escHtml(e.symbol||'—')+' / '+escHtml(labels.types[e.type]||e.type||'—')+'</span><span class="capital-event-tags"><span class="capital-event-tag" data-strength="'+escHtml(e.evidenceStrength||'weak')+'">'+escHtml(strength)+'</span><span class="capital-event-tag" data-direction="'+escHtml(e.direction||'neutral')+'">'+escHtml(direction)+'</span><span class="capital-event-tag">'+escHtml(status)+'</span></span></div><div class="capital-event-time">'+time+(Number.isFinite(price)?' · '+(en?'Ref ':'参考价 ')+fmt(price,price<1?6:2):'')+'</div><div class="capital-event-summary">'+escHtml(e.summary||'')+'</div><div class="capital-evidence-list">'+(evidence||'<div class="capital-event-time">—</div>')+'</div>'+(limits?'<div class="capital-event-limits">'+(en?'Limits: ':'限制：')+limits+'</div>':'')+'</article>';
+  }).join('')+'</div>';
+ }
+ h+='<div class="capital-event-limits">'+(en?'Evidence strength is not a win probability. OI does not identify long/short positions; exchange-wallet inflows are not proof of selling; tracked wallets are a disclosed sample, not the full exchange reserve.':'证据等级不是胜率。OI不区分多空；钱包流入不等于卖出；跟踪钱包只是公开披露样本，不代表交易所全部储备。')+'</div></div>';
+ box.innerHTML=h;
+}
+async function loadCapitalBehavior(force){
+ if(capitalBehaviorState.loading)return;
+ if(!force&&capitalBehaviorState.data&&Date.now()-capitalBehaviorState.loadedAt<60000){renderCapitalBehaviorPanel();return;}
+ capitalBehaviorState.loading=true;capitalBehaviorState.error='';renderCapitalBehaviorPanel();
+ try{
+  var response=await fetch('/api/capital-behavior',{headers:{Accept:'application/json'}});
+  var data=await response.json();if(!response.ok||!data.enabled)throw new Error(data.error||('HTTP '+response.status));
+  capitalBehaviorState.data=data;capitalBehaviorState.loadedAt=Date.now();
+ }catch(error){capitalBehaviorState.error=String(error&&error.message||error);}
+ finally{capitalBehaviorState.loading=false;renderCapitalBehaviorPanel();}
+}
+
 function renderDragonTiger(){var box=$('dragon-tiger-content');if(!box)return;if(dragonState.tab==='whales'){renderWhales(box);loadWhales(false);return;}if(!dragonTigerData.lastUpdate&&!dragonState.loading){box.innerHTML='<div class="muted" style="padding:30px;text-align:center">'+t('dragonLoading')+'</div>';if(markets.length)fetchDragonTigerData();else setTimeout(renderDragonTiger,1500);return;}
 if(dragonState.tab==='history'){renderDragonHistory(box);return;}
-var day=dayKey();var hist=loadHist()[day]||{};var list=dragonTigerData.todayList;var h=dtHeader(list.length);
+var day=dayKey();var hist=loadHist()[day]||{};var list=dragonTigerData.todayList;var h=dtHeader(list.length)+'<div id="capital-behavior-intelligence"></div>';
 h+='<div class="dragon-criteria" style="margin:15px 0;padding:12px;background:#0f1621;border-radius:8px"><div style="font-size:12px;color:var(--text);font-weight:600;margin-bottom:5px">'+t('dragonCriteria')+'</div><div style="font-size:11px;color:var(--muted)">'+(currentLang==='zh'?'逐小时对齐主动买入/卖出、合约持仓张数变化与已收盘K线价格响应，并结合大额成交；点击币种查看资金行为发生的时间、方向和价格反馈。':'Align hourly taker buy/sell, contract-count OI changes and closed-candle price response, alongside large trades. Open an asset to inspect the timing, direction and price reaction of flow.')+'</div></div>';
 h+='<div class="dragon-criteria" style="margin:12px 0;padding:12px;background:#0f1621;border-radius:8px"><div style="font-size:12px;font-weight:600;margin-bottom:8px">'+t('rotationTitle')+'</div><div class="table-wrap"><table class="dragon-table"><thead><tr><th>'+t('rotationAsset')+'</th><th>'+t('rotationNet')+'</th><th>'+t('rotationSync')+'</th><th>'+t('rotationVenues')+'</th></tr></thead><tbody>'+list.map(function(c){var x=c.flow&&c.flow.cross;var sy=x?x.sync:'noConsensus';var n=x&&x.available?x.net:null;return '<tr><td><b>'+c.symbol+'</b></td><td class="'+(n===null?'muted':cls(n))+'">'+(n===null?'—':signedUsd(n))+'</td><td>'+t('sync_'+sy)+'</td><td>'+(x?x.available+'/3':'—')+'</td></tr>';}).join('')+'</tbody></table></div><div class="muted" style="font-size:10px;margin-top:6px">'+t('rotationNote')+' '+t('crossLiveNote')+'</div></div>';
 h+=dtTableHead(false)+list.map(function(c){return '<tr class="dragon-row">'+dtRowCells(coinToRow(c,hist[c.symbol]),day,false)+'</tr>';}).join('')+'</tbody></table></div>';
 h+=flowAlertBoard();
-h+='<div class="dragon-criteria flow-archive-panel" style="margin:12px 0;padding:16px;border-radius:12px"><div class="flow-archive-heading" style="font-size:13px;font-weight:700;margin-bottom:8px">'+t('eventArchiveTitle')+'</div>'+flowEventBoard()+'<div class="muted" style="font-size:10px;margin-top:10px">'+t('eventArchiveNote')+'</div></div>';h+='<div id="okx-reserve-panel" class="okx-reserve-panel"><div class="muted">'+(currentLang==='zh'?'正在加载交易所储备数据…':'Loading exchange reserve data…')+'</div></div>';h+='<div class="notice" style="margin-top:14px">'+t('dtDisclaimer')+'</div>';box.innerHTML=h;loadOkxReserves(false);}
+h+='<div class="dragon-criteria flow-archive-panel" style="margin:12px 0;padding:16px;border-radius:12px"><div class="flow-archive-heading" style="font-size:13px;font-weight:700;margin-bottom:8px">'+t('eventArchiveTitle')+'</div>'+flowEventBoard()+'<div class="muted" style="font-size:10px;margin-top:10px">'+t('eventArchiveNote')+'</div></div>';h+='<div id="okx-reserve-panel" class="okx-reserve-panel"><div class="muted">'+(currentLang==='zh'?'正在加载交易所储备数据…':'Loading exchange reserve data…')+'</div></div>';h+='<div class="notice" style="margin-top:14px">'+t('dtDisclaimer')+'</div>';box.innerHTML=h;loadCapitalBehavior(false);loadOkxReserves(false);}
 function renderDragonHistory(box){var hist=loadHist();var days=Object.keys(hist).sort().reverse();var h=dtHeader(null);
 if(!days.length){box.innerHTML=h+'<div class="muted" style="padding:30px;text-align:center">'+t('dtHistEmpty')+'</div>';return;}
 if(!dragonState.histDate||!hist[dragonState.histDate])dragonState.histDate=days[0];var q=dragonState.histQuery;
