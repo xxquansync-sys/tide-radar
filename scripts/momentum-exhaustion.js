@@ -356,6 +356,9 @@
     atr: atr,
     findPivots: findPivots,
     trendBias: trendBias,
+    comparePair: comparePair,
+    findTrigger: findTrigger,
+    contextAssessment: contextAssessment,
     compute: compute,
     render: render
   };
