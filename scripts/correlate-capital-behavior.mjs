@@ -196,7 +196,7 @@ function analyzeEvent(event, observations, flows, outcomes = [], now = Date.now(
   });
 
   const promotion = event.event_type === 'aggressive_execution' &&
-    ['buy', 'sell'].includes(event.direction) && priceAligned && oiMaterialChange ? 'medium' : null;
+    ['buy', 'sell'].includes(event.direction) && priceAligned && oiMaterialChange && matchingFlows.length > 0 ? 'medium' : null;
   return { ready: true, evidence, promotion, priceChangePct, price15mPct, oiDeltaPct, matchingFlowCount: matchingFlows.length };
 }
 
@@ -325,8 +325,12 @@ function test() {
   if (flatOi.promotion !== null) throw new Error('Small OI changes must not promote an event');
   const noLookahead = analyzeEvent(event, observations, flows, outcomes, start + 30 * 60000);
   if (noLookahead.ready) throw new Error('Events younger than 60m must not be evaluated');
+  const noChain = analyzeEvent(event, observations, [], outcomes, now);
+  if (noChain.promotion !== null) throw new Error('Price and OI alone must not confirm a cross-source capital event');
   const excluded = analyzeEvent(event, observations, flows.filter(x => x.block_height === null), outcomes, now);
-  if (excluded.matchingFlowCount !== 0) throw new Error('Unconfirmed chain flows must be excluded');
+  if (excluded.matchingFlowCount !== 0 || excluded.promotion !== null) {
+    throw new Error('Unconfirmed chain flows must be excluded from promotion');
+  }
   console.log('Capital correlation tests passed: 15m/60m candle outcomes, 60–90m OI alignment, OI neutrality, estimated-data guard, and confirmed chain-flow filter.');
 }
 
