@@ -161,11 +161,17 @@ function parseSnapshot(csv, stamp) {
     if (!fallbackTotals.has(wallet.coin)) fallbackTotals.set(wallet.coin, []);
     fallbackTotals.get(wallet.coin).push(wallet.amount);
   }
-  const summaries = summaryMap.size
-    ? [...summaryMap].map(([asset, amount]) => ({ asset, amount, source: 'official_csv_summary' }))
-    : [...fallbackTotals].map(([asset, values]) => ({
-        asset, amount: addAmounts(values), source: 'sum_of_published_wallet_rows',
-      }));
+  const summaryAssets = new Set([...summaryMap.keys(), ...fallbackTotals.keys()]);
+  const summaries = [...summaryAssets].map(asset => {
+    if (summaryMap.has(asset)) {
+      return { asset, amount: summaryMap.get(asset), source: 'official_csv_summary' };
+    }
+    return {
+      asset,
+      amount: addAmounts(fallbackTotals.get(asset)),
+      source: 'sum_of_published_wallet_rows',
+    };
+  });
 
   return { wallets, summaries, snapshot_at: snapshotAt };
 }
@@ -355,6 +361,12 @@ function test() {
 
   const parsed = parseSnapshot(csv, '2026110100');
   if (parsed.wallets.length !== 3 || parsed.summaries.length !== 2) throw Error('CSV sections test failed');
+  const partialSummaryCsv = csv.replace('ETH,987.125', '');
+  const partialSummary = parseSnapshot(partialSummaryCsv, '2026110100').summaries;
+  const ethFallback = partialSummary.find(x => x.asset === 'ETH');
+  if (!ethFallback || ethFallback.amount !== '2.5' || ethFallback.source !== 'sum_of_published_wallet_rows') {
+    throw Error('Missing per-asset summary fallback test failed');
+  }
   if (parsed.wallets[1].type !== 'Native ETH Staking' || parsed.wallets[1].eoa1 !== '0xdef') throw Error('Wallet fields test failed');
   if (parsed.snapshot_at !== '2026-10-31T16:00:00.000Z') throw Error('UTC+8 timestamp test failed');
   if (csvLine('"asset, wrapped",Type')[0] !== 'asset, wrapped') throw Error('Quoted CSV parser test failed');
