@@ -1,0 +1,20 @@
+name: Validate OKX PoR cleanup script
+on:
+  push:
+    branches:
+      - fix/okx-por-cleanup-batches
+    paths:
+      - 'scripts/cleanup-okx-por.mjs'
+      - '.github/workflows/validate-okx-por-cleanup.yml'
+permissions:
+  contents: read
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate cleanup script syntax
+        run: node --check scripts/cleanup-okx-por.mjs
