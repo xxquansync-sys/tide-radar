@@ -70,9 +70,11 @@ const syntheticAtr = Array(80).fill(2);
   syntheticHistogram[i + 1] = -1.5;
   syntheticHistogram[i + 2] = -1.2;
 });
-syntheticHistogram[61] = -2.3;
-syntheticHistogram[62] = -2.5;
-syntheticHistogram[63] = -2.2;
+syntheticHistogram[59] = -2.0;
+syntheticHistogram[60] = -1.8;
+syntheticHistogram[61] = -1.9;
+syntheticHistogram[62] = -2.2;
+syntheticHistogram[63] = -2.0;
 const triple = detectDivergence(synthetic, syntheticHistogram, syntheticAtr, 'long', options);
 assert(triple && triple.divergenceCount === 3 && triple.confirmationIndex === 62,
   'Three-swing bullish divergence sequence failed');
