@@ -6,4 +6,6 @@ const blocks = Array.from(html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script
 if (!blocks.length) throw new Error('No inline JavaScript blocks found');
 blocks.forEach((source, index) => new Script(source, { filename: 'index.html:inline-' + index }));
 if (!html.includes("fetch('/api/capital-behavior'")) throw new Error('Capital behavior UI does not call the read-only API');
+if (!html.includes('<script src="./scripts/momentum-exhaustion.js"></script>')) throw new Error('Momentum exhaustion browser module is not loaded');
+if (!html.includes('MACD:[13,34,9]')) throw new Error('Visible MACD default is not 13/34/9');
 console.log('Index inline JavaScript syntax passed: ' + blocks.length + ' script blocks.');
