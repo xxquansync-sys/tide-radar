@@ -1779,7 +1779,7 @@ function klineBuildCampaignHtml(selected,x,en){
  var from=Math.max(0,idx-12),to=Math.min(bars.length,idx+13),windowBars=bars.slice(from,to);
  var keyEvents=(tideKline.anomalyEvents||[]).filter(function(ev){return ev.timestamp>=bars[from].timestamp&&ev.timestamp<=bars[to-1].timestamp;});
  var keyTimes={};keyEvents.forEach(function(ev){keyTimes[ev.timestamp]=true;});
- windowBars=windowBars.filter(function(b){return keyTimes[b.timestamp]||b.timestamp===Number(selected.timestamp);}).slice(-15);
+ windowBars=windowBars.filter(function(b){return keyTimes[b.timestamp]||b.timestamp===Number(selected.timestamp);}).sort(function(a,b){return Math.abs(a.timestamp-Number(selected.timestamp))-Math.abs(b.timestamp-Number(selected.timestamp));}).slice(0,15).sort(function(a,b){return a.timestamp-b.timestamp;});
  function nearest(list,ts){if(!list.length)return null;var best=null,dist=Infinity;list.forEach(function(v){var d=Math.abs(Number(v.ts)-ts);if(d<dist){dist=d;best=v;}});return dist<=Math.max(Number(c.periodMs)||300000,klineEventDuration())*.65?best:null;}
  function pct(v){return (v>=0?'+':'')+v.toFixed(2)+'%';}
  function phase(bar,oiChange,buyShare){
@@ -1797,9 +1797,10 @@ function klineBuildCampaignHtml(selected,x,en){
  var rows=windowBars.map(function(b){
   var o=nearest(oi,b.timestamp),t=nearest(taker,b.timestamp),oiIndex=o?oi.indexOf(o):-1,prev=oiIndex>0?oi[oiIndex-1]:null;
   var oiChange=o&&prev&&prev.usd>0?(o.usd/prev.usd-1)*100:null;
-  var buyShare=t&&t.buy+t.sell>0?t.buy/(t.buy+t.sell):null;
+  var buyShare=t&&t.buy+t.sell>0?t.buy/(t.buy+t.sell):null,takerUsd=t?t.buy+t.sell:null;
+  var prior=bars.slice(Math.max(0,bars.indexOf(b)-20),bars.indexOf(b)).filter(function(z){return Number(z.turnover)>0;}),avgTurn=prior.length?prior.reduce(function(sum,z){return sum+z.turnover;},0)/prior.length:0,turnMult=avgTurn>0&&b.turnover>0?b.turnover/avgTurn:null;
   var move=(b.close/b.open-1)*100,label=phase(b,oiChange,buyShare),color=move>=0?'#18b88a':'#f06478';
-  return '<div style="display:grid;grid-template-columns:90px 72px 82px 1fr;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #223247;font-size:11px"><span style="color:#9fb1c5">'+new Date(b.timestamp).toLocaleString(en?'en-SG':'zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})+'</span><b style="color:'+color+'">'+pct(move)+'</b><span style="color:'+(oiChange===null?'#8496ad':oiChange>=0?'#eabd69':'#8496ad')+'">'+(oiChange===null?'OI —':'OI '+pct(oiChange))+'</span><span style="color:'+(buyShare===null?'#8496ad':buyShare>=.58?'#18b88a':buyShare<=.42?'#f06478':'#eabd69')+'">'+(buyShare===null?(en?'Taker —':'主动买卖 —'):(en?'Buy ':'主动买 ')+(buyShare*100).toFixed(0)+'%')+' · '+label+'</span></div>';
+  return '<div style="display:grid;grid-template-columns:88px 62px 64px 74px minmax(0,1fr);gap:7px;align-items:center;padding:8px 0;border-bottom:1px solid #223247;font-size:11px"><span style="color:#9fb1c5">'+new Date(b.timestamp).toLocaleString(en?'en-SG':'zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})+'</span><b style="color:'+color+'">'+pct(move)+'</b><span style="color:#9fb1c5">'+(turnMult===null?'—':turnMult.toFixed(1)+'x')+'</span><span style="color:'+(oiChange===null?'#8496ad':oiChange>=0?'#eabd69':'#8496ad')+'">'+(oiChange===null?'OI —':'OI '+pct(oiChange))+'</span><span style="color:'+(buyShare===null?'#8496ad':buyShare>=.58?'#18b88a':buyShare<=.42?'#f06478':'#eabd69')+'">'+(buyShare===null?(en?'Taker —':'主动买卖 —'):(en?'Buy ':'主动买 ')+(buyShare*100).toFixed(0)+'%')+(takerUsd===null?'':' · '+klineMoney(takerUsd))+' · '+label+'</span></div>';
  }).join('');
  if(!rows)return '';
  var oiNote=c.oiError?(en?'OI unavailable: ':'持仓量数据不可用：')+String(c.oiError).replace(/[<>]/g,''):oi.length?(en?'OKX contract OI (USD)':'OKX 合约持仓量（USD）'):(en?'No OI series returned':'未返回持仓量序列');
