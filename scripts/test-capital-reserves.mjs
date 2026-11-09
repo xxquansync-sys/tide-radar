@@ -2,6 +2,13 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 
+const html = fs.readFileSync('index.html', 'utf8');
+const clientStart = html.indexOf('function okxReserveEsc(');
+const clientEnd = html.indexOf('var dragonState=', clientStart);
+assert.ok(clientStart >= 0 && clientEnd > clientStart, 'Reserve UI code must be present in the capital page');
+new vm.Script(html.slice(clientStart, clientEnd), { filename: 'index.html#reserve-ui' });
+assert.ok(html.includes('id="okx-reserve-panel"'), 'Reserve panel mount point must be present');
+
 const source = fs.readFileSync('api/capital-reserves.js', 'utf8');
 const calls = [];
 const responses = [
