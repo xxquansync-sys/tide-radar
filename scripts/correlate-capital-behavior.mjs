@@ -69,7 +69,7 @@ function analyzeEvent(event, observations, flows, outcomes = [], now = Date.now(
     row.data_quality === 'complete' && Number.isFinite(Number(row.return_pct)));
   const outcome15 = validOutcomes.find(row => Number(row.horizon_minutes) === 15);
   const outcome60 = validOutcomes.find(row => Number(row.horizon_minutes) === 60);
-  let priceAligned = false, oiExpansion = false, priceChangePct = null, price15mPct = null, oiDeltaPct = null;
+  let priceAligned = false, oiMaterialChange = false, priceChangePct = null, price15mPct = null, oiDeltaPct = null;
 
   [outcome15, outcome60].filter(Boolean).forEach(outcome => {
     const horizon = Number(outcome.horizon_minutes);
@@ -133,14 +133,14 @@ function analyzeEvent(event, observations, flows, outcomes = [], now = Date.now(
   if (oiBefore && oiAfter) {
     const before = Number(oiBefore.metric_value), after = Number(oiAfter.metric_value);
     oiDeltaPct = before > 0 ? (after / before - 1) * 100 : null;
-    oiExpansion = Number.isFinite(oiDeltaPct) && oiDeltaPct >= OI_EXPANSION_THRESHOLD_PCT;
+    oiMaterialChange = Number.isFinite(oiDeltaPct) && Math.abs(oiDeltaPct) >= OI_EXPANSION_THRESHOLD_PCT;
     evidence.push({
       event_id: event.id, evidence_type: 'open_interest',
       source: 'OKX swap open-interest observations · 60–90m window',
       observed_at: oiAfter.observed_at, window_seconds: Math.max(1, Math.round((Date.parse(oiAfter.observed_at) - start) / 1000)),
       direction: 'neutral', evidence_state: 'observed',
       metrics: { open_interest_before_usd: before, open_interest_after_usd: after,
-        delta_pct: oiDeltaPct, expansion_threshold_pct: OI_EXPANSION_THRESHOLD_PCT,
+        delta_pct: oiDeltaPct, material_change_threshold_pct: OI_EXPANSION_THRESHOLD_PCT,
         interpretation: 'aggregate_open_interest_is_not_directional' },
       explanation: oiDeltaPct >= OI_EXPANSION_THRESHOLD_PCT ?
         '60–90分钟内未平仓合约名义价值增加，说明总风险敞口扩张；OI本身不区分新增多头与新增空头。' :
@@ -196,7 +196,7 @@ function analyzeEvent(event, observations, flows, outcomes = [], now = Date.now(
   });
 
   const promotion = event.event_type === 'aggressive_execution' &&
-    ['buy', 'sell'].includes(event.direction) && priceAligned && oiExpansion ? 'medium' : null;
+    ['buy', 'sell'].includes(event.direction) && priceAligned && oiMaterialChange ? 'medium' : null;
   return { ready: true, evidence, promotion, priceChangePct, price15mPct, oiDeltaPct, matchingFlowCount: matchingFlows.length };
 }
 
@@ -315,10 +315,14 @@ function test() {
   if (conflicting.promotion !== null) throw new Error('Conflicting 60m price response must not promote event');
   const contractionObservations = observations.map(row => row.metric === 'open_interest_usd' && Date.parse(row.observed_at) > start ?
     { ...row, metric_value: 99000000 } : row);
-  const contraction = analyzeEvent(event, contractionObservations, flows, outcomes, now);
-  if (contraction.promotion !== null || !contraction.evidence.find(row => row.evidence_type === 'open_interest').explanation.includes('风险敞口收缩')) {
-    throw new Error('OI contraction must be described as deleveraging context, not new directional positioning');
+  const contraction = analyzeEvent({ ...event, direction: 'sell' }, contractionObservations, flows,
+    outcomes.map(row => row.horizon_minutes === 60 ? { ...row, return_pct: -0.4 } : row), now);
+  if (contraction.promotion !== 'medium' || !contraction.evidence.find(row => row.evidence_type === 'open_interest').explanation.includes('风险敞口收缩')) {
+    throw new Error('Aligned price follow-through plus OI contraction should confirm a deleveraging context, not imply new shorts');
   }
+  const flatOi = analyzeEvent(event, observations.map(row => row.metric === 'open_interest_usd' && Date.parse(row.observed_at) > start ?
+    { ...row, metric_value: 100100000 } : row), flows, outcomes, now);
+  if (flatOi.promotion !== null) throw new Error('Small OI changes must not promote an event');
   const noLookahead = analyzeEvent(event, observations, flows, outcomes, start + 30 * 60000);
   if (noLookahead.ready) throw new Error('Events younger than 60m must not be evaluated');
   const excluded = analyzeEvent(event, observations, flows.filter(x => x.block_height === null), outcomes, now);
