@@ -357,6 +357,7 @@
     findPivots: findPivots,
     trendBias: trendBias,
     comparePair: comparePair,
+    detectDivergence: detectDivergence,
     findTrigger: findTrigger,
     contextAssessment: contextAssessment,
     compute: compute,
