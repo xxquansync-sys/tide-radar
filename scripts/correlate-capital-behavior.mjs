@@ -1,9 +1,9 @@
 const BASE = (process.env.SUPABASE_URL || '').replace(/\/$/, '');
 const KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 const iso = value => new Date(value).toISOString();
-const MIN_HORIZON_MS = 15 * 60000;
-const MAX_TARGET_MS = 35 * 60000;
-const BASELINE_LOOKBACK_MS = 30 * 60000;
+const MIN_HORIZON_MS = 60 * 60000;
+const MAX_TARGET_MS = 90 * 60000;
+const BASELINE_LOOKBACK_MS = 60 * 60000;
 const PRICE_THRESHOLD_PCT = 0.15;
 const OI_EXPANSION_THRESHOLD_PCT = 0.5;
 
@@ -49,15 +49,13 @@ function priceDirection(changePct, threshold = PRICE_THRESHOLD_PCT) {
   return changePct > 0 ? 'buy' : 'sell';
 }
 
-function analyzeEvent(event, observations, flows, now = Date.now()) {
+function analyzeEvent(event, observations, flows, outcomes = [], now = Date.now()) {
   const start = Date.parse(event.started_at);
   if (!Number.isFinite(start) || now < start + MIN_HORIZON_MS) return { ready: false, evidence: [], promotion: null };
   const spot = metricRows(observations, 'spot', 'last_price');
   const oi = metricRows(observations, 'swap', 'open_interest_usd');
   const funding = metricRows(observations, 'swap', 'funding_rate');
   const basis = metricRows(observations, 'aggregate', 'spot_swap_basis_pct');
-  const priceBefore = closestBefore(spot, start, BASELINE_LOOKBACK_MS);
-  const priceAfter = firstAfter(spot, start, MIN_HORIZON_MS, MAX_TARGET_MS);
   const oiBefore = closestBefore(oi, start, BASELINE_LOOKBACK_MS);
   const oiAfter = firstAfter(oi, start, MIN_HORIZON_MS, MAX_TARGET_MS);
   const contextAt = start + MIN_HORIZON_MS;
@@ -67,32 +65,69 @@ function analyzeEvent(event, observations, flows, now = Date.now()) {
     firstAfter(basis, start, MIN_HORIZON_MS, MAX_TARGET_MS);
 
   const evidence = [];
-  let priceAligned = false, oiExpansion = false, priceChangePct = null, oiDeltaPct = null;
-  if (priceBefore && priceAfter) {
-    const before = Number(priceBefore.metric_value), after = Number(priceAfter.metric_value);
-    priceChangePct = before > 0 ? (after / before - 1) * 100 : null;
-    const observedDirection = priceDirection(priceChangePct);
-    priceAligned = observedDirection === event.direction;
+  const validOutcomes = outcomes.filter(row => row.evaluation_status === 'complete' &&
+    row.data_quality === 'complete' && Number.isFinite(Number(row.return_pct)));
+  const outcome15 = validOutcomes.find(row => Number(row.horizon_minutes) === 15);
+  const outcome60 = validOutcomes.find(row => Number(row.horizon_minutes) === 60);
+  let priceAligned = false, oiExpansion = false, priceChangePct = null, price15mPct = null, oiDeltaPct = null;
+
+  [outcome15, outcome60].filter(Boolean).forEach(outcome => {
+    const horizon = Number(outcome.horizon_minutes);
+    const change = Number(outcome.return_pct);
+    const direction = priceDirection(change);
+    const aligned = direction === event.direction;
+    if (horizon === 15) price15mPct = change;
+    if (horizon === 60) { priceChangePct = change; priceAligned = aligned; }
     evidence.push({
       event_id: event.id, evidence_type: 'price_response',
-      source: 'OKX spot market observations · post-event follow-through window',
-      observed_at: priceAfter.observed_at, window_seconds: Math.max(1, Math.round((Date.parse(priceAfter.observed_at) - start) / 1000)),
-      direction: observedDirection, evidence_state: 'observed',
-      metrics: { baseline_price: before, follow_through_price: after, return_pct: priceChangePct,
-        event_direction: event.direction, direction_aligned: priceAligned, observed_horizon_minutes: Math.round((Date.parse(priceAfter.observed_at) - start) / 60000) },
-      explanation: priceAligned ? '事件发生后，现货价格在15分钟观察窗内沿事件主动成交方向延续。该价格响应不代表账户身份或净持仓。' :
-        observedDirection === 'neutral' ? '事件后的现货价格变化未达到方向阈值，尚未形成明确跟随。' :
-          '事件后的现货价格方向与主动成交方向不一致，记为冲突证据。'
+      source: 'OKX candle outcome · ' + horizon + 'm horizon',
+      observed_at: outcome.evaluated_at || iso(start + horizon * 60000),
+      window_seconds: horizon * 60, direction, evidence_state: 'observed',
+      metrics: {
+        return_pct: change, horizon_minutes: horizon, event_direction: event.direction,
+        direction_aligned: aligned,
+        max_favorable_excursion_pct: outcome.max_favorable_excursion_pct === null ? null : Number(outcome.max_favorable_excursion_pct),
+        max_adverse_excursion_pct: outcome.max_adverse_excursion_pct === null ? null : Number(outcome.max_adverse_excursion_pct)
+      },
+      explanation: aligned ?
+        horizon + '分钟价格变化与主动成交方向一致。该结果是价格响应，不等于账户净持仓或策略收益。' :
+        direction === 'neutral' ?
+          horizon + '分钟价格变化未达到方向阈值，暂未形成明确跟随。' :
+          horizon + '分钟价格变化与主动成交方向相反，记为冲突证据。'
     });
-  } else if (now >= start + MAX_TARGET_MS) {
-    evidence.push({
-      event_id: event.id, evidence_type: 'price_response',
-      source: 'OKX spot market observations · post-event follow-through window',
-      observed_at: iso(start + MIN_HORIZON_MS), window_seconds: 900,
-      direction: 'neutral', evidence_state: 'missing',
-      metrics: { event_direction: event.direction, reason: 'No valid baseline and follow-through pair' },
-      explanation: '该事件缺少同一时间窗内可配对的现货价格观测，不用其他时间尺度的数据代替。'
-    });
+  });
+
+  if (!outcome60) {
+    const priceBefore = closestBefore(spot, start, BASELINE_LOOKBACK_MS);
+    const priceAfter = firstAfter(spot, start, MIN_HORIZON_MS, MAX_TARGET_MS);
+    if (priceBefore && priceAfter) {
+      const before = Number(priceBefore.metric_value), after = Number(priceAfter.metric_value);
+      priceChangePct = before > 0 ? (after / before - 1) * 100 : null;
+      const direction = priceDirection(priceChangePct);
+      priceAligned = direction === event.direction;
+      evidence.push({
+        event_id: event.id, evidence_type: 'price_response',
+        source: 'OKX spot observations · 60–90m follow-through',
+        observed_at: priceAfter.observed_at,
+        window_seconds: Math.max(1, Math.round((Date.parse(priceAfter.observed_at) - start) / 1000)),
+        direction, evidence_state: 'observed',
+        metrics: { baseline_price: before, follow_through_price: after, return_pct: priceChangePct,
+          event_direction: event.direction, direction_aligned: priceAligned,
+          observed_horizon_minutes: Math.round((Date.parse(priceAfter.observed_at) - start) / 60000) },
+        explanation: priceAligned ? '60–90分钟现货价格响应与事件方向一致。' :
+          direction === 'neutral' ? '60–90分钟现货价格变化未达到方向阈值。' :
+            '60–90分钟现货价格方向与主动成交方向相反。'
+      });
+    } else if (now >= start + MAX_TARGET_MS) {
+      evidence.push({
+        event_id: event.id, evidence_type: 'price_response',
+        source: 'OKX spot observations · 60–90m follow-through',
+        observed_at: iso(start + MIN_HORIZON_MS), window_seconds: 3600,
+        direction: 'neutral', evidence_state: 'missing',
+        metrics: { event_direction: event.direction, reason: 'No complete 60–90m spot follow-through pair' },
+        explanation: '缺少完整60–90分钟现货观测，不能用其他时间尺度替代。'
+      });
+    }
   }
 
   if (oiBefore && oiAfter) {
@@ -101,30 +136,30 @@ function analyzeEvent(event, observations, flows, now = Date.now()) {
     oiExpansion = Number.isFinite(oiDeltaPct) && oiDeltaPct >= OI_EXPANSION_THRESHOLD_PCT;
     evidence.push({
       event_id: event.id, evidence_type: 'open_interest',
-      source: 'OKX swap open-interest observations',
+      source: 'OKX swap open-interest observations · 60–90m window',
       observed_at: oiAfter.observed_at, window_seconds: Math.max(1, Math.round((Date.parse(oiAfter.observed_at) - start) / 1000)),
       direction: 'neutral', evidence_state: 'observed',
       metrics: { open_interest_before_usd: before, open_interest_after_usd: after,
         delta_pct: oiDeltaPct, expansion_threshold_pct: OI_EXPANSION_THRESHOLD_PCT,
         interpretation: 'aggregate_open_interest_is_not_directional' },
       explanation: oiDeltaPct >= OI_EXPANSION_THRESHOLD_PCT ?
-        '未平仓合约名义价值增加，说明总风险敞口扩张；OI本身不区分新增多头与新增空头。' :
+        '60–90分钟内未平仓合约名义价值增加，说明总风险敞口扩张；OI本身不区分新增多头与新增空头。' :
         oiDeltaPct <= -OI_EXPANSION_THRESHOLD_PCT ?
-          '未平仓合约名义价值下降，说明总风险敞口收缩；不能单凭OI判断是多头还是空头平仓。' :
-          '未平仓合约名义价值变化较小，暂不构成持仓扩张或收缩证据。'
+          '60–90分钟内未平仓合约名义价值下降，说明总风险敞口收缩，可能涉及去杠杆或平仓；不能据此判断是哪一侧账户在平仓。' :
+          '60–90分钟内未平仓合约名义价值变化较小，暂不构成明显持仓扩张或收缩证据。'
     });
   } else if (now >= start + MAX_TARGET_MS) {
     evidence.push({
       event_id: event.id, evidence_type: 'open_interest',
-      source: 'OKX swap open-interest observations',
-      observed_at: iso(start + MIN_HORIZON_MS), window_seconds: 900,
+      source: 'OKX swap open-interest observations · 60–90m window',
+      observed_at: iso(start + MIN_HORIZON_MS), window_seconds: 3600,
       direction: 'neutral', evidence_state: 'missing',
-      metrics: { reason: 'No valid baseline and follow-through pair' },
-      explanation: '缺少同一观察窗口内可配对的OI数据，不将单点OI数值解释为持仓变化。'
+      metrics: { reason: 'No observed 60–90m open-interest pair' },
+      explanation: '缺少完整60–90分钟OI观测，不将单点OI数值解释为持仓变化。'
     });
   }
 
-  const windowStart = start - 15 * 60000, windowEnd = start + 60 * 60000;
+  const windowStart = start - 15 * 60000, windowEnd = start + 90 * 60000;
   const matchingFlows = flows.filter(flow => {
     const occurred = Date.parse(flow.occurred_at);
     const pending = flow.metadata && (flow.metadata.pending === true || flow.metadata.pending === 'true');
@@ -151,27 +186,26 @@ function analyzeEvent(event, observations, flows, now = Date.now()) {
     attribution_scope: 'published_exchange_wallet_sample_only',
     reserve_trend_available: false
   };
-  const contextTime = iso(start + MIN_HORIZON_MS);
   evidence.push({
     event_id: event.id, evidence_type: 'other',
     source: 'OKX funding/basis and confirmed public PoR wallet sample',
-    observed_at: contextTime, window_seconds: 3600,
+    observed_at: iso(start + MIN_HORIZON_MS), window_seconds: 5400,
     direction: 'neutral', evidence_state: fundingRow || basisRow || matchingFlows.length ? 'observed' : 'missing',
     metrics: contextMetrics,
-    explanation: '资金费率与现货/永续基差仅作拥挤度背景；链上仅纳入已确认的交易所公开钱包样本。钱包流入不等于卖出，流出不等于买入；该样本不代表交易所完整储备或全部链上流量。当前储备快照不足以计算储备趋势。'
+    explanation: '资金费率与现货/永续基差仅作拥挤度背景；链上仅纳入已确认的交易所公开钱包样本。钱包流入不等于卖出，流出不等于买入；该样本不代表交易所完整储备或全部链上流量。当前每个资产只有一个PoR快照，不能计算储备趋势。'
   });
 
   const promotion = event.event_type === 'aggressive_execution' &&
     ['buy', 'sell'].includes(event.direction) && priceAligned && oiExpansion ? 'medium' : null;
-  return { ready: true, evidence, promotion, priceChangePct, oiDeltaPct, matchingFlowCount: matchingFlows.length };
+  return { ready: true, evidence, promotion, priceChangePct, price15mPct, oiDeltaPct, matchingFlowCount: matchingFlows.length };
 }
 
 function evidenceKey(row) {
   return [row.evidence_type, row.source, row.observed_at].join('|');
 }
 
-async function processEvent(event, observations, flows, now, existingByEvent) {
-  const analysis = analyzeEvent(event, observations, flows, now);
+async function processEvent(event, observations, flows, now, existingByEvent, outcomesByEvent) {
+  const analysis = analyzeEvent(event, observations, flows, outcomesByEvent.get(event.id) || [], now);
   if (!analysis.ready || !analysis.evidence.length) return { eventKey: event.event_key, status: 'waiting' };
   const existing = existingByEvent.get(event.id) || [];
   const seen = new Set(existing.map(evidenceKey));
@@ -222,8 +256,17 @@ async function main() {
       list.push(row);
       existingByEvent.set(row.event_id, list);
     });
+    const outcomeRows = eventIds.length ? await db('capital_behavior_outcomes',
+      'select=event_id,horizon_minutes,return_pct,max_favorable_excursion_pct,max_adverse_excursion_pct,evaluation_status,data_quality,evaluated_at&event_id=' +
+      encodeURIComponent('in.(' + eventIds.join(',') + ')') + '&evaluation_status=eq.complete&data_quality=eq.complete&limit=500') : [];
+    const outcomesByEvent = new Map();
+    outcomeRows.forEach(row => {
+      const list = outcomesByEvent.get(row.event_id) || [];
+      list.push(row);
+      outcomesByEvent.set(row.event_id, list);
+    });
     for (const event of symbolEvents) {
-      try { results.push(await processEvent(event, observations, flows, now, existingByEvent)); }
+      try { results.push(await processEvent(event, observations, flows, now, existingByEvent, outcomesByEvent)); }
       catch (error) { results.push({ eventKey: event.event_key, status: 'error', error: String(error.message || error).slice(0, 180) }); }
     }
   }
@@ -231,18 +274,24 @@ async function main() {
 }
 
 function test() {
-  const now = Date.parse('2026-11-10T00:45:00Z');
   const start = Date.parse('2026-11-10T00:00:00Z');
+  const now = start + 90 * 60000;
   const event = { id: 'event-1', event_key: 'ETH:aggressive_execution:buy:test', symbol: 'ETH',
     event_type: 'aggressive_execution', direction: 'buy', evidence_strength: 'weak',
-    started_at: iso(start) };
+    status: 'forming', started_at: iso(start) };
   const observations = [
     { market_type: 'spot', metric: 'last_price', metric_value: 3000, observed_at: iso(start - 600000), data_quality: 'observed' },
-    { market_type: 'spot', metric: 'last_price', metric_value: 3010, observed_at: iso(start + 900000), data_quality: 'observed' },
+    { market_type: 'spot', metric: 'last_price', metric_value: 3010, observed_at: iso(start + 60 * 60000), data_quality: 'observed' },
     { market_type: 'swap', metric: 'open_interest_usd', metric_value: 100000000, observed_at: iso(start - 600000), data_quality: 'observed' },
-    { market_type: 'swap', metric: 'open_interest_usd', metric_value: 101000000, observed_at: iso(start + 900000), data_quality: 'observed' },
-    { market_type: 'swap', metric: 'funding_rate', metric_value: 0.0001, observed_at: iso(start + 900000), data_quality: 'observed' },
-    { market_type: 'aggregate', metric: 'spot_swap_basis_pct', metric_value: 0.03, observed_at: iso(start + 900000), data_quality: 'observed' }
+    { market_type: 'swap', metric: 'open_interest_usd', metric_value: 101000000, observed_at: iso(start + 60 * 60000), data_quality: 'observed' },
+    { market_type: 'swap', metric: 'funding_rate', metric_value: 0.0001, observed_at: iso(start + 60 * 60000), data_quality: 'observed' },
+    { market_type: 'aggregate', metric: 'spot_swap_basis_pct', metric_value: 0.03, observed_at: iso(start + 60 * 60000), data_quality: 'estimated' }
+  ];
+  const outcomes = [
+    { event_id: 'event-1', horizon_minutes: 15, return_pct: 0.1, max_favorable_excursion_pct: 0.2,
+      max_adverse_excursion_pct: -0.1, evaluation_status: 'complete', data_quality: 'complete', evaluated_at: iso(start + 20 * 60000) },
+    { event_id: 'event-1', horizon_minutes: 60, return_pct: 0.4, max_favorable_excursion_pct: 0.6,
+      max_adverse_excursion_pct: -0.2, evaluation_status: 'complete', data_quality: 'complete', evaluated_at: iso(start + 60 * 60000) }
   ];
   const flows = [
     { flow_type: 'exchange_inflow', usd_value: 100000, block_height: 200, occurred_at: iso(start + 300000),
@@ -250,22 +299,31 @@ function test() {
     { flow_type: 'exchange_inflow', usd_value: 50000, block_height: null, occurred_at: iso(start + 300000),
       metadata: { pending: true } }
   ];
-  const result = analyzeEvent(event, observations, flows, now);
-  if (!result.ready || result.promotion !== 'medium' || result.priceChangePct < 0.15 ||
-      result.oiDeltaPct < 0.5 || result.matchingFlowCount !== 1) throw new Error('Aligned cross-source promotion test failed');
+  const result = analyzeEvent(event, observations, flows, outcomes, now);
+  if (!result.ready || result.promotion !== 'medium' || result.priceChangePct !== 0.4 ||
+      result.oiDeltaPct < 0.5 || result.matchingFlowCount !== 1) throw new Error('Aligned 60m cross-source promotion test failed');
   const oiEvidence = result.evidence.find(row => row.evidence_type === 'open_interest');
   if (!oiEvidence || oiEvidence.direction !== 'neutral') throw new Error('Open interest must remain non-directional evidence');
   const contextEvidence = result.evidence.find(row => row.evidence_type === 'other');
-  if (!contextEvidence || contextEvidence.metrics.reserve_trend_available !== false) throw new Error('Reserve trend must remain unavailable without snapshots');
-  const estimatedOnly = analyzeEvent(event, observations.map(row => ({ ...row, data_quality: 'estimated' })), flows, now);
+  if (!contextEvidence || contextEvidence.metrics.reserve_trend_available !== false ||
+      contextEvidence.metrics.spot_swap_basis_pct !== null) throw new Error('Reserve/basis quality guard failed');
+  const fifteenMinute = result.evidence.find(row => row.evidence_type === 'price_response' && row.metrics.horizon_minutes === 15);
+  if (!fifteenMinute || fifteenMinute.direction !== 'neutral') throw new Error('15m price response threshold failed');
+  const estimatedOnly = analyzeEvent(event, observations.map(row => ({ ...row, data_quality: 'estimated' })), flows, outcomes, now);
   if (estimatedOnly.promotion !== null) throw new Error('Estimated market observations must not promote events');
-  const conflicting = analyzeEvent({ ...event, direction: 'sell' }, observations, flows, now);
-  if (conflicting.promotion !== null) throw new Error('Conflicting price response must not promote event');
-  const noLookahead = analyzeEvent(event, observations, flows, start + 10 * 60000);
-  if (noLookahead.ready) throw new Error('Events younger than 15m must not be evaluated');
-  const excluded = analyzeEvent(event, observations, flows.filter(x => x.block_height === null), now);
+  const conflicting = analyzeEvent({ ...event, direction: 'sell' }, observations, flows, outcomes, now);
+  if (conflicting.promotion !== null) throw new Error('Conflicting 60m price response must not promote event');
+  const contractionObservations = observations.map(row => row.metric === 'open_interest_usd' && Date.parse(row.observed_at) > start ?
+    { ...row, metric_value: 99000000 } : row);
+  const contraction = analyzeEvent(event, contractionObservations, flows, outcomes, now);
+  if (contraction.promotion !== null || !contraction.evidence.find(row => row.evidence_type === 'open_interest').explanation.includes('风险敞口收缩')) {
+    throw new Error('OI contraction must be described as deleveraging context, not new directional positioning');
+  }
+  const noLookahead = analyzeEvent(event, observations, flows, outcomes, start + 30 * 60000);
+  if (noLookahead.ready) throw new Error('Events younger than 60m must not be evaluated');
+  const excluded = analyzeEvent(event, observations, flows.filter(x => x.block_height === null), outcomes, now);
   if (excluded.matchingFlowCount !== 0) throw new Error('Unconfirmed chain flows must be excluded');
-  console.log('Capital correlation tests passed: time alignment, OI neutrality, price direction, confirmed chain-flow filter, and conservative promotion.');
+  console.log('Capital correlation tests passed: 15m/60m candle outcomes, 60–90m OI alignment, OI neutrality, estimated-data guard, and confirmed chain-flow filter.');
 }
 
 if (process.env.TIDE_CAPITAL_CORRELATION_TEST === '1') test();
