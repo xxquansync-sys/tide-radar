@@ -196,17 +196,18 @@
     var opposing = direction === 'long' ? 'down' : 'up';
     var aligned = direction === 'long' ? 'up' : 'down';
     if (period === '15m') {
+      if (htfBias === 'unavailable' || dailyBias === 'unavailable') return { state: 'pending', reason: '等待完整4H与日线数据' };
       if (htfBias === opposing && dailyBias === opposing) return { state: 'blocked', reason: '4H与日线均逆向' };
       if (htfBias === aligned && dailyBias === aligned) return { state: 'aligned', reason: '4H与日线共振' };
-      if (htfBias === opposing || dailyBias === opposing) return { state: 'caution', reason: '至少一个大周期逆向' };
-      return { state: 'mixed', reason: '大周期方向尚未共振' };
+      return { state: 'mixed', reason: '大周期尚未形成同向共振' };
     }
     if (period === '4H') {
+      if (dailyBias === 'unavailable') return { state: 'pending', reason: '等待日线方向数据' };
       if (dailyBias === opposing) return { state: 'blocked', reason: '日线方向逆向' };
       if (dailyBias === aligned) return { state: 'aligned', reason: '日线方向一致' };
-      return { state: 'mixed', reason: '等待日线方向确认' };
+      return { state: 'mixed', reason: '日线方向尚不明确' };
     }
-    return { state: 'context_only', reason: '仅作为环境观察' };
+    return { state: 'context_only', reason: '该周期仅用于方向或执行参考' };
   }
 
   function compute(allCandles, config) {
@@ -234,6 +235,20 @@
       message: '至少需要 80 根已收盘K线'
     };
     if (candles.length < 80) return result;
+
+    if (period === '1D' || period === '4H') {
+      var localBias = trendBias(candles, period, now);
+      result.status = 'context_only';
+      result.direction = localBias === 'up' ? 'long' : localBias === 'down' ? 'short' : null;
+      result.message = period + ' 只提供大周期方向，不独立生成入场信号';
+      result.localBias = localBias;
+      return result;
+    }
+    if (period === '1m' || period === '3m' || period === '5m') {
+      result.status = 'execution_only';
+      result.message = '执行周期仅用于细化入场，必须先有15M确认信号';
+      return result;
+    }
 
     var macdResult = macd(candles, cfg.fast, cfg.slow, cfg.signal);
     var atrValues = atr(candles, cfg.atrPeriod);
@@ -264,21 +279,28 @@
     var risk = Math.abs(entry - stop);
     var ageBars = lastIndex - triggerIndex;
     var context = contextAssessment(divergence.direction, period, result.htfBias, result.dailyBias);
-    result.status = ageBars <= cfg.activeWindowBars ? (context.state === 'blocked' ? 'blocked' : 'triggered') : 'expired';
+    result.status = context.state === 'blocked' ? 'blocked' :
+      context.state === 'pending' ? 'context_pending' :
+      context.state !== 'aligned' ? 'context_mixed' :
+      ageBars <= cfg.activeWindowBars ? 'triggered' : 'expired';
     result.direction = divergence.direction;
     result.divergenceCount = divergence.divergenceCount;
     result.triggerIndex = triggerIndex;
     result.triggerTime = Number(trigger.timestamp);
-    result.entry = entry;
-    result.atr = riskAtr;
-    result.stop = stop;
-    result.risk = risk;
-    result.target15 = isLong ? entry + risk * 1.5 : entry - risk * 1.5;
-    result.target2 = isLong ? entry + risk * 2 : entry - risk * 2;
     result.ageBars = ageBars;
     result.context = context;
     result.swings = divergence.swings;
-    result.message = result.status === 'blocked' ? '背离成立，但大周期方向冲突，禁止作为交易信号' :
+    if (result.status === 'triggered') {
+      result.entry = entry;
+      result.atr = riskAtr;
+      result.stop = stop;
+      result.risk = risk;
+      result.target15 = isLong ? entry + risk * 1.5 : entry - risk * 1.5;
+      result.target2 = isLong ? entry + risk * 2 : entry - risk * 2;
+    }
+    result.message = result.status === 'blocked' ? '背离成立，但4H与日线方向均冲突，禁止作为交易信号' :
+      result.status === 'context_pending' ? '背离形态出现，等待完整高周期数据' :
+      result.status === 'context_mixed' ? '背离形态出现，但大周期未共振，仅作观察' :
       result.status === 'expired' ? '背离触发已过期，仅保留历史标记' :
       (isLong ? '底背离' : '顶背离') + ' · ' + divergence.divergenceCount + '段 · 收盘触发';
     return result;
@@ -299,8 +321,12 @@
     };
     var status = result.status;
     var label = status === 'insufficient' ? (en ? 'Waiting for candles' : '等待足够K线') :
-      status === 'triggered' ? (en ? 'Confirmed setup' : '收盘触发') :
+      status === 'triggered' ? (en ? 'Confirmed 15M setup' : '15M收盘触发') :
       status === 'blocked' ? (en ? 'Blocked by higher timeframe' : '大周期拦截') :
+      status === 'context_pending' ? (en ? 'Waiting for higher-timeframe data' : '等待高周期数据') :
+      status === 'context_mixed' ? (en ? 'Higher timeframes not aligned' : '大周期未共振') :
+      status === 'context_only' ? (en ? 'Direction context only' : '方向参考，不独立入场') :
+      status === 'execution_only' ? (en ? 'Execution only · wait for 15M' : '仅执行周期 · 等待15M确认') :
       status === 'expired' ? (en ? 'Expired trigger' : '触发已过期') :
       (en ? 'No confirmed divergence' : '暂无有效背离');
     var side = result.direction ? (result.direction === 'long' ? (en ? 'LONG' : '做多') : (en ? 'SHORT' : '做空')) : '—';
@@ -308,7 +334,7 @@
     var context = result.context && result.context.reason ? result.context.reason : '—';
     if (en && result.context) {
       context = ({ aligned: 'Higher-timeframe aligned', caution: 'Countertrend risk', mixed: 'Mixed higher-timeframe bias',
-        blocked: 'Blocked by higher-timeframe bias', context_only: 'Context only', unavailable: 'Waiting for context data' })[result.context.state] || context;
+        blocked: 'Blocked by higher-timeframe bias', pending: 'Waiting for higher-timeframe data', context_only: 'Context only', unavailable: 'Waiting for context data' })[result.context.state] || context;
     }
     set('momentum-label-status', en ? 'Momentum exhaustion' : '动能衰竭');
     set('momentum-value-status', label);
