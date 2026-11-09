@@ -21,25 +21,31 @@ module.exports = async function handler(req, res) {
   // OKX history-trades supports timestamp pagination and up to three months of public trade history.
   // Page backwards from candle end; never substitute current "recent trades" for an old candle.
   const instId = symbol + '-USDT-SWAP', rows = [], maxPages = 8;
-  let cursor = String(Math.floor(end)), pages = 0, reachedStart = false, capped = false, error = null;
+  // OKX does not support timestamp pagination for history-trades.
+  // Walk backwards by tradeId (type=1), then filter the returned trades by the candle's exact [start,end) window.
+  let cursor = null, pages = 0, reachedStart = false, capped = false, exhausted = false, error = null;
   try {
     for (let page = 0; page < maxPages; page++) {
-      const url = 'https://www.okx.com/api/v5/market/history-trades?instId=' + encodeURIComponent(instId) + '&type=2&after=' + encodeURIComponent(cursor) + '&limit=100';
-      const data = await request(url);
+      const params = 'instId=' + encodeURIComponent(instId) + '&type=1' +
+        (cursor ? '&after=' + encodeURIComponent(cursor) : '') + '&limit=100';
+      const data = await request('https://www.okx.com/api/v5/market/history-trades?' + params);
       if (!data || data.code !== '0' || !Array.isArray(data.data)) throw new Error((data && data.msg) || 'Invalid OKX response');
-      const batch = data.data.map(x => ({ id: String(x.tradeId || ''), ts: Number(x.ts), p: Number(x.px), q: Number(x.sz), side: String(x.side || '').toLowerCase() }))
-        .filter(x => Number.isFinite(x.ts) && x.p > 0 && x.q > 0 && (x.side === 'buy' || x.side === 'sell'));
+      const batch = data.data.map(x => ({
+        id: String(x.tradeId || ''), ts: Number(x.ts), p: Number(x.px), q: Number(x.sz), side: String(x.side || '').toLowerCase()
+      })).filter(x => x.id && Number.isFinite(x.ts) && x.p > 0 && x.q > 0 && (x.side === 'buy' || x.side === 'sell'))
+        .sort((a,b) => b.ts-a.ts);
       pages++;
       rows.push(...batch);
-      if (!batch.length) { reachedStart = true; break; }
-      const oldest = Math.min(...batch.map(x => x.ts));
-      if (oldest <= start) { reachedStart = true; break; }
-      const next = String(oldest);
-      if (next === cursor) break;
+      if (!batch.length) { exhausted = true; break; }
+      const oldest = batch.reduce((v,x) => x.ts < v.ts ? x : v, batch[0]);
+      if (oldest.ts <= start) { reachedStart = true; break; }
+      if (batch.length < 100) { exhausted = true; break; }
+      const next = oldest.id;
+      if (!next || next === cursor) { exhausted = true; break; }
       cursor = next;
       if (page < maxPages - 1) await new Promise(resolve => setTimeout(resolve, 110));
     }
-    if (!reachedStart && pages >= maxPages) capped = true;
+    if (!reachedStart && !exhausted && pages >= maxPages) capped = true;
   } catch (e) { error = String(e && e.message || e); }
 
   const matched = rows.filter(x => x.ts >= start && x.ts < end);
