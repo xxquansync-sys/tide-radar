@@ -16,3 +16,6 @@ if (!html.includes('id="tide-kline-countdown"')) throw new Error('K-line candle 
 if (!html.includes("setInterval(klineUpdateCountdown,1000)")) throw new Error('K-line countdown must refresh every second');
 if (!html.includes("'1D'?8*3600000:0")) throw new Error('Daily countdown must respect OKX UTC+8 candle boundary');
 if (!html.includes('tideKline.countdownTimer=null')) throw new Error('K-line countdown timer cleanup is missing');
+
+if (!html.includes('convertToPixel({value:last.close})')) throw new Error('Candle countdown must follow the latest price marker on the right axis');
+if (!html.includes('right:3px;transform:translateY(-50%)')) throw new Error('Candle countdown must be positioned at the right price scale');
