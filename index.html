@@ -548,6 +548,21 @@ th{position:static!important;top:auto!important;z-index:auto!important}
 .flow-priority-panel>div[style*="border-top"]{border-top-color:#e2ece9!important}
 .flow-priority-panel .muted{color:#71868e}
 
+
+/* Exchange reserve intelligence */
+.okx-reserve-panel{margin:14px 0;padding:16px;background:linear-gradient(145deg,#fff,#f8fbfb);border:1px solid #dce8e9;border-radius:13px;box-shadow:0 5px 18px rgba(27,66,75,.04)}
+.okx-reserve-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.okx-reserve-title{font-size:14px;font-weight:750;color:#203847}.okx-reserve-kicker{font-size:9px;letter-spacing:.14em;color:#188c85;font-weight:750;margin-bottom:5px}
+.okx-reserve-note{font-size:10px;color:#778795;line-height:1.7;margin:7px 0 12px;max-width:1000px}
+.okx-reserve-meta{font-size:10px;color:#82909e}.okx-reserve-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}
+.okx-reserve-stat{background:#f5f9f9;border:1px solid #e5eeee;border-radius:9px;padding:10px;min-width:0}
+.okx-reserve-stat small{display:block;color:#7b8b96;font-size:10px}.okx-reserve-stat b{display:block;color:#243b49;font-size:17px;margin-top:4px;font-variant-numeric:tabular-nums}
+.okx-reserve-table{width:100%;border-collapse:collapse;font-size:11px}.okx-reserve-table th{text-align:left;color:#7a8997;padding:9px 7px;border-bottom:1px solid #e6edef;font-weight:600}.okx-reserve-table td{padding:9px 7px;border-bottom:1px solid #edf1f2;color:#304655;vertical-align:top;white-space:normal}
+.okx-quality{display:inline-flex;border-radius:5px;padding:3px 6px;font-size:9px;font-weight:700;white-space:nowrap}.okx-quality.observed{background:#e7f5ef;color:#167451}.okx-quality.partial{background:#fff5e4;color:#9a6a18}
+.okx-wallet-list{display:flex;flex-direction:column;gap:5px;min-width:210px}.okx-wallet{font-size:10px;color:#627481;display:flex;justify-content:space-between;gap:10px}.okx-wallet code{font-family:ui-monospace,monospace;font-size:9px;color:#365363;overflow-wrap:anywhere}
+.okx-reserve-actions{display:flex;gap:8px;align-items:center}.okx-reserve-actions button{border:1px solid #dce7e8;background:#fff;color:#45616a;border-radius:7px;padding:6px 9px;font-size:10px;cursor:pointer}.okx-reserve-status{font-size:10px;color:#84939d}
+@media(max-width:700px){.okx-reserve-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.okx-reserve-table thead{display:none}.okx-reserve-table,.okx-reserve-table tbody,.okx-reserve-table tr,.okx-reserve-table td{display:block;width:100%;box-sizing:border-box}.okx-reserve-table tr{border:1px solid #e8eeee;border-radius:9px;margin:8px 0;padding:7px}.okx-reserve-table td{display:flex;justify-content:space-between;gap:12px;border:0;padding:6px 3px}.okx-reserve-table td:before{content:attr(data-label);color:#87949d;font-size:10px;flex-shrink:0}.okx-wallet-list{min-width:0;max-width:70%}}
+
 </style>
 </head>
 <body>
@@ -1109,6 +1124,45 @@ whTreasuryTitle:'Public Company & Institution Treasuries',whTreasuryNote:'From C
 whTreasuryPending:'Loading treasury data…',whCompany:'Institution',whCoin:'Coin',whHoldings:'Holdings',whValue:'Market Value',whTicker:'Ticker',
 whNote:'Positions come from the Hyperliquid public leaderboard and clearinghouse API, queried directly by your browser and cached for about 30 minutes. Addresses are picked by size, PnL and self-set display name; a display name is not a verified identity. Protocol vaults with account value above $1B are excluded.',
 whDisclaimer:'Note: this is public on-chain and disclosed data. It does not cover all positions and does not confirm any address identity. Positions change constantly. For research only, not investment advice.'});
+
+var okxReserveState={loading:false,loadedAt:0,data:null,error:'',requestId:0};
+function okxReserveEsc(value){return String(value===null||value===undefined?'':value).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);});}
+function okxReserveAgeLabel(snapshotAt,en,now){var age=(Number.isFinite(now)?now:Date.now())-Date.parse(snapshotAt);if(!Number.isFinite(age)||age<0)return en?'report time unavailable':'报告时间不可用';var days=Math.floor(age/86400000);if(days>=1)return en?'reported '+days+'d ago':'报告于'+days+'天前';var hours=Math.floor(age/3600000);if(hours>=1)return en?'reported '+hours+'h ago':'报告于'+hours+'小时前';var minutes=Math.floor(age/60000);return en?'reported '+minutes+'m ago':'报告于'+minutes+'分钟前';}
+function okxReserveAmount(value){var s=String(value===null||value===undefined?'':value).trim();if(!/^\d+(?:\.\d+)?$/.test(s))return '—';var p=s.split('.'),whole=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,','),fraction=(p[1]||'').replace(/0+$/,'');return whole+(fraction?'.'+fraction:'');}
+function okxReserveShortRef(value){var s=String(value||'');return s.length>25?s.slice(0,10)+'…'+s.slice(-9):s||'—';}
+function renderOkxReserves(){
+ var box=$('okx-reserve-panel');if(!box)return;
+ var en=currentLang!=='zh',d=okxReserveState.data;
+ var title=en?'Exchange reserves & tracked wallets':'交易所储备与公开钱包观察';
+ var note=en?'Periodic proof-of-reserves snapshot, not a live balance feed. Entity-level reserve totals are kept separate from the bounded tracked-wallet sample. “Partial” totals sum only published wallet rows when no official per-asset CSV summary exists. Wallet roles remain unknown.':'定期储备证明快照，并非实时余额。实体级储备总额与有限公开钱包样本分开统计。没有官方单资产汇总行的资产，partial 仅表示已发布钱包记录求和；不代表完整储备。钱包冷热角色均保持未知。';
+ var h='<div class="okx-reserve-head"><div><div class="okx-reserve-kicker">CAPITAL INTELLIGENCE / PROOF OF RESERVES</div><div class="okx-reserve-title">'+title+'</div><div class="okx-reserve-note">'+note+'</div></div><div class="okx-reserve-actions"><span class="okx-reserve-status" id="okx-reserve-status">'+(okxReserveState.loading?(en?'Loading…':'正在加载…'):okxReserveState.error?okxReserveEsc(okxReserveState.error):d?(en?'Report ':'报告 ')+new Date(d.snapshotAt).toLocaleString(en?'en-US':'zh-CN')+' · '+okxReserveAgeLabel(d.snapshotAt,en):(en?'Not loaded':'尚未加载'))+'</span><button onclick="loadOkxReserves(true)">'+(en?'Refresh':'刷新')+'</button></div></div>';
+ if(okxReserveState.error&&!d){box.innerHTML=h+'<div class="muted">'+(en?'Reserve data is temporarily unavailable. ':'储备数据暂时不可用：')+okxReserveEsc(okxReserveState.error)+'</div>';return;}
+ if(!d){box.innerHTML=h+'<div class="muted">'+(en?'Waiting for the official reserve snapshot…':'等待官方储备快照…')+'</div>';return;}
+ var observed=d.assets.filter(function(x){return x.dataQuality==='observed';}).length,partial=d.assets.filter(function(x){return x.dataQuality==='partial';}).length,tracked=d.assets.reduce(function(a,x){return a+(Number(x.trackedWalletCount)||0);},0);
+ h+='<div class="okx-reserve-stats"><div class="okx-reserve-stat"><small>'+(en?'Assets with reserve snapshots':'储备资产种类')+'</small><b>'+d.assetCount+'</b></div><div class="okx-reserve-stat"><small>'+(en?'Official summary rows':'官方汇总资产')+'</small><b>'+observed+'</b></div><div class="okx-reserve-stat"><small>'+(en?'Partial fallback assets':'部分样本估算资产')+'</small><b>'+partial+'</b></div><div class="okx-reserve-stat"><small>'+(en?'Tracked wallet sample rows':'已追踪钱包样本')+'</small><b>'+tracked.toLocaleString('en-US')+'</b></div><div class="okx-reserve-stat"><small>'+(en?'Wallet rows returned':'读取钱包记录')+'</small><b>'+Number(d.walletRowsReturned||0).toLocaleString('en-US')+'</b></div><div class="okx-reserve-stat"><small>'+(en?'Sample cap':'样本读取上限')+'</small><b>'+(d.walletRowsTruncated?(en?'Reached':'已触及'):(en?'Within limit':'未触及'))+'</b></div></div>';
+ h+='<div class="table-wrap"><table class="okx-reserve-table"><thead><tr><th>'+(en?'Asset':'资产')+'</th><th>'+(en?'Entity reserve (native units)':'实体储备总额（原生单位）')+'</th><th>'+(en?'Data basis':'数据依据')+'</th><th>'+(en?'Tracked sample':'钱包样本')+'</th><th>'+(en?'Largest published wallet samples':'公开钱包样本（前5）')+'</th></tr></thead><tbody>';
+ h+=d.assets.map(function(x){
+  var quality=x.dataQuality==='observed'?'observed':'partial',label=quality==='observed'?(en?'Official summary':'官方汇总'):(en?'Published-wallet fallback':'公开钱包求和');
+  var sourceLink=/^https:\/\/[^\s<>"']+$/i.test(String(x.sourceUrl||''))?'<a href="'+okxReserveEsc(x.sourceUrl)+'" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:4px;font-size:9px;color:#287e78">'+(en?'Source ↗':'来源 ↗')+'</a>':'';
+  var wallets=(x.topWallets||[]).map(function(w){return '<div class="okx-wallet"><code title="'+okxReserveEsc(w.accountRef)+'">'+okxReserveEsc(w.network)+' · '+okxReserveShortRef(w.accountRef)+'</code><span>'+okxReserveAmount(w.amount)+' '+okxReserveEsc(x.asset)+'</span></div>';}).join('')||'<span class="okx-reserve-status">—</span>';
+  return '<tr><td data-label="'+(en?'Asset':'资产')+'"><b>'+okxReserveEsc(x.asset)+'</b></td><td data-label="'+(en?'Entity reserve':'实体储备总额')+'"><b>'+okxReserveAmount(x.reserveAmount)+'</b></td><td data-label="'+(en?'Data basis':'数据依据')+'"><span class="okx-quality '+quality+'">'+label+'</span>'+sourceLink+'</td><td data-label="'+(en?'Tracked sample':'钱包样本')+'">'+Number(x.trackedWalletCount||0).toLocaleString('en-US')+'</td><td data-label="'+(en?'Top wallet samples':'钱包样本')+'"><div class="okx-wallet-list">'+wallets+'</div></td></tr>';
+ }).join('');
+ h+='</tbody></table></div><div class="okx-reserve-note">'+(en?'Reserve values are native-asset quantities, not USD valuations. The tracked-wallet rows are a capped subset and must never be added to the entity reserve total. No hot/cold classification or cryptographic signature verification is asserted.':'储备金额为各资产原生数量，不是美元估值。钱包记录是有限样本，不能与实体储备总额相加。此处不推断冷热钱包，也不声称完成密码学签名验证。')+'</div>';
+ box.innerHTML=h;
+}
+async function loadOkxReserves(force){
+ if(okxReserveState.loading)return;
+ if(!force&&okxReserveState.data&&Date.now()-okxReserveState.loadedAt<60000)return;
+ okxReserveState.loading=true;okxReserveState.error='';var req=++okxReserveState.requestId;renderOkxReserves();
+ try{
+  var response=await fetch('/api/capital-reserves',{headers:{Accept:'application/json'}});
+  var data=await response.json();if(!response.ok||!data.enabled)throw new Error(data.error||('HTTP '+response.status));
+  if(req!==okxReserveState.requestId)return;
+  okxReserveState.data=data;okxReserveState.loadedAt=Date.now();
+ }catch(error){if(req===okxReserveState.requestId)okxReserveState.error=String(error&&error.message||error);}
+ finally{if(req===okxReserveState.requestId){okxReserveState.loading=false;renderOkxReserves();}}
+}
+
 var dragonState={tab:'today',loading:false,progress:0,total:0,histDate:null,histQuery:'',error:''};
 var instCtVal={};
 var apiQueue=Promise.resolve();
@@ -1462,7 +1516,7 @@ h+='<div class="dragon-criteria" style="margin:15px 0;padding:12px;background:#0
 h+='<div class="dragon-criteria" style="margin:12px 0;padding:12px;background:#0f1621;border-radius:8px"><div style="font-size:12px;font-weight:600;margin-bottom:8px">'+t('rotationTitle')+'</div><div class="table-wrap"><table class="dragon-table"><thead><tr><th>'+t('rotationAsset')+'</th><th>'+t('rotationNet')+'</th><th>'+t('rotationSync')+'</th><th>'+t('rotationVenues')+'</th></tr></thead><tbody>'+list.map(function(c){var x=c.flow&&c.flow.cross;var sy=x?x.sync:'noConsensus';var n=x&&x.available?x.net:null;return '<tr><td><b>'+c.symbol+'</b></td><td class="'+(n===null?'muted':cls(n))+'">'+(n===null?'—':signedUsd(n))+'</td><td>'+t('sync_'+sy)+'</td><td>'+(x?x.available+'/3':'—')+'</td></tr>';}).join('')+'</tbody></table></div><div class="muted" style="font-size:10px;margin-top:6px">'+t('rotationNote')+' '+t('crossLiveNote')+'</div></div>';
 h+=dtTableHead(false)+list.map(function(c){return '<tr class="dragon-row">'+dtRowCells(coinToRow(c,hist[c.symbol]),day,false)+'</tr>';}).join('')+'</tbody></table></div>';
 h+=flowAlertBoard();
-h+='<div class="dragon-criteria flow-archive-panel" style="margin:12px 0;padding:16px;border-radius:12px"><div class="flow-archive-heading" style="font-size:13px;font-weight:700;margin-bottom:8px">'+t('eventArchiveTitle')+'</div>'+flowEventBoard()+'<div class="muted" style="font-size:10px;margin-top:10px">'+t('eventArchiveNote')+'</div></div>';h+='<div class="notice" style="margin-top:14px">'+t('dtDisclaimer')+'</div>';box.innerHTML=h;}
+h+='<div class="dragon-criteria flow-archive-panel" style="margin:12px 0;padding:16px;border-radius:12px"><div class="flow-archive-heading" style="font-size:13px;font-weight:700;margin-bottom:8px">'+t('eventArchiveTitle')+'</div>'+flowEventBoard()+'<div class="muted" style="font-size:10px;margin-top:10px">'+t('eventArchiveNote')+'</div></div>';h+='<div id="okx-reserve-panel" class="okx-reserve-panel"><div class="muted">'+(currentLang==='zh'?'正在加载交易所储备数据…':'Loading exchange reserve data…')+'</div></div>';h+='<div class="notice" style="margin-top:14px">'+t('dtDisclaimer')+'</div>';box.innerHTML=h;loadOkxReserves(false);}
 function renderDragonHistory(box){var hist=loadHist();var days=Object.keys(hist).sort().reverse();var h=dtHeader(null);
 if(!days.length){box.innerHTML=h+'<div class="muted" style="padding:30px;text-align:center">'+t('dtHistEmpty')+'</div>';return;}
 if(!dragonState.histDate||!hist[dragonState.histDate])dragonState.histDate=days[0];var q=dragonState.histQuery;
