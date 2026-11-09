@@ -18,39 +18,9 @@ module.exports = async function handler(req, res) {
     } finally { clearTimeout(timer); }
   }
 
-  // OKX history-trades supports timestamp pagination and up to three months of public trade history.
-  // Page backwards from candle end; never substitute current "recent trades" for an old candle.
-  const instId = symbol + '-USDT-SWAP', rows = [], maxPages = 8;
-  // OKX does not support timestamp pagination for history-trades.
-  // Walk backwards by tradeId (type=1), then filter the returned trades by the candle's exact [start,end) window.
-  let cursor = null, pages = 0, reachedStart = false, capped = false, exhausted = false, error = null;
-  try {
-    for (let page = 0; page < maxPages; page++) {
-      const params = 'instId=' + encodeURIComponent(instId) + '&type=1' +
-        (cursor ? '&after=' + encodeURIComponent(cursor) : '') + '&limit=100';
-      const data = await request('https://www.okx.com/api/v5/market/history-trades?' + params);
-      if (!data || data.code !== '0' || !Array.isArray(data.data)) throw new Error((data && data.msg) || 'Invalid OKX response');
-      const batch = data.data.map(x => ({
-        id: String(x.tradeId || ''), ts: Number(x.ts), p: Number(x.px), q: Number(x.sz), side: String(x.side || '').toLowerCase()
-      })).filter(x => x.id && Number.isFinite(x.ts) && x.p > 0 && x.q > 0 && (x.side === 'buy' || x.side === 'sell'))
-        .sort((a,b) => b.ts-a.ts);
-      pages++;
-      rows.push(...batch);
-      if (!batch.length) { exhausted = true; break; }
-      const oldest = batch.reduce((v,x) => x.ts < v.ts ? x : v, batch[0]);
-      if (oldest.ts <= start) { reachedStart = true; break; }
-      if (batch.length < 100) { exhausted = true; break; }
-      const next = oldest.id;
-      if (!next || next === cursor) { exhausted = true; break; }
-      cursor = next;
-      if (page < maxPages - 1) await new Promise(resolve => setTimeout(resolve, 110));
-    }
-    if (!reachedStart && !exhausted && pages >= maxPages) capped = true;
-  } catch (e) { error = String(e && e.message || e); }
-
-  const matched = rows.filter(x => x.ts >= start && x.ts < end);
-  const unique = Array.from(new Map(matched.map(x => [x.id, x])).values()).sort((a,b) => a.ts-b.ts);
-
+  // Historical public trades are not timestamp-seekable on OKX.
+  // Use time-bucketed contract taker volume + OI for the selected candle instead of showing unrelated latest trades.
+  const instId = symbol + '-USDT-SWAP';
   // Add a compact surrounding campaign context from OKX contract OI and taker-volume series.
   // These are aggregate market statistics, not account-level positioning.
   const candleMs = end - start;
@@ -77,14 +47,11 @@ module.exports = async function handler(req, res) {
   })).filter(x => Number.isFinite(x.ts) && Number.isFinite(x.buy) && Number.isFinite(x.sell)).sort((a,b) => a.ts-b.ts) : [];
 
   const result = {
-    name: 'OKX', ok: !error, error, rows: unique, sampledRows: rows.length, matchedRows: unique.length,
-    pages, capped, complete: reachedStart && !error,
-    sampleFrom: rows.length ? Math.min(...rows.map(x => x.ts)) : null,
-    sampleTo: rows.length ? Math.max(...rows.map(x => x.ts)) : null,
-    coverageStart: rows.length ? Math.min(...rows.map(x => x.ts)) : null,
-    coverageEnd: rows.length ? Math.max(...rows.map(x => x.ts)) : null,
+    name: 'OKX', ok: true, error: null, rows: [], sampledRows: 0, matchedRows: 0,
+    pages: 0, capped: false, complete: false, tradeCoverage: 'aggregate-only',
+    sampleFrom: null, sampleTo: null, coverageStart: null, coverageEnd: null,
     campaign: {
-      period, periodMs, oi, taker,
+      period, periodMs, oi, taker, takerUnit: 'U',
       oiError: oiResult.status === 'rejected' ? String(oiResult.reason && oiResult.reason.message || oiResult.reason) : null,
       takerError: takerResult.status === 'rejected' ? String(takerResult.reason && takerResult.reason.message || takerResult.reason) : null
     },
