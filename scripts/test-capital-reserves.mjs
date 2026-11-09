@@ -5,15 +5,15 @@ import assert from 'node:assert/strict';
 const source = fs.readFileSync('api/capital-reserves.js', 'utf8');
 const calls = [];
 const responses = [
-  [{ id: 'entity-1', display_name: 'OKX Exchange', entity_key: 'okx:exchange' }, '0-0/1'],
-  [
+  [[{ id: 'entity-1', display_name: 'OKX Exchange', entity_key: 'okx:exchange' }], '0-0/1'],
+  [[
     { asset: 'BTC', reserve_amount: '100.25', snapshot_at: '2026-10-31T16:00:00Z', source: 'okx_por', source_url: 'https://example.test/por.csv', data_quality: 'observed' },
     { asset: 'ETH', reserve_amount: '2000', snapshot_at: '2026-10-31T16:00:00Z', source: 'okx_por', source_url: null, data_quality: 'partial' }
-  , '0-1/2'],
-  [
+  ], '0-1/2'],
+  [[
     { asset: 'BTC', amount: '1.5', usd_value: '100000', account: { network: 'Bitcoin', account_ref: 'bc1qexamplewallet000000000000000000000000', account_kind: 'wallet', account_role: 'unknown' } },
     { asset: 'BTC', amount: '0.8', usd_value: '50000', account: { network: 'Bitcoin', account_ref: 'bc1qsecondwallet0000000000000000000000000', account_kind: 'wallet', account_role: 'unknown' } }
-  , '0-1/2']
+  ], '0-1/2']
 ];
 const sandbox = {
   module: { exports: {} },
