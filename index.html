@@ -1202,9 +1202,12 @@ function recordFlowAlerts(c){
  var f=c.flow||{},x=f.cross||{},now=Date.now(),bucket=Math.floor(now/900000),alerts=loadFlowAlerts(),candidates=[];
  var aligned=x.sync==='multiBuy'||x.sync==='multiSell',direction=x.sync==='multiBuy'?'buy':'sell';
  if(aligned&&Number(x.available)>=2){
-  var oi=Number(c.oiDelta24)||0,net=Number(x.net)||0,oiConfirm=oi!==0&&((oi>0&&net>0)||(oi<0&&net<0));
+  var oi=Number(c.oiDelta24)||0,oiPct=Number(c.oiChange),net=Number(x.net)||0,alignedCount=(x.syncExchanges||[]).length;
+  // OI is a 24h context metric; it must never be presented as confirmation of a 15m taker-flow direction.
+  var strong=alignedCount>=3&&Math.abs(net)>=500000;
+  var oiContext=Number.isFinite(oiPct)?' · 24H OI '+(oiPct>0?'+':'')+oiPct.toFixed(2)+'%（背景）':'';
   var venues=(x.syncExchanges||[]).join(', ');
-  candidates.push({type:'crossConsensus',level:oiConfirm?'high':'watch',direction:direction,title:oiConfirm?'跨所方向共振 + OI确认':'跨所方向共振',detail:'净主动'+(direction==='buy'?'买入':'卖出')+' '+compact(Math.abs(net)+'')+' · '+(x.syncExchanges||[]).length+'/3 venues'+(oiConfirm?' · OI '+(oi>0?'增加':'减少'):' · OI未确认'),venues:venues,amount:Math.abs(net)});
+  candidates.push({type:'crossConsensus',level:strong?'high':'watch',direction:direction,title:strong?'三所资金共振 · 强度较高':'跨所方向共振',detail:'近15m净主动'+(direction==='buy'?'买入':'卖出')+' '+compact(Math.abs(net)+'')+' · '+alignedCount+'/3 venues'+oiContext,venues:venues,amount:Math.abs(net)});
  }
  var big=(f.bigTrades||[]).filter(function(z){return z.usd>=100000;});
  var buys=big.filter(function(z){return z.side==='buy';}),sells=big.filter(function(z){return z.side==='sell';});
@@ -1227,7 +1230,7 @@ function flowAlertBoard(){
  var alerts=loadFlowAlerts().filter(function(a){return Date.now()-a.ts<=48*3600000;}).slice(0,20),en=currentLang!=='zh';
  var cloudLabel=flowAlertRemote.state==='synced'?(en?'Cloud synced':'云端已同步'):flowAlertRemote.state==='checking'?(en?'Checking cloud':'正在检查云端'):(en?'Local only':'仅本机保存');
  var h='<div style="margin:12px 0;padding:12px;background:#101c2a;border:1px solid #30445b;border-radius:9px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:5px"><b style="font-size:12px">'+(en?'Capital behavior alerts':'资金行为预警')+'</b><span style="font-size:10px;color:#8fa3b9">'+cloudLabel+' · '+(en?'Last 48 hours':'最近48小时')+' · '+alerts.length+'</span></div>'+(flowAlertRemote.error?'<div style="font-size:10px;color:#e7a5a5;margin-bottom:6px">'+escHtml(flowAlertRemote.error)+'</div>':'');
- h+='<div style="font-size:10px;color:#8297ad;margin-bottom:8px">'+(en?'Rule-based alerts from sampled public trades, cross-venue taker flow and positioning. Not a trade instruction.':'基于公开成交样本、跨所主动成交方向及持仓变化的规则预警，不构成交易指令。')+'</div>';
+ h+='<div style="font-size:10px;color:#8297ad;margin-bottom:8px">'+(en?'Rule-based alerts from sampled public trades and cross-venue taker flow. OI is 24h context, not 15m directional confirmation. Not a trade instruction.':'基于公开成交样本与跨所主动成交方向的规则预警；OI为24H背景数据，不作为15分钟方向确认，不构成交易指令。')+'</div>';
  if(!alerts.length)return h+'<div class="muted">'+(en?'No qualifying alerts yet.':'暂时没有满足条件的预警。')+'</div></div>';
  h+=alerts.map(function(a){return '<div style="display:flex;justify-content:space-between;gap:9px;padding:9px 0;border-top:1px solid #29394d"><div style="min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><b>'+a.symbol+' · '+escHtml(a.title)+'</b><span style="font-size:9px;padding:2px 5px;border-radius:4px;background:'+(a.level==='high'?'#4b2c35':'#29394d')+';color:'+(a.level==='high'?'#ff9ba8':'#b6c6d7')+'">'+(a.level==='high'?(en?'STRONG':'较强'):(en?'WATCH':'观察'))+'</span></div><div style="font-size:10px;color:#a1b3c6;margin-top:4px">'+escHtml(a.detail)+'</div><small style="display:block;color:#778da5;margin-top:4px">'+fmtTime(a.ts,true)+' · '+escHtml(a.venues||'—')+'</small></div><div style="text-align:right;white-space:nowrap;color:'+(a.direction==='buy'?'#18b88a':'#f06478')+';font-size:11px;font-weight:700">'+(a.direction==='buy'?(en?'BUY':'偏多'):(en?'SELL':'偏空'))+'</div></div>';}).join('');
  return h+'</div>';
