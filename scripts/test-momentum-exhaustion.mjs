@@ -78,8 +78,34 @@ syntheticHistogram[63] = -2.0;
 const triple = detectDivergence(synthetic, syntheticHistogram, syntheticAtr, 'long', options);
 assert(triple && triple.divergenceCount === 3 && triple.confirmationIndex === 62,
   'Three-swing bullish divergence sequence failed');
+
 assert(findTrigger(syntheticHistogram, triple, 'long', options, 79) === 63,
   'Divergence must wait for the first post-confirmation histogram turn');
+
+const syntheticShort = Array.from({ length: 80 }, (_, i) => ({
+  timestamp: 1790000000000 + i * 900000,
+  open: 100, high: 105, low: 99, close: 100
+}));
+const syntheticShortHistogram = Array(80).fill(1);
+const syntheticShortAtr = Array(80).fill(2);
+[20, 40, 60].forEach((i, n) => {
+  syntheticShort[i].high = 110 + n;
+  syntheticShortHistogram[i - 2] = 1.2;
+  syntheticShortHistogram[i - 1] = 1.5;
+  syntheticShortHistogram[i] = 3 - n * 0.5;
+  syntheticShortHistogram[i + 1] = 1.5;
+  syntheticShortHistogram[i + 2] = 1.2;
+});
+syntheticShortHistogram[59] = 2.0;
+syntheticShortHistogram[60] = 1.8;
+syntheticShortHistogram[61] = 1.9;
+syntheticShortHistogram[62] = 2.2;
+syntheticShortHistogram[63] = 2.0;
+const tripleShort = detectDivergence(syntheticShort, syntheticShortHistogram, syntheticShortAtr, 'short', options);
+assert(tripleShort && tripleShort.divergenceCount === 3 && tripleShort.confirmationIndex === 62,
+  'Three-swing bearish divergence sequence failed');
+assert(findTrigger(syntheticShortHistogram, tripleShort, 'short', options, 79) === 63,
+  'First post-confirmation bearish histogram turn failed');
 assert(contextAssessment('long', '15m', 'up', 'up').state === 'aligned',
   '15m requires 4H and daily resonance');
 assert(contextAssessment('long', '15m', 'down', 'down').state === 'blocked',
