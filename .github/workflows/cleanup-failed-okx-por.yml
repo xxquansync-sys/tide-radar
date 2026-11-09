@@ -21,6 +21,6 @@ jobs:
           node-version: 22
       - name: Remove only failed OKX PoR wallet rows in bounded batches
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_URL: https://gkgvvljxmrbwmqzgyykn.supabase.co
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: node scripts/cleanup-okx-por.mjs
