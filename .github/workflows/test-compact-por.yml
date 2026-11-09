@@ -1,0 +1,21 @@
+name: Test compact OKX PoR importer
+on:
+  push:
+    branches:
+      - feature/okx-por-compact-snapshots
+    paths:
+      - 'scripts/import-okx-por.mjs'
+      - 'supabase/migrations/202611090001_compact_okx_por_snapshots.sql'
+      - '.github/workflows/test-compact-por.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test parser, exact arithmetic, top-N filtering and ZIP extraction
+        run: TIDE_POR_IMPORT_TEST=1 node scripts/import-okx-por.mjs
