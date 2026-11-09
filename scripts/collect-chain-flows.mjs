@@ -72,12 +72,12 @@ function parseEthTransaction(tx, address, observedAt) {
   const target = address.toLowerCase();
   const txHash = String(tx.hash || tx.transaction_hash || '');
   const value = BigInt(String(tx.value || '0'));
-  if (!txHash || value <= 0n || from === to || (from !== target && to !== target)) return null;
+  if (!txHash || value <= 0n || tx.status === 'error' || from === to || (from !== target && to !== target)) return null;
   const direction = to === target ? 'in' : 'out';
   const timestamp = tx.timestamp && Number.isFinite(Date.parse(tx.timestamp))
     ? new Date(tx.timestamp).toISOString()
     : observedAt;
-  const block = Number(tx.block);
+  const block = Number(tx.block_number);
   return {
     flowKey: 'ETH:' + txHash + ':' + target,
     txHash: txHash,
@@ -85,12 +85,12 @@ function parseEthTransaction(tx, address, observedAt) {
     amount: decimalFromUnits(value, 18),
     occurredAt: timestamp,
     blockHeight: Number.isSafeInteger(block) && block > 0 ? block : null,
-    pending: tx.status === 'pending' || !Number.isSafeInteger(block),
+    pending: tx.status === 'pending' || !Number.isSafeInteger(block) || block <= 0,
     fromAccount: direction === 'out' ? address : null,
     toAccount: direction === 'in' ? address : null,
     metadata: {
       provider: 'Blockscout',
-      confirmation_status: Number.isSafeInteger(block) ? 'indexed' : 'pending_or_unconfirmed',
+      confirmation_status: Number.isSafeInteger(block) && block > 0 ? 'indexed' : 'pending_or_unconfirmed',
       time_basis: tx.timestamp ? 'explorer_timestamp' : 'first_observed',
       transaction_type: tx.method || tx.type || null,
       address_scope: 'single_tracked_address',
@@ -201,11 +201,23 @@ async function getCursors(network, wallets) {
   return new Map(rows.map(row => [row.account_ref, row]));
 }
 
-function sortByScanAge(wallets, cursors) {
-  const priority = cursor => !cursor ? 2 : cursor.cursor_status === 'error' ? 0 : cursor.cursor_status === 'stale' ? 1 : 3;
+async function getPendingAccountRefs(network) {
+  const rows = await db('capital_flows',
+    'select=metadata&network=eq.' + network + '&block_height=is.null&limit=5000');
+  return new Set(rows.map(row => row.metadata && row.metadata.tracked_account_ref).filter(Boolean));
+}
+
+function sortByScanAge(wallets, cursors, pendingRefs) {
+  const priority = (cursor, pending) => {
+    if (cursor && cursor.cursor_status === 'error') return 0;
+    if (cursor && cursor.cursor_status === 'stale') return 1;
+    if (pending) return 2;
+    return cursor ? 4 : 3;
+  };
   return wallets.slice().sort((a, b) => {
     const ac = cursors.get(a.account_ref), bc = cursors.get(b.account_ref);
-    const urgency = priority(ac) - priority(bc);
+    const urgency = priority(ac, pendingRefs && pendingRefs.has(a.account_ref)) -
+      priority(bc, pendingRefs && pendingRefs.has(b.account_ref));
     const at = ac && ac.last_checked_at ? Date.parse(ac.last_checked_at) : 0;
     const bt = bc && bc.last_checked_at ? Date.parse(bc.last_checked_at) : 0;
     return urgency || at - bt || Number(b.amount || 0) - Number(a.amount || 0);
@@ -222,7 +234,7 @@ async function fetchTransactions(networkConfig, address) {
   const result = await getJson(networkConfig.base + '/addresses/' + encodeURIComponent(address) + '/transactions');
   const txs = Array.isArray(result.items) ? result.items : [];
   return { txs, hasMore: Boolean(result.next_page_params), latestTx: txs[0] && (txs[0].hash || txs[0].transaction_hash) || null,
-    latestBlock: txs.reduce((max, tx) => Math.max(max, Number(tx.block) || 0), 0) };
+    latestBlock: txs.reduce((max, tx) => Math.max(max, Number(tx.block_number) || 0), 0) };
 }
 
 async function saveCursor(network, wallet, previous, result, status, error) {
@@ -284,8 +296,11 @@ async function main() {
   for (const config of NETWORKS) {
     try {
       const [wallets, price] = await Promise.all([getWalletBatch(config, entityId), getPrice(config.asset)]);
-      const cursors = await getCursors(config.network, wallets);
-      const selected = sortByScanAge(wallets, cursors);
+      const [cursors, pendingRefs] = await Promise.all([
+        getCursors(config.network, wallets),
+        getPendingAccountRefs(config.network)
+      ]);
+      const selected = sortByScanAge(wallets, cursors, pendingRefs);
       const results = [];
       for (const wallet of selected) {
         const previous = cursors.get(wallet.account_ref) || null;
@@ -308,6 +323,25 @@ async function main() {
 }
 
 function test() {
+  const scanCandidates = [
+    { account_ref: 'error', amount: 1 },
+    { account_ref: 'stale', amount: 1 },
+    { account_ref: 'pending-old', amount: 1 },
+    { account_ref: 'pending-new', amount: 1 },
+    { account_ref: 'unseen', amount: 100 },
+    { account_ref: 'active', amount: 1000 }
+  ];
+  const priorityTestCursors = new Map([
+    ['error', { cursor_status: 'error', last_checked_at: '2026-11-09T23:00:00Z' }],
+    ['stale', { cursor_status: 'stale', last_checked_at: '2026-11-09T23:01:00Z' }],
+    ['pending-old', { cursor_status: 'active', last_checked_at: '2026-11-09T20:00:00Z' }],
+    ['pending-new', { cursor_status: 'active', last_checked_at: '2026-11-09T23:30:00Z' }],
+    ['active', { cursor_status: 'active', last_checked_at: '2026-11-09T19:00:00Z' }]
+  ]);
+  const prioritySelected = sortByScanAge(scanCandidates, priorityTestCursors, new Set(['pending-old', 'pending-new']));
+  if (!prioritySelected.some(x => x.account_ref === 'pending-old') || !prioritySelected.some(x => x.account_ref === 'pending-new')) {
+    throw new Error('Accounts with unconfirmed stored flows must be prioritized for reprocessing');
+  }
   const observedAt = '2026-11-10T00:00:00.000Z';
   const address = 'bc1qtracked';
   const outgoing = parseBtcTransaction({
@@ -324,9 +358,19 @@ function test() {
   if (!incoming || incoming.direction !== 'in' || incoming.amount !== '0.0003' || !incoming.pending) throw new Error('BTC inflow parsing failed');
   const eth = parseEthTransaction({
     hash: '0xeth', from: { hash: '0xexternal' }, to: { hash: '0xtracked' },
-    value: '1000000000000000000', timestamp: observedAt, block: 123
+    value: '1000000000000000000', timestamp: observedAt, block_number: 123, status: 'ok'
   }, '0xtracked', observedAt);
-  if (!eth || eth.direction !== 'in' || eth.amount !== '1' || eth.blockHeight !== 123) throw new Error('ETH inflow parsing failed');
+  if (!eth || eth.direction !== 'in' || eth.amount !== '1' || eth.blockHeight !== 123 || eth.pending || eth.metadata.confirmation_status !== 'indexed') throw new Error('ETH indexed inflow parsing failed');
+  const failedEth = parseEthTransaction({
+    hash: '0xfailed', from: { hash: '0xexternal' }, to: { hash: '0xtracked' },
+    value: '1000000000000000000', timestamp: observedAt, block_number: 124, status: 'error'
+  }, '0xtracked', observedAt);
+  if (failedEth !== null) throw new Error('Failed ETH transactions must not be counted as flows');
+  const pendingEth = parseEthTransaction({
+    hash: '0xpending', from: { hash: '0xexternal' }, to: { hash: '0xtracked' },
+    value: '1000000000000000000', status: 'pending'
+  }, '0xtracked', observedAt);
+  if (!pendingEth || !pendingEth.pending || pendingEth.blockHeight !== null || pendingEth.occurredAt !== observedAt) throw new Error('Pending ETH transaction parsing failed');
   const ignored = parseEthTransaction({
     hash: '0xzero', from: { hash: '0xexternal' }, to: { hash: '0xtracked' }, value: '0'
   }, '0xtracked', observedAt);
