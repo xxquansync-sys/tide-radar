@@ -23,6 +23,8 @@ jobs:
         run: TIDE_MARKET_CONTEXT_TEST=1 node scripts/collect-market-context.mjs
       - name: Test capital behavior detector
         run: TIDE_DETECTOR_TEST=1 node scripts/detect-capital-behavior.mjs
+      - name: Test cross-source capital correlation
+        run: node scripts/test-capital-correlation.mjs
       - name: Collect OKX ETH and WLD trades and order books
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -38,3 +40,8 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: node scripts/detect-capital-behavior.mjs
+      - name: Correlate market, derivatives and confirmed wallet-flow evidence
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: node scripts/correlate-capital-behavior.mjs
