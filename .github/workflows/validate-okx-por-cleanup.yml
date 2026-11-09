@@ -7,7 +7,7 @@ on:
       - 'scripts/cleanup-okx-por.mjs'
       - '.github/workflows/validate-okx-por-cleanup.yml'
       - '.github/workflows/cleanup-failed-okx-por.yml'
-      - 'supabase/migrations/20261109051700_cleanup_okx_entity_account_batch_index.sql'
+      - 'supabase/migrations/20261109051843_cleanup_okx_entity_account_batch_index.sql'
 permissions:
   contents: read
 jobs:
