@@ -1745,7 +1745,7 @@ function klineSetStatus(s){
 function klineCacheKey(symbol,period){return TIDE_KLINE_CACHE+':'+symbol+':'+period;}
 function klineReadCache(symbol,period){try{var x=JSON.parse(localStorage.getItem(klineCacheKey(symbol,period))||'null');if(x&&Array.isArray(x.data))return x;}catch(e){}return null;}
 function klineWriteCache(){try{localStorage.setItem(klineCacheKey(tideKline.symbol,tideKline.period),JSON.stringify({version:3,ts:Date.now(),data:tideKline.data.slice(-TIDE_KLINE_MAX_CACHE)}));}catch(e){klineSetStatus('本地缓存空间不足；当前行情仍可正常使用');}}
-function klineRowsToData(rows){return (rows||[]).map(function(x){return {timestamp:+x[0],open:+x[1],high:+x[2],low:+x[3],close:+x[4],volume:+x[5]||0,turnover:+x[7]||0};}).filter(function(x){return x.timestamp>0&&x.open>0&&x.high>0&&x.low>0&&x.close>0;}).sort(function(a,b){return a.timestamp-b.timestamp;});}
+function klineRowsToData(rows){return (rows||[]).map(function(x){return {timestamp:+x[0],open:+x[1],high:+x[2],low:+x[3],close:+x[4],volume:+x[5]||0,turnover:+x[7]||0};}).filter(function(x){return Number.isFinite(x.timestamp)&&x.timestamp>0&&Number.isFinite(x.open)&&Number.isFinite(x.high)&&Number.isFinite(x.low)&&Number.isFinite(x.close)&&x.open>0&&x.high>0&&x.low>0&&x.close>0&&x.high>=Math.max(x.open,x.close,x.low)&&x.low<=Math.min(x.open,x.close,x.high)&&x.volume>=0&&x.turnover>=0;}).sort(function(a,b){return a.timestamp-b.timestamp;});}
 function klineFetch(limit,symbol,period,signal,before){
  var inst=(symbol||tideKline.symbol)+'-USDT-SWAP',bar=klinePeriodType(period||tideKline.period);
  var endpoint=before?'/api/v5/market/history-candles':'/api/v5/market/candles';
@@ -2165,9 +2165,9 @@ function klineLoad(force){
  var controller=new AbortController();tideKline.controller=controller;
  var req=++tideKline.requestId,symbol=tideKline.symbol,period=tideKline.period,incremental=tideKline.data.length>=TIDE_KLINE_MIN_HISTORY;
  tideKline.loading=true;klineSetStatus((incremental?'更新':'加载')+' '+symbol+' '+period+' · OKX');
- (incremental?klineFetch(2,symbol,period,controller.signal):klineFetchInitial(symbol,period,controller.signal,function(recent){if(req!==tideKline.requestId||!tideKline.chart||symbol!==tideKline.symbol||period!==tideKline.period)return;klineMergeData(recent);tideKline.chart.applyNewData(tideKline.data);klineWriteCache();klineUpdatePrice();klineSetStatus('已显示最新 '+tideKline.data.length+' 根K线，正在后台补齐至少3000根历史…');})).then(function(data){
+ (incremental?klineFetch(300,symbol,period,controller.signal):klineFetchInitial(symbol,period,controller.signal,function(recent){if(req!==tideKline.requestId||!tideKline.chart||symbol!==tideKline.symbol||period!==tideKline.period)return;klineMergeData(recent);tideKline.chart.applyNewData(tideKline.data);klineWriteCache();klineUpdatePrice();klineSetStatus('已显示最新 '+tideKline.data.length+' 根K线，正在后台补齐至少3000根历史…');})).then(function(data){
   if(req!==tideKline.requestId||!tideKline.chart||symbol!==tideKline.symbol||period!==tideKline.period)return;
-  tideKline.historyError=data.historyError||'';klineMergeData(data);if(incremental){try{tideKline.chart.updateData(data[data.length-1]);}catch(e){tideKline.chart.applyNewData(tideKline.data);}}else{tideKline.chart.applyNewData(tideKline.data);}klineWriteCache();klineUpdatePrice();klineRenderEvents();
+  tideKline.historyError=data.historyError||'';klineMergeData(data);/* REST reconciliation may repair candles missed while WebSocket stayed connected; replace the chart series so backfilled bars become visible. */tideKline.chart.applyNewData(tideKline.data);klineWriteCache();klineUpdatePrice();klineRenderEvents();
   var needHtf=period==='15m'&&Date.now()-Math.max(tideKline.htfFetchedAt,tideKline.htfRequestedAt)>60000;if(needHtf)tideKline.htfRequestedAt=Date.now();var needDaily=(period==='15m'||period==='4H')&&Date.now()-Math.max(tideKline.dailyFetchedAt,tideKline.dailyRequestedAt)>60000;if(needDaily)tideKline.dailyRequestedAt=Date.now();var htfTask=needHtf?klineFetch(300,symbol,'4H',controller.signal).then(function(higher){if(req===tideKline.requestId){tideKline.htfData=higher;tideKline.htfFetchedAt=Date.now();}}).catch(function(){ }):Promise.resolve();var dailyTask=needDaily?klineFetch(300,symbol,'1D',controller.signal).then(function(daily){if(req===tideKline.requestId){tideKline.dailyData=daily;tideKline.dailyFetchedAt=Date.now();}}).catch(function(){ }):Promise.resolve();
   Promise.all([htfTask,dailyTask]).then(function(){if(req===tideKline.requestId)klineRenderTdx();});
   klineSetStatus('OKX 行情 · '+tideKline.data.length+' 根 · '+(tideKline.historyError?'历史分页异常：'+tideKline.historyError:(tideKline.data.length>=TIDE_KLINE_MIN_HISTORY?'历史已加载':'当前可获取历史不足3000根'))+' · '+new Date().toLocaleTimeString());
@@ -2191,7 +2191,7 @@ function openKlineChart(symbol){
  klineEnsureScript().then(function(lib){
   if(modal.style.display==='none')return;klineCreateChart(lib);
   if(tideKline.data.length){tideKline.chart.applyNewData(tideKline.data);klineUpdatePrice();klineRenderTdx();klineRenderEvents();}
-  klineLoad(true);klineWsStart();tideKline.timer=setInterval(function(){if(!tideKline.ws||tideKline.ws.readyState!==WebSocket.OPEN)klineLoad(true);},30000);
+  klineLoad(true);klineWsStart();/* Keep REST history authoritative even while the WebSocket socket remains OPEN: silent stream gaps otherwise persist forever. */tideKline.timer=setInterval(function(){var active=$('tide-kline-modal');if(active&&active.style.display!=='none')klineLoad(true);},60000);
  }).catch(function(e){klineSetStatus(e.message);});
 }
 function changeKlinePeriod(p){
