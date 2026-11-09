@@ -7,6 +7,7 @@ on:
       - 'scripts/cleanup-okx-por.mjs'
       - '.github/workflows/validate-okx-por-cleanup.yml'
       - '.github/workflows/cleanup-failed-okx-por.yml'
+      - 'supabase/migrations/20261109051700_cleanup_okx_entity_account_batch_index.sql'
 permissions:
   contents: read
 jobs:
@@ -19,3 +20,5 @@ jobs:
           node-version: 22
       - name: Validate cleanup script syntax
         run: node --check scripts/cleanup-okx-por.mjs
+      - name: Verify cleanup index migration is present
+        run: grep -q 'idx_capital_entity_accounts_entity_id_id' supabase/migrations/20261109051700_cleanup_okx_entity_account_batch_index.sql
