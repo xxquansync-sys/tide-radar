@@ -1750,40 +1750,54 @@ function klineShowAnomalyDetail(e){
  body.innerHTML+='<div style="margin-top:18px;padding-top:14px;border-top:1px solid #2c3d51"><div style="font-weight:700;margin-bottom:8px">'+(en?'Who drove this candle? · OKX':'这根K线是谁在推动？· OKX')+'</div><div id="tide-event-candle-flow" style="font-size:12px;color:#9fb1c5">'+(en?'Loading paginated OKX historical trades for this exact candle…':'正在分页读取这根K线对应时间范围内的 OKX 历史成交…')+'</div><div style="font-size:10px;color:#758ba3;margin-top:8px">'+(en?'Historical coverage differs by exchange and API limits. A capped sample is not full candle volume.':'各交易所历史接口覆盖范围和条数有限；样本不代表整根K线的全部成交量。')+'</div></div><div style="font-size:10px;line-height:1.6;color:#7f93a9;margin-top:15px">'+(en?'Public trades cannot identify retail vs institutional accounts, track the same fund entering and exiting, or prove who owns the flow. Size buckets are only trade-size proxies.':'公开逐笔成交无法识别散户/机构账户，无法追踪同一笔主力资金进出，也不能确认资金归属。小额/中额/大额只能作为成交规模分层，不能冒充真实散户占比。')+'</div>';
  modal.style.display='flex';var seq=++tideKline.eventRequestId;klineLoadSelectedCandleFlow(e,seq);
 }
+function klineCampaignStats(bar,c){
+ var periodMs=Number(c.periodMs)||300000,duration=klineEventDuration(),from=Number(bar.timestamp),to=from+duration;
+ var oi=Array.isArray(c.oi)?c.oi:[],taker=Array.isArray(c.taker)?c.taker:[];
+ if(duration<periodMs)return{periodMismatch:true,periodMs:periodMs,takerCount:0,oiChange:null,buy:null,sell:null,buyShare:null,turnMult:null};
+ var takerRows=taker.filter(function(v){return Number(v.ts)>=from&&Number(v.ts)<to;});
+ var buy=takerRows.length?takerRows.reduce(function(sum,v){return sum+(Number(v.buy)||0);},0):null;
+ var sell=takerRows.length?takerRows.reduce(function(sum,v){return sum+(Number(v.sell)||0);},0):null;
+ var oiBefore=oi.filter(function(v){return Number(v.ts)<from;}).slice(-1)[0]||null;
+ var oiDuring=oi.filter(function(v){return Number(v.ts)>=from&&Number(v.ts)<to;}).slice(-1)[0]||null;
+ var oiChange=oiBefore&&oiDuring&&Number(oiBefore.contracts)>0?(Number(oiDuring.contracts)/Number(oiBefore.contracts)-1)*100:null;
+ var total=buy===null||sell===null?0:buy+sell,buyShare=total>0?buy/total:null;
+ var bars=Array.isArray(tideKline.data)?tideKline.data:[],idx=bars.findIndex(function(v){return Number(v.timestamp)===from;});
+ var prior=idx>0?bars.slice(Math.max(0,idx-20),idx).filter(function(v){return Number(v.turnover)>0;}):[];
+ var avgTurn=prior.length?prior.reduce(function(sum,v){return sum+Number(v.turnover);},0)/prior.length:0;
+ var turnMult=avgTurn>0&&Number(bar.turnover)>0?Number(bar.turnover)/avgTurn:null;
+ return{periodMismatch:false,periodMs:periodMs,takerCount:takerRows.length,oiChange:oiChange,buy:buy,sell:sell,buyShare:buyShare,turnMult:turnMult};
+}
+function klineCampaignPhase(bar,stats,en){
+ if(stats.periodMismatch)return en?'Aggregate timeframe is coarser than this candle':'统计周期大于当前K线，不能归因到单根K线';
+ var up=Number(bar.close)>=Number(bar.open),oi=stats.oiChange,buy=stats.buyShare,highTurn=stats.turnMult!==null&&stats.turnMult>=1.2;
+ var oiUp=oi!==null&&oi>0.3,oiDown=oi!==null&&oi<-.3;
+ if(up&&oiUp&&buy!==null&&buy>=.58)return en?(highTurn?'Position expansion · buy-led · turnover rising':'Position expansion · buy-led'):(highTurn?'增仓推进 · 主动买盘占优 · 成交放大':'增仓上涨 · 主动买盘占优');
+ if(up&&oiDown)return en?'Advance with position reduction · possible short covering':'上涨伴随减仓 · 可能包含空头回补';
+ if(!up&&oiUp&&buy!==null&&buy<=.42)return en?(highTurn?'Downward expansion · sell-led · turnover rising':'Downward expansion · sell-led'):(highTurn?'增仓下行 · 主动卖盘占优 · 成交放大':'增仓下行 · 主动卖盘占优');
+ if(!up&&oiDown)return en?'Decline with position reduction · possible long unwind':'下跌伴随减仓 · 可能包含多头撤退';
+ if(!up&&buy!==null&&buy>=.58)return en?(highTurn?'Buy-side absorption attempt · turnover rising':'Buy-side activity · absorption unconfirmed'):(highTurn?'主动买盘承接迹象 · 成交放大':'主动买盘出现 · 承接尚未确认');
+ if(up&&buy!==null&&buy<=.42)return en?(highTurn?'Selling into strength · possible distribution':'Aggressive selling during an advance'):(highTurn?'上涨中卖压增强 · 留意兑现换手':'上涨中主动卖盘偏多');
+ if(oiUp)return en?(highTurn?'Positions expanding · turnover rising · direction mixed':'Positions expanding · direction mixed'):(highTurn?'持仓扩张且成交放大 · 多空方向分歧':'持仓扩张 · 方向仍有分歧');
+ if(oiDown)return en?'Positions reducing':'持仓收缩';
+ if(buy!==null&&highTurn)return en?(buy>=.5?'Aggressive buying · turnover rising':'Aggressive selling · turnover rising'):(buy>=.5?'主动买盘增强 · 成交放大':'主动卖盘增强 · 成交放大');
+ if(buy!==null)return en?'Taker flow mixed with price':'主动买卖与价格表现分歧';
+ return en?'Insufficient matched data':'匹配数据不足，不作阶段判断';
+}
 function klineLoadSelectedCandleFlow(e,seq){
  var el=$('tide-event-candle-flow'),en=tideKlineLang==='en',symbol=tideKline.symbol;
  if(!el)return;
  var start=Number(e.timestamp),end=start+klineEventDuration();
  fetch('/api/candle-flow?symbol='+encodeURIComponent(symbol)+'&start='+encodeURIComponent(start)+'&end='+encodeURIComponent(end)).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}).then(function(data){
   if(seq!==tideKline.eventRequestId||!el.isConnected)return;
-  var ct=Number(instCtVal[symbol+'-USDT-SWAP'])||0;
   var html=(data.exchanges||[]).map(function(x){
    if(!x.ok)return '<div style="padding:7px 0;border-bottom:1px solid #26364a"><b>'+x.name+'</b> <span style="color:#f0a3a9">'+(en?'unavailable':'数据不可用')+'</span> · '+String(x.error||'').replace(/[<>]/g,'')+'</div>';
-   var campaign=x.campaign||{};
-   if(Number(x.matchedRows)===0){
-    var candleTs=Number(e.timestamp),takerRows=Array.isArray(campaign.taker)?campaign.taker:[],oiRows=Array.isArray(campaign.oi)?campaign.oi:[];
-    function nearestFlow(list){var best=null,dist=Infinity;list.forEach(function(v){var d=Math.abs(Number(v.ts)-candleTs);if(d<dist){dist=d;best=v;}});return best&&dist<=Math.max(Number(campaign.periodMs)||klineEventDuration(),klineEventDuration())*.65?best:null;}
-    var takerPoint=nearestFlow(takerRows),oiPoint=nearestFlow(oiRows);
-    if(!takerPoint)return '<div style="padding:10px 0;border-bottom:1px solid #26364a"><b>OKX</b><div style="font-size:12px;color:#d9a96a;margin-top:5px">'+(en?'No matching contract taker bucket for this candle.':'没有找到与这根K线时间匹配的合约主动买卖数据。')+'</div><div style="font-size:10px;color:#8297ad;margin-top:4px">'+(en?'No unrelated latest trades are substituted.':'不会用当前最新成交冒充这根历史K线的成交。')+'</div></div>'+klineBuildCampaignHtml(e,x,en);
-    var buy=Number(takerPoint.buy)||0,sell=Number(takerPoint.sell)||0,total=buy+sell,buyShare=total>0?buy/total:.5,net=buy-sell;
-    var oiIndex=oiPoint?oiRows.indexOf(oiPoint):-1,priorOi=oiIndex>0?oiRows[oiIndex-1]:null;
-    var oiChange=oiPoint&&priorOi&&Number(priorOi.usd)>0?(Number(oiPoint.usd)/Number(priorOi.usd)-1)*100:null;
-    var up=Number(e.close)>=Number(e.open),phase=up?(buyShare>=.58?(en?'UP MOVE · BUY-LED':'上涨推进 · 主动买盘占优'):buyShare<=.42?(en?'UP MOVE · SELLING INTO STRENGTH':'上涨中主动卖盘占优 · 留意兑现'): (en?'UP MOVE · MIXED FLOW':'上涨但买卖力量分歧')):(buyShare<=.42?(en?'DOWN MOVE · SELL-LED':'下跌推进 · 主动卖盘占优'):buyShare>=.58?(en?'DOWN MOVE · BUYERS ABSORBING':'下跌中主动买盘占优 · 观察承接'):(en?'DOWN MOVE · MIXED FLOW':'下跌但买卖力量分歧'));
-    var oiLabel=oiChange===null?(en?'OI unavailable':'OI 暂不可用'):(en?'OI ':'OI ')+(oiChange>=0?'+':'')+oiChange.toFixed(2)+'%';
-    return '<div style="padding:10px 0;border-bottom:1px solid #26364a"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>OKX · '+(en?'Contract taker flow':'合约主动买卖')+'</b><b style="color:'+(net>=0?'#18b88a':'#f06478')+'">'+(net>=0?'+':'')+klineMoney(net)+' U</b></div><div style="font-size:12px;font-weight:700;margin-top:6px;color:'+(buyShare>=.58?'#18b88a':buyShare<=.42?'#f06478':'#eabd69')+'">'+phase+'</div><div style="height:7px;background:#26364a;border-radius:8px;overflow:hidden;display:flex;margin:7px 0 5px"><span style="width:'+(buyShare*100).toFixed(1)+'%;background:#18b88a"></span><span style="flex:1;background:#f06478"></span></div><div style="display:flex;justify-content:space-between;color:#9fb1c5;font-size:11px"><span>'+(en?'Taker buys ':'主动买入 ')+klineMoney(buy)+' U ('+(buyShare*100).toFixed(1)+'%)</span><span>'+(en?'Taker sells ':'主动卖出 ')+klineMoney(sell)+' U ('+((1-buyShare)*100).toFixed(1)+'%)</span></div><div style="font-size:10px;color:#8297ad;margin-top:6px">'+oiLabel+' · '+(en?'Time-bucketed OKX aggregate data; no account identity.':'OKX 时间分桶汇总数据，无法识别账户身份。')+'</div></div>'+klineBuildCampaignHtml(e,x,en);
-   }
-   var buy=0,sell=0,bigBuy=0,bigSell=0,small=0,medium=0,large=0,smallN=0,mediumN=0,largeN=0;
-   (x.rows||[]).forEach(function(t){var qty=t.q*(x.name==='OKX'?ct:1),usd=t.p*qty;if(!Number.isFinite(usd)||usd<=0)return;if(t.side==='buy'){buy+=usd;if(usd>=100000)bigBuy+=usd;}else{sell+=usd;if(usd>=100000)bigSell+=usd;}if(usd<10000){small+=usd;smallN++;}else if(usd<100000){medium+=usd;mediumN++;}else{large+=usd;largeN++;}});
-   var net=buy-sell,total=buy+sell,buyShare=total>0?buy/total:0.5;
-   var smallShare=total>0?small/total:0;
-   var stance=buyShare>=0.58?(en?'Aggressive buyers dominant':'主动买盘占优'):buyShare<=0.42?(en?'Aggressive sellers dominant':'主动卖盘占优'):(en?'Two-sided / balanced':'买卖力量相对均衡');
-   var candleUp=Number(e.close)>=Number(e.open);
-   var phase=candleUp?(buyShare>=0.58?(en?'UP MOVE · BUY-LED':'上涨推进 · 主动买盘推动'):buyShare<=0.42?(en?'UP MOVE · SELLING INTO STRENGTH':'上涨但主动卖盘占优 · 留意兑现/换手'):(en?'UP MOVE · MIXED FLOW':'上涨但买卖力量分歧')):(buyShare<=0.42?(en?'DOWN MOVE · SELL-LED':'下跌推进 · 主动卖盘主导'):buyShare>=0.58?(en?'DOWN MOVE · BUYERS ABSORBING':'下跌但主动买盘占优 · 观察承接是否有效'):(en?'DOWN MOVE · MIXED FLOW':'下跌但买卖力量分歧'));
-   var coverage=x.matchedRows===0?(en?'no trades in returned sample':'返回样本中没有该时段成交'):(en?(x.matchedRows+' matched trades'):(x.matchedRows+' 笔匹配成交'));
-   return '<div style="padding:10px 0;border-bottom:1px solid #26364a"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>'+x.name+'</b><b style="color:'+(net>=0?'#18b88a':'#f06478')+'">'+(net>=0?'+':'')+klineMoney(net)+'</b></div><div style="font-size:12px;font-weight:700;margin-top:6px;color:'+(buyShare>=0.58?'#18b88a':buyShare<=0.42?'#f06478':'#eabd69')+'">'+phase+'</div><div style="height:7px;background:#26364a;border-radius:8px;overflow:hidden;display:flex;margin:7px 0 5px"><span style="width:'+(buyShare*100).toFixed(1)+'%;background:#18b88a"></span><span style="flex:1;background:#f06478"></span></div><div style="display:flex;justify-content:space-between;color:#9fb1c5;font-size:11px"><span>'+(en?'Aggressive buys ':'主动买入 ')+klineMoney(buy)+' ('+(buyShare*100).toFixed(1)+'%)</span><span>'+(en?'Sells ':'主动卖出 ')+klineMoney(sell)+' ('+((1-buyShare)*100).toFixed(1)+'%)</span></div><div style="color:#8297ad;font-size:10px;margin-top:5px">'+stance+' · '+coverage+' · '+(en?'Size mix <10K / 10–100K / 100K+ ':'成交规模 <1万 / 1–10万 / 10万+ ')+klineMoney(small)+' / '+klineMoney(medium)+' / '+klineMoney(large)+' · '+(en?'small-size turnover ':'小额成交额占样本 ')+(smallShare*100).toFixed(1)+'%'+' · '+(x.complete?(en?'time window covered':'时间窗口已覆盖'):(en?'partial history coverage':'历史成交覆盖不完整'))+(x.capped?' · '+(en?'page limit reached':'达到分页上限'):'')+'</div></div>'+klineBuildCampaignHtml(e,x,en);
+   var c=x.campaign||{},stats=klineCampaignStats(e,c),buy=stats.buy,sell=stats.sell,net=buy===null||sell===null?null:buy-sell;
+   var phase=klineCampaignPhase(e,stats,en),oiLabel=stats.oiChange===null?(en?'OI unavailable':'OI 暂不可用'):(en?'OI contracts ':'OI合约张数 ')+(stats.oiChange>=0?'+':'')+stats.oiChange.toFixed(2)+'%';
+   var takerHtml=stats.takerCount?'<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:7px"><span>'+(en?'Taker buys ':'主动买入 ')+klineMoney(buy)+' U ('+(stats.buyShare*100).toFixed(1)+'%)</span><span>'+(en?'Taker sells ':'主动卖出 ')+klineMoney(sell)+' U ('+((1-stats.buyShare)*100).toFixed(1)+'%)</span></div>':'<div style="font-size:11px;color:#d9a96a;margin-top:7px">'+(stats.periodMismatch?(en?'This candle is shorter than the 5m OKX aggregate; no candle-level taker value is assigned.':'当前K线短于OKX最小5分钟统计周期，不把5分钟汇总值冒充单根K线数据。'):(en?'No taker bucket matched this candle; value is left blank.':'没有匹配到本根K线的主动买卖数据，留空不补值。'))+'</div>';
+   return '<div style="padding:10px 0;border-bottom:1px solid #26364a"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>OKX · '+(en?'Contract taker flow':'合约主动买卖')+'</b><b style="color:'+(net===null?'#9fb1c5':net>=0?'#18b88a':'#f06478')+'">'+(net===null?'—':(net>=0?'+':'')+klineMoney(net)+' U')+'</b></div><div style="font-size:12px;font-weight:700;margin-top:6px;color:'+(stats.buyShare===null?'#eabd69':stats.buyShare>=.58?'#18b88a':stats.buyShare<=.42?'#f06478':'#eabd69')+'">'+phase+'</div>'+(stats.buyShare===null?'':'<div style="height:7px;background:#26364a;border-radius:8px;overflow:hidden;display:flex;margin:7px 0 5px"><span style="width:'+(stats.buyShare*100).toFixed(1)+'%;background:#18b88a"></span><span style="flex:1;background:#f06478"></span></div>')+takerHtml+'<div style="font-size:10px;color:#8297ad;margin-top:6px">'+oiLabel+' · '+(en?'OI change uses contract count to avoid price-driven USD valuation changes.':'OI变化按合约张数计算，避免价格波动造成USD估值变化干扰。')+' · '+(en?'Taker unit: U':'主动买卖单位：U')+' · '+(en?'Bucket ':'统计周期 ')+(c.period||'—')+'</div></div>'+klineBuildCampaignHtml(e,x,en);
   }).join('');
-  el.innerHTML=html|| (en?'No exchange trade samples returned for this candle.':'没有获取到这根K线对应时段的交易所成交样本。');
- }).catch(function(err){if(seq!==tideKline.eventRequestId)return;el.textContent=(en?'Historical candle trades unavailable: ':'该K线历史成交暂不可用：')+String(err.message||err);});
+  el.innerHTML=html||(en?'No OKX aggregate data returned.':'没有获取到OKX汇总数据。');
+ }).catch(function(err){if(seq!==tideKline.eventRequestId)return;el.textContent=(en?'Historical candle flow unavailable: ':'该K线资金数据暂不可用：')+String(err.message||err);});
 }
 function klineBuildCampaignHtml(selected,x,en){
  var c=x.campaign||{},oi=Array.isArray(c.oi)?c.oi:[],taker=Array.isArray(c.taker)?c.taker:[];
@@ -1792,7 +1806,7 @@ function klineBuildCampaignHtml(selected,x,en){
  var from=Math.max(0,idx-12),to=Math.min(bars.length,idx+13),windowBars=bars.slice(from,to);
  var keyEvents=(tideKline.anomalyEvents||[]).filter(function(ev){return ev.timestamp>=bars[from].timestamp&&ev.timestamp<=bars[to-1].timestamp;});
  var keyTimes={};keyEvents.forEach(function(ev){keyTimes[ev.timestamp]=true;});
- windowBars=windowBars.filter(function(b){return keyTimes[b.timestamp]||b.timestamp===Number(selected.timestamp);}).sort(function(a,b){return Math.abs(a.timestamp-Number(selected.timestamp))-Math.abs(b.timestamp-Number(selected.timestamp));}).slice(0,15).sort(function(a,b){return a.timestamp-b.timestamp;});
+ windowBars=windowBars.filter(function(b){return keyTimes[b.timestamp]||b.timestamp===Number(selected.timestamp);}).sort(function(a,b){return a.timestamp-b.timestamp;});
  function nearest(list,ts){if(!list.length)return null;var best=null,dist=Infinity;list.forEach(function(v){var d=Math.abs(Number(v.ts)-ts);if(d<dist){dist=d;best=v;}});return dist<=Math.max(Number(c.periodMs)||300000,klineEventDuration())*.65?best:null;}
  function pct(v){return (v>=0?'+':'')+v.toFixed(2)+'%';}
  function phase(bar,oiChange,buyShare){
@@ -1808,17 +1822,14 @@ function klineBuildCampaignHtml(selected,x,en){
   return en?'Mixed / insufficient confirmation':'多空分歧 / 暂无明确确认';
  }
  var rows=windowBars.map(function(b){
-  var o=nearest(oi,b.timestamp),t=nearest(taker,b.timestamp),oiIndex=o?oi.indexOf(o):-1,prev=oiIndex>0?oi[oiIndex-1]:null;
-  var oiChange=o&&prev&&prev.usd>0?(o.usd/prev.usd-1)*100:null;
-  var buyShare=t&&t.buy+t.sell>0?t.buy/(t.buy+t.sell):null,takerUsd=t?t.buy+t.sell:null;
-  var prior=bars.slice(Math.max(0,bars.indexOf(b)-20),bars.indexOf(b)).filter(function(z){return Number(z.turnover)>0;}),avgTurn=prior.length?prior.reduce(function(sum,z){return sum+z.turnover;},0)/prior.length:0,turnMult=avgTurn>0&&b.turnover>0?b.turnover/avgTurn:null;
-  var move=(b.close/b.open-1)*100,label=phase(b,oiChange,buyShare),color=move>=0?'#18b88a':'#f06478';
-  return '<div style="display:grid;grid-template-columns:88px 62px 64px 74px minmax(0,1fr);gap:7px;align-items:center;padding:8px 0;border-bottom:1px solid #223247;font-size:11px"><span style="color:#9fb1c5">'+new Date(b.timestamp).toLocaleString(en?'en-SG':'zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})+'</span><b style="color:'+color+'">'+pct(move)+'</b><span style="color:#9fb1c5">'+(turnMult===null?'—':turnMult.toFixed(1)+'x')+'</span><span style="color:'+(oiChange===null?'#8496ad':oiChange>=0?'#eabd69':'#8496ad')+'">'+(oiChange===null?'OI —':'OI '+pct(oiChange))+'</span><span style="color:'+(buyShare===null?'#8496ad':buyShare>=.58?'#18b88a':buyShare<=.42?'#f06478':'#eabd69')+'">'+(buyShare===null?(en?'Taker —':'主动买卖 —'):(en?'Buy ':'主动买 ')+(buyShare*100).toFixed(0)+'%')+(takerUsd===null?'':' · '+klineMoney(takerUsd))+' · '+label+'</span></div>';
+  var stats=klineCampaignStats(b,c),oiChange=stats.oiChange,buyShare=stats.buyShare,takerU=stats.buy===null||stats.sell===null?null:stats.buy+stats.sell;
+  var move=(b.close/b.open-1)*100,label=klineCampaignPhase(b,stats,en),color=move>=0?'#18b88a':'#f06478';
+  return '<div style="display:grid;grid-template-columns:88px 62px 64px 74px minmax(0,1fr);gap:7px;align-items:center;padding:8px 0;border-bottom:1px solid #223247;font-size:11px"><span style="color:#9fb1c5">'+new Date(b.timestamp).toLocaleString(en?'en-SG':'zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})+'</span><b style="color:'+color+'">'+pct(move)+'</b><span style="color:#9fb1c5">'+(stats.turnMult===null?'—':stats.turnMult.toFixed(1)+'x')+'</span><span style="color:'+(oiChange===null?'#8496ad':oiChange>=0?'#eabd69':'#8496ad')+'">'+(oiChange===null?'OI —':'OI '+pct(oiChange))+'</span><span style="color:'+(buyShare===null?'#8496ad':buyShare>=.58?'#18b88a':buyShare<=.42?'#f06478':'#eabd69')+'">'+(buyShare===null?(en?'Taker —':'主动买卖 —'):(en?'Buy ':'主动买 ')+(buyShare*100).toFixed(0)+'%')+(takerU===null?'':' · '+klineMoney(takerU)+' U')+' · '+label+'</span></div>';
  }).join('');
  if(!rows)return '';
- var oiNote=c.oiError?(en?'OI unavailable: ':'持仓量数据不可用：')+String(c.oiError).replace(/[<>]/g,''):oi.length?(en?'OKX contract OI (USD)':'OKX 合约持仓量（USD）'):(en?'No OI series returned':'未返回持仓量序列');
+ var oiNote=c.oiError?(en?'OI unavailable: ':'持仓量数据不可用：')+String(c.oiError).replace(/[<>]/g,''):oi.length?(en?'OKX contract open interest (contracts)':'OKX 合约持仓量（张）'):(en?'No OI series returned':'未返回持仓量序列');
  var takerNote=c.takerError?(en?'Taker flow unavailable: ':'主动买卖数据不可用：')+String(c.takerError).replace(/[<>]/g,''):taker.length?(en?'OKX contract taker buy/sell':'OKX 合约主动买入/卖出'):(en?'No taker series returned':'未返回主动买卖序列');
- return '<div style="margin-top:15px;padding-top:12px;border-top:1px solid #2c3d51"><div style="font-weight:700;margin-bottom:5px">'+(en?'Capital campaign · surrounding candles':'连续资金轨迹 · 前后关键时段')+'</div><div style="font-size:10px;color:#8297ad;margin-bottom:8px">'+oiNote+' · '+takerNote+' · '+(en?'Period ':'周期 ')+(c.period||'—')+'</div>'+rows+'<div style="font-size:10px;color:#71869d;margin-top:8px;line-height:1.6">'+(en?'OI change shows aggregate position expansion or reduction, not whether new positions are long or short. Taker flow is an aggressor-side proxy; phase labels are interpretations, not verified identities.':'OI变化只说明全市场仓位扩张或收缩，不能单独识别新增多仓还是空仓。主动买卖是成交方向代理指标；阶段标签是综合推断，不代表已识别具体资金主体。')+'</div></div>';
+ return '<div style="margin-top:15px;padding-top:12px;border-top:1px solid #2c3d51"><div style="font-weight:700;margin-bottom:5px">'+(en?'Capital campaign · surrounding candles':'连续资金轨迹 · 前后关键时段')+'</div><div style="font-size:10px;color:#8297ad;margin-bottom:8px">'+oiNote+' · '+takerNote+' · '+(en?'Period ':'周期 ')+(c.period||'—')+'</div>'+rows+'<div style="font-size:10px;color:#71869d;margin-top:8px;line-height:1.6">'+(en?'OI change uses contract count (not USD notional) and cannot tell whether new positions are long or short. Taker flow is an aggressor-side proxy; phase labels are interpretations, not verified identities.':'OI变化按合约张数计算（不是USD名义价值），但仍不能单独识别新增多仓还是空仓。主动买卖是成交方向代理指标；阶段标签是综合推断，不代表已识别具体资金主体。')+'</div></div>';
 }
 function klineShowTradeBehaviorProfile(encodedKey){
  var key;try{key=decodeURIComponent(encodedKey);}catch(e){key=encodedKey;}

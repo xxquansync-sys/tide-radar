@@ -24,10 +24,11 @@ module.exports = async function handler(req, res) {
   // Add a compact surrounding campaign context from OKX contract OI and taker-volume series.
   // These are aggregate market statistics, not account-level positioning.
   const candleMs = end - start;
-  const period = candleMs >= 86400000 ? '1D' : candleMs >= 43200000 ? '12H' : candleMs >= 21600000 ? '6H' : candleMs >= 14400000 ? '4H' : candleMs >= 7200000 ? '2H' : candleMs >= 3600000 ? '1H' : candleMs >= 1800000 ? '30m' : candleMs >= 900000 ? '15m' : '5m';
-  const periodMs = ({ '5m': 300000, '15m': 900000, '30m': 1800000, '1H': 3600000, '2H': 7200000, '4H': 14400000, '6H': 21600000, '12H': 43200000, '1D': 86400000 })[period];
-  const contextBegin = Math.max(0, start - periodMs * 12);
-  const contextEnd = end + periodMs * 12;
+  const period = candleMs >= 86400000 ? '1D' : candleMs >= 3600000 ? '1H' : '5m';
+  const periodMs = ({ '5m': 300000, '1H': 3600000, '1D': 86400000 })[period];
+  // Rubik aggregate endpoints use 5m / 1H / 1D buckets. Keep the request below 100 points.
+  const contextBegin = Math.max(0, start - periodMs * 45);
+  const contextEnd = end + periodMs * 45;
   async function readSeries(path, extra) {
     const url = 'https://www.okx.com' + path + '?instId=' + encodeURIComponent(instId) +
       '&period=' + encodeURIComponent(period) + '&begin=' + contextBegin + '&end=' + contextEnd + '&limit=100' + (extra || '');
@@ -55,7 +56,7 @@ module.exports = async function handler(req, res) {
       oiError: oiResult.status === 'rejected' ? String(oiResult.reason && oiResult.reason.message || oiResult.reason) : null,
       takerError: takerResult.status === 'rejected' ? String(takerResult.reason && takerResult.reason.message || takerResult.reason) : null
     },
-    source: 'OKX public historical trades + contract open interest + taker volume'
+    source: 'OKX contract open interest + taker-volume aggregate'
   };
   res.statusCode = 200;
   return res.end(JSON.stringify({ symbol, instId, start, end, updated: Date.now(), exchanges: [result] }));
