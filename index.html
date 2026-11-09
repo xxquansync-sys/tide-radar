@@ -1283,8 +1283,14 @@ function flowEventBoard(){
   return true;
  }).slice(0,100);
  var archiveLabel=flowArchiveRemote.state==='synced'?t('eventCloudSynced'):flowArchiveRemote.state==='checking'?t('eventCloudChecking'):t('eventLocalOnly');
+ var focus=a.slice().sort(function(x,y){var rank=function(e){return(e.kind==='multiBuy'||e.kind==='multiSell'?2:1)*Math.log10(Math.max(1,Number(e.amount)||1));};return rank(y)-rank(x)||y.ts-x.ts;}).slice(0,5);
+ var focusHtml='<div style="margin:10px 0 14px;padding:12px;background:#101d2b;border:1px solid #2b465d;border-radius:9px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px"><b style="font-size:12px">'+(currentLang==='zh'?'重点异动':'Priority flow events')+'</b><span class="muted" style="font-size:10px">'+(currentLang==='zh'?'按跨所一致性与资金规模排序':'Ranked by cross-venue agreement and size')+'</span></div><div class="muted" style="font-size:10px;margin-bottom:8px">'+(currentLang==='zh'?'优先展示跨所方向共振，其次为单所大额成交；同一事件不代表独立资金账户。':'Cross-venue alignment is prioritized, followed by large single-venue trades; events do not identify independent accounts.')+'</div>';
+ if(!focus.length)focusHtml+='<div class="muted">'+t('eventEmpty')+'</div>';
+ else focusHtml+=focus.map(function(e){var buy=e.kind==='multiBuy'||e.kind==='largeBuy',cross=e.kind==='multiBuy'||e.kind==='multiSell';var ret=e.return15!==null&&e.return15!==undefined&&Number.isFinite(Number(e.return15))?' · 15m '+pct(e.return15):'';return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #26394d"><div style="min-width:0"><div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap"><b>'+escHtml(e.symbol)+'</b><span style="font-size:10px;color:'+(buy?'#39ca91':'#ff6c80')+'">'+(buy?(currentLang==='zh'?'主动买入':'BUY'):(currentLang==='zh'?'主动卖出':'SELL'))+'</span><span class="muted" style="font-size:10px">'+(cross?(currentLang==='zh'?'跨所共振':'Cross-venue'):(currentLang==='zh'?'单所大额':'Single venue'))+'</span></div><div class="muted" style="font-size:10px;margin-top:3px">'+fmtTime(e.ts,true)+' · '+escHtml(e.venues||'—')+ret+'</div></div><b style="white-space:nowrap;font-size:12px">'+compact(e.amount)+'</b></div>';}).join('');
+ focusHtml+='</div>';
  var options=function(items,current){return items.map(function(x){return '<option value="'+x.value+'"'+(current===x.value?' selected':'')+'>'+x.label+'</option>';}).join('');};
  var h='<div class="muted" style="font-size:10px;margin:0 0 8px">'+archiveLabel+(flowArchiveRemote.error?' · '+escHtml(flowArchiveRemote.error):'')+'</div>';
+ h+=focusHtml;
  h+=flowBehaviorPatterns();
  h+=flowOutcomeStats();
  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 10px">';
