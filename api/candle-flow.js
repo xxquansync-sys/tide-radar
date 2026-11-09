@@ -52,16 +52,16 @@ module.exports = async function handler(req, res) {
   const periodMs = ({ '5m': 300000, '15m': 900000, '1H': 3600000, '4H': 14400000, '1D': 86400000 })[period];
   const contextBegin = Math.max(0, start - periodMs * 12);
   const contextEnd = end + periodMs * 12;
-  async function readSeries(path) {
+  async function readSeries(path, extra) {
     const url = 'https://www.okx.com' + path + '?instId=' + encodeURIComponent(instId) +
-      '&period=' + encodeURIComponent(period) + '&begin=' + contextBegin + '&end=' + contextEnd + '&limit=100';
+      '&period=' + encodeURIComponent(period) + '&begin=' + contextBegin + '&end=' + contextEnd + '&limit=100' + (extra || '');
     const payload = await request(url);
     if (!payload || payload.code !== '0' || !Array.isArray(payload.data)) throw new Error((payload && payload.msg) || 'Invalid OKX series response');
     return payload.data;
   }
   const [oiResult, takerResult] = await Promise.allSettled([
     readSeries('/api/v5/rubik/stat/contracts/open-interest-history'),
-    readSeries('/api/v5/rubik/stat/taker-volume-contract')
+    readSeries('/api/v5/rubik/stat/taker-volume-contract', '&unit=2')
   ]);
   const oi = oiResult.status === 'fulfilled' ? oiResult.value.map(x => ({
     ts: Number(x[0]), contracts: Number(x[1]), coin: Number(x[2]), usd: Number(x[3])
