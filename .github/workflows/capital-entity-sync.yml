@@ -23,6 +23,6 @@ jobs:
         run: TIDE_POR_IMPORT_TEST=1 node scripts/import-okx-por.mjs
       - name: Import latest official OKX reserve wallet snapshot
         env:
-          SUPABASE_URL: \${{ secrets.SUPABASE_URL }}
-          SUPABASE_SECRET_KEY: \${{ secrets.SUPABASE_SECRET_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: node scripts/import-okx-por.mjs
