@@ -245,6 +245,18 @@ async function saveCursor(network, wallet, previous, result, status, error) {
   });
 }
 
+function cursorDecision(previous, result) {
+  const cursor = previous && previous.last_txid;
+  const cursorSeen = !cursor || result.txs.some(tx =>
+    String(tx.txid || tx.hash || tx.transaction_hash || '') === cursor
+  );
+  const status = result.hasMore && (!cursor || !cursorSeen) ? 'stale' : 'active';
+  const latestTx = cursor && result.hasMore && !cursorSeen
+    ? cursor
+    : (result.latestTx || cursor || null);
+  return { status, cursorSeen, latestTx };
+}
+
 async function scanWallet(networkConfig, entityId, wallet, previous, price) {
   const observedAt = nowIso();
   const result = await fetchTransactions(networkConfig, wallet.account_ref);
@@ -256,15 +268,10 @@ async function scanWallet(networkConfig, entityId, wallet, previous, price) {
       method: 'POST', body: rows, prefer: 'resolution=merge-duplicates,return=minimal'
     });
   }
-  const cursor = previous && previous.last_txid;
-  const cursorSeen = !cursor || result.txs.some(tx => String(tx.txid || tx.hash || tx.transaction_hash || '') === cursor);
-  const status = result.hasMore && (!cursor || !cursorSeen) ? 'stale' : 'active';
-  // If the previous cursor fell outside the explorer's capped first page, do not advance it silently.
-  const cursorResult = cursor && result.hasMore && !cursorSeen
-    ? Object.assign({}, result, { latestTx: cursor })
-    : result;
-  await saveCursor(networkConfig.network, wallet, previous, cursorResult, status);
-  return { address: wallet.account_ref, transactions: result.txs.length, flows: rows.length, capped: result.hasMore, cursorSeen, status };
+  // Never advance beyond a capped explorer page if the previous cursor was not found.
+  const decision = cursorDecision(previous, result);
+  await saveCursor(networkConfig.network, wallet, previous, Object.assign({}, result, { latestTx: decision.latestTx }), decision.status);
+  return { address: wallet.account_ref, transactions: result.txs.length, flows: rows.length, capped: result.hasMore, cursorSeen: decision.cursorSeen, status: decision.status };
 }
 
 async function main() {
@@ -322,10 +329,16 @@ function test() {
     hash: '0xzero', from: { hash: '0xexternal' }, to: { hash: '0xtracked' }, value: '0'
   }, '0xtracked', observedAt);
   if (ignored !== null) throw new Error('Zero-value ETH transaction should be ignored');
+  const bootstrap = cursorDecision(null, { txs: [{ txid: 'newest' }], latestTx: 'newest', hasMore: true });
+  if (bootstrap.status !== 'stale' || bootstrap.latestTx !== 'newest') throw new Error('Initial capped-page cursor test failed');
+  const missed = cursorDecision({ last_txid: 'old-cursor' }, { txs: [{ txid: 'newest' }], latestTx: 'newest', hasMore: true });
+  if (missed.status !== 'stale' || missed.latestTx !== 'old-cursor' || missed.cursorSeen) throw new Error('Capped-page cursor must not advance past unseen history');
+  const caughtUp = cursorDecision({ last_txid: 'old-cursor' }, { txs: [{ txid: 'newest' }, { txid: 'old-cursor' }], latestTx: 'newest', hasMore: true });
+  if (caughtUp.status !== 'active' || caughtUp.latestTx !== 'newest' || !caughtUp.cursorSeen) throw new Error('Caught-up cursor test failed');
   const row = makeFlowRow('ETH', 'ETH', 'entity-id', { account_ref: '0xtracked', confidence: 0.95, snapshot_at: observedAt }, eth, 3000, observedAt);
   if (row.flow_type !== 'exchange_inflow' || row.usd_value !== 3000 || row.to_entity_id !== 'entity-id') throw new Error('Flow row mapping failed');
   if (decimalFromUnits('123456789012345678901', 18) !== '123.456789012345678901') throw new Error('Exact decimal conversion failed');
-  console.log('BTC/ETH chain flow tests passed: direction, exact units, pending status, attribution, and USD valuation.');
+  console.log('BTC/ETH chain flow tests passed: direction, exact units, pending status, attribution, USD valuation, and capped-page cursor safety.');
 }
 
 if (process.env.TIDE_CHAIN_FLOW_TEST === '1') test();
