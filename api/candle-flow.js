@@ -50,8 +50,8 @@ module.exports = async function handler(req, res) {
   const candleMs = end - start;
   const period = candleMs >= 86400000 ? '1D' : candleMs >= 14400000 ? '4H' : candleMs >= 3600000 ? '1H' : candleMs >= 900000 ? '15m' : '5m';
   const periodMs = ({ '5m': 300000, '15m': 900000, '1H': 3600000, '4H': 14400000, '1D': 86400000 })[period];
-  const contextBegin = Math.max(0, start - periodMs * 6);
-  const contextEnd = end + periodMs * 6;
+  const contextBegin = Math.max(0, start - periodMs * 12);
+  const contextEnd = end + periodMs * 12;
   async function readSeries(path) {
     const url = 'https://www.okx.com' + path + '?instId=' + encodeURIComponent(instId) +
       '&period=' + encodeURIComponent(period) + '&begin=' + contextBegin + '&end=' + contextEnd + '&limit=100';
