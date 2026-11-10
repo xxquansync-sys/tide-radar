@@ -165,7 +165,7 @@ table th{color:#788698;border-color:#e8edf2}td{border-color:#edf0f4}tbody tr:hov
 .home-chart-name{font-size:14px;font-weight:720;color:#172333}.home-market-tag{font-size:10px;font-weight:500;color:#7d8998;background:#f1f4f7;border-radius:4px;padding:3px 6px;margin-left:5px}.home-chart-sub{font-size:10px;color:#8995a3;margin-top:3px}
 .home-eth-price{display:flex;align-items:baseline;gap:8px;margin-left:10px}.home-eth-price strong{font-size:19px;font-weight:720;font-variant-numeric:tabular-nums}.home-eth-price span{font-size:11px;font-weight:650}.home-chart-actions{display:flex;align-items:center;gap:8px;font-size:11px;color:#7d8b9a;white-space:nowrap}.home-live-dot{width:7px;height:7px;background:#14a17a;border-radius:50%;box-shadow:0 0 0 3px #14a17a18}
 .home-expand{border:1px solid #e2e8ed;background:#fff;color:#516174;border-radius:7px;padding:7px 10px;font-size:11px;cursor:pointer}.home-expand:hover{border-color:#b9d8d4;color:#147b75;background:#f7fbfa}.home-chart-toolbar{height:42px;display:flex;align-items:center;justify-content:space-between;gap:10px}.home-timeframes{display:flex;gap:4px}.home-timeframes button{border:0;background:transparent;color:#7a8797;border-radius:6px;padding:5px 9px;font-size:11px;cursor:pointer}.home-timeframes button.active,.home-timeframes button:hover{background:#edf5f4;color:#147c76;font-weight:650}.home-chart-hint{font-size:10px;color:#98a3af}
-#tide-home-kline-canvas{height:390px;width:100%;background:#fff}.home-chart-foot{display:flex;justify-content:space-between;gap:10px;color:#8995a3;font-size:10px;padding:5px 2px;border-top:1px solid #f0f2f5}.home-selected-candle{font-size:10px;color:#788698;padding:7px 2px 0;min-height:24px;font-variant-numeric:tabular-nums}
+#tide-home-kline-canvas{height:390px;width:100%;background:#fff};position:relative.home-chart-foot{display:flex;justify-content:space-between;gap:10px;color:#8995a3;font-size:10px;padding:5px 2px;border-top:1px solid #f0f2f5}.home-selected-candle{font-size:10px;color:#788698;padding:7px 2px 0;min-height:24px;font-variant-numeric:tabular-nums}
 .home-market-side{padding:16px 15px;display:flex;flex-direction:column}.home-side-heading{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;color:#26364a;margin-bottom:12px}.home-side-heading span+span{font-size:10px;font-weight:500;color:#97a2af}.home-side-stat{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #f0f2f5;gap:10px}.home-side-stat span{font-size:11px;color:#8190a0}.home-side-stat strong{font-size:12px;color:#243448;font-weight:650;font-variant-numeric:tabular-nums}.home-side-divider{height:1px;background:#e9edf1;margin:13px 0}
 .home-watch-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f0f2f5;font-size:11px}.home-watch-item>span:first-child{font-weight:700;color:#26364a;width:38px}.home-watch-state{flex:1;color:#8290a0}.home-watch-item button{border:0;background:#f0f6f5;color:#197d76;border-radius:5px;padding:5px 8px;font-size:10px;cursor:pointer}.home-side-note{font-size:10px;color:#98a2ae;line-height:1.6;margin-top:auto;padding-top:14px}
 @media(max-width:980px){.home-market-hero{grid-template-columns:1fr}.home-market-side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}.home-side-heading{grid-column:1/-1}.home-side-divider{display:none}.home-side-note{grid-column:1/-1;margin-top:8px}}
@@ -1655,6 +1655,28 @@ setInterval(refresh,60000);
 
 /* Homepage ETH interactive chart */
 var tideHomeChart={chart:null,data:[],symbol:'BTC',period:'4H',timer:null,controller:null,requestId:0,clickHandler:null,loading:false,historyLoaded:false};
+function tideCountdownText(data,period){
+ if(!data||!data.length)return '--:--';
+ var duration=({ '1m':60000,'5m':300000,'15m':900000,'1H':3600000,'4H':14400000,'1D':86400000 })[period];
+ if(!duration)return '--:--';
+ var latest=data[data.length-1],start=Number(latest.timestamp),now=Date.now();
+ if(!Number.isFinite(start)||start<=0||now>=start+duration)return '00:00';
+ var seconds=Math.max(0,Math.ceil((start+duration-now)/1000)),hours=Math.floor(seconds/3600),minutes=Math.floor((seconds%3600)/60),secs=seconds%60;
+ return (hours?String(hours).padStart(2,'0')+':':'')+String(minutes).padStart(2,'0')+':'+String(secs).padStart(2,'0');
+}
+function tideEnsureCountdown(host,id){
+ if(!host)return null;var el=$(id);if(el&&el.parentNode===host)return el;
+ el=document.createElement('span');el.id=id;el.setAttribute('aria-label','Latest candle close countdown');
+ el.style.cssText='position:absolute;z-index:20;top:8px;right:12px;padding:3px 6px;border-radius:4px;background:rgba(20,32,46,.72);color:#e8f0f7;font:11px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;pointer-events:none;letter-spacing:.02em';
+ host.appendChild(el);return el;
+}
+function tideUpdateCandleCountdowns(){
+ var home=$('tide-home-kline-canvas');
+ if(home){var h=tideEnsureCountdown(home,'tide-home-candle-countdown');if(h)h.textContent=tideCountdownText(tideHomeChart.data,tideHomeChart.period);}
+ var modal=$('tide-kline-canvas');
+ if(modal){var m=tideEnsureCountdown(modal,'tide-modal-candle-countdown');if(m)m.textContent=tideCountdownText(tideKline.data,tideKline.period);}
+}
+if(!window.tideCandleCountdownTimer)window.tideCandleCountdownTimer=setInterval(tideUpdateCandleCountdowns,1000);
 function homeChartStatus(v,retry){var el=$('home-chart-status');if(el){el.removeAttribute('data-i18n');el.textContent=v;el.style.cursor=retry?'pointer':'default';el.style.textDecoration=retry?'underline dotted':'none';el.title=retry?(currentLang==='zh'?'点击此处重试':'Click here to retry'):'';el.onclick=retry?function(){homeChartStatus(currentLang==='zh'?'正在重试 K 线…':'Retrying chart…');if(tideHomeChart.chart)homeChartLoad(true);else homeChartInit();}:null;}}
 function homeChartRenderPeriods(){var el=$('home-chart-periods');if(el)el.querySelectorAll('button').forEach(function(b){b.classList.toggle('active',b.dataset.period===tideHomeChart.period);});}
 function homeChartUpdateStats(){
@@ -1706,7 +1728,7 @@ function homeChartInit(){
  if(tideHomeChart.chart)return;var host=$('tide-home-kline-canvas');if(!host){homeChartStatus(currentLang==='zh'?'图表容器未找到':'Chart container not found',true);return;}klineEnsureScript().then(function(lib){if(tideHomeChart.chart||!$('tide-home-kline-canvas'))return;
  var chart=lib&&typeof lib.init==='function'?lib.init('tide-home-kline-canvas',{locale:currentLang==='zh'?'zh-CN':'en-US',timezone:'Asia/Singapore',styles:klineThemeStyles('light',currentLang)}):null;
  if(!chart||typeof chart.applyNewData!=='function')throw new Error('KLineChart 初始化未返回有效图表实例');
- tideHomeChart.chart=chart;
+ tideHomeChart.chart=chart;tideEnsureCountdown(host,'tide-home-candle-countdown');
  try{tideHomeChart.chart.createIndicator({name:'MA',calcParams:[20]},true,{id:'candle_pane'});}catch(e){}try{tideHomeChart.chart.createIndicator('VOL',false,{id:'home_volume_pane',height:72,minHeight:48});}catch(e){}
  tideHomeChart.clickHandler=homeChartSelectCandle;try{tideHomeChart.chart.subscribeAction('onCandleBarClick',tideHomeChart.clickHandler);}catch(e){}
  var periodHost=$('home-chart-periods');if(periodHost)periodHost.querySelectorAll('button').forEach(function(b){b.onclick=function(){homeChartChangePeriod(b.dataset.period);};});
@@ -1959,7 +1981,7 @@ function klineApplyIndicators(){
 }
 function klineCreateChart(lib){
  if(tideKline.chart)return;
- tideKline.chart=lib.init('tide-kline-canvas',{locale:currentLang==='zh'?'zh-CN':'en-US',timezone:'Asia/Singapore',styles:klineThemeStyles(tideKlineTheme)});
+ tideKline.chart=lib.init('tide-kline-canvas',{locale:currentLang==='zh'?'zh-CN':'en-US',timezone:'Asia/Singapore',styles:klineThemeStyles(tideKlineTheme)});tideEnsureCountdown($('tide-kline-canvas'),'tide-modal-candle-countdown');
  tideKline.candleClickHandler=function(payload){klineHandleCandleClick(payload);};try{tideKline.chart.subscribeAction('onCandleBarClick',tideKline.candleClickHandler);}catch(clickErr){}
  klineApplyIndicators();if(tideKline.data.length)tideKline.chart.applyNewData(tideKline.data);
  klineApplyTheme();
