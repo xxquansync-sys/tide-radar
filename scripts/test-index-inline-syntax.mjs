@@ -23,8 +23,11 @@ if (!html.includes("klineFetchInitial('BTC',period,ctl.signal")) throw new Error
 if (!html.includes('tideHomeChart.historyLoaded')) throw new Error('Homepage history loading state is missing');
 if (!html.includes('klineCancelOlderHistory();tideKline.period=p;')) throw new Error('Changing timeframe must cancel older-history pagination');
 if (!html.includes('if(tideKline.olderController===controller)')) throw new Error('Older-history completion must not mutate a newer request');
-if (!html.includes('#tide-home-kline-canvas{height:390px;width:100%;background:#fff;position:relative}')) throw new Error('Homepage countdown host must be positioned');
-if (!html.includes('#tide-kline-canvas{height:100%;min-height:320px;width:100%;position:relative}')) throw new Error('Professional chart countdown host must be positioned');
+if (!html.includes("chart.getDom('candle_pane','yAxis')")) throw new Error('Countdown must attach to the chart right price axis');
+if (!html.includes("chart.convertToPixel({value:Number(latest.close)},{paneId:'candle_pane',absolute:true})")) throw new Error('Countdown must use the latest close price axis coordinate');
 if (!html.includes('tideUpdateCandleCountdowns();if(!window.tideCandleCountdownTimer)')) throw new Error('Countdown must render immediately, not wait for the first timer tick');
 if (!html.includes('tdxEnabled:false')) throw new Error('Unstable structure overlay must remain disabled by default');
+if (!html.includes('pixel.y-axisSize.top+16')) throw new Error('Countdown must sit immediately below the live price label');
+if (!html.includes("['onDataReady','onZoom','onScroll','onVisibleRangeChange','onPaneDrag']")) throw new Error('Countdown must track chart redraw, zoom, scroll and pane resize');
+if (!html.includes('visibility:hidden')) throw new Error('Countdown must stay hidden rather than float at an incorrect fallback position');
 console.log('K-line structure and inline JavaScript checks passed: ' + blocks.length + ' script blocks.');
