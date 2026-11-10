@@ -1693,10 +1693,10 @@ function tideBindCountdownChart(chart){
  ['onDataReady','onZoom','onScroll','onVisibleRangeChange','onPaneDrag'].forEach(function(type){try{chart.subscribeAction(type,update);}catch(e){}});
 }
 function tideUpdateCandleCountdowns(){
- if(tideHomeChart.chart)tidePositionCountdown(tideHomeChart.chart,tideHomeChart.data,'tide-home-candle-countdown');
- if(tideKline.chart)tidePositionCountdown(tideKline.chart,tideKline.data,'tide-modal-candle-countdown');
+ if(typeof tideHomeChart!=='undefined'&&tideHomeChart&&tideHomeChart.chart)tidePositionCountdown(tideHomeChart.chart,tideHomeChart.data,'tide-home-candle-countdown');
+ if(typeof tideKline!=='undefined'&&tideKline&&tideKline.chart)tidePositionCountdown(tideKline.chart,tideKline.data,'tide-modal-candle-countdown');
 }
-tideUpdateCandleCountdowns();if(!window.tideCandleCountdownTimer)window.tideCandleCountdownTimer=setInterval(tideUpdateCandleCountdowns,1000);
+if(!window.tideCandleCountdownTimer)window.tideCandleCountdownTimer=setInterval(tideUpdateCandleCountdowns,1000);
 function homeChartStatus(v,retry){var el=$('home-chart-status');if(el){el.removeAttribute('data-i18n');el.textContent=v;el.style.cursor=retry?'pointer':'default';el.style.textDecoration=retry?'underline dotted':'none';el.title=retry?(currentLang==='zh'?'点击此处重试':'Click here to retry'):'';el.onclick=retry?function(){homeChartStatus(currentLang==='zh'?'正在重试 K 线…':'Retrying chart…');if(tideHomeChart.chart)homeChartLoad(true);else homeChartInit();}:null;}}
 function homeChartRenderPeriods(){var el=$('home-chart-periods');if(el)el.querySelectorAll('button').forEach(function(b){b.classList.toggle('active',b.dataset.period===tideHomeChart.period);});}
 function homeChartUpdateStats(){
