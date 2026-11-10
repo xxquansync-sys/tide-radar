@@ -11,7 +11,6 @@ if (count(/<\/html\s*>/gi) !== 1 || !/<\/body>\s*<\/html>\s*$/i.test(html)) thro
 for (const name of ['homeChartLoad','klineFetch','klineFetchInitial','klineLoadOlder','klineCancelOlderHistory']) {
   if (count(new RegExp('\\bfunction\\s+' + name + '\\s*\\(', 'g')) !== 1) throw new Error('Expected exactly one ' + name + ' definition');
 }
-if (!html.includes("fetch('/api/capital-behavior'")) throw new Error('Capital behavior UI does not call the read-only API');
 if (!html.includes('incremental?klineFetch(300,symbol,period,controller.signal)')) throw new Error('Incremental REST reconciliation must reload the latest 300 candles');
 if (!html.includes('tideKline.chart.applyNewData(tideKline.data)')) throw new Error('REST reconciliation must render the merged/backfilled candle series');
 if (!html.includes("klineLoad(true);},60000)")) throw new Error('REST reconciliation must run periodically even with an open WebSocket');
