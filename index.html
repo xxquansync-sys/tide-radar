@@ -1654,8 +1654,8 @@ setInterval(refresh,60000);
 
 
 /* Homepage ETH interactive chart */
-var tideHomeChart={chart:null,data:[],symbol:'BTC',period:'4H',timer:null,controller:null,requestId:0,clickHandler:null};
-function homeChartStatus(v,retry){var el=$('home-chart-status');if(el){el.removeAttribute('data-i18n');el.textContent=v;el.style.cursor=retry?'pointer':'default';el.style.textDecoration=retry?'underline dotted':'none';el.title=retry?(currentLang==='zh'?'点击此处重试':'Click here to retry'):'';el.onclick=retry?function(){homeChartStatus(currentLang==='zh'?'正在重试 K 线…':'Retrying chart…');if(tideHomeChart.chart)homeChartLoad();else homeChartInit();}:null;}}
+var tideHomeChart={chart:null,data:[],symbol:'BTC',period:'4H',timer:null,controller:null,requestId:0,clickHandler:null,loading:false,historyLoaded:false};
+function homeChartStatus(v,retry){var el=$('home-chart-status');if(el){el.removeAttribute('data-i18n');el.textContent=v;el.style.cursor=retry?'pointer':'default';el.style.textDecoration=retry?'underline dotted':'none';el.title=retry?(currentLang==='zh'?'点击此处重试':'Click here to retry'):'';el.onclick=retry?function(){homeChartStatus(currentLang==='zh'?'正在重试 K 线…':'Retrying chart…');if(tideHomeChart.chart)homeChartLoad(true);else homeChartInit();}:null;}}
 function homeChartRenderPeriods(){var el=$('home-chart-periods');if(el)el.querySelectorAll('button').forEach(function(b){b.classList.toggle('active',b.dataset.period===tideHomeChart.period);});}
 function homeChartUpdateStats(){
  var btc=markets.find(function(x){return x.symbol==='BTC';}),eth=markets.find(function(x){return x.symbol==='ETH';});
@@ -1672,12 +1672,36 @@ function homeChartSelectCandle(payload){
  var d=new Date(Number(c.timestamp)),time=d.toLocaleString(currentLang==='zh'?'zh-CN':'en-US',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}),change=(Number(c.close)/Number(c.open)-1)*100;
  var el=$('home-selected-candle');if(el){var tr=translations[currentLang],labels=[tr.homeTime,tr.homeOpen,tr.homeHigh,tr.homeLow,tr.homeClose,tr.homeChange];el.removeAttribute('data-i18n');el.textContent=time+' · '+labels[1]+' '+fmt(c.open,c.open<1?6:2)+' '+labels[2]+' '+fmt(c.high,c.high<1?6:2)+' '+labels[3]+' '+fmt(c.low,c.low<1?6:2)+' '+labels[4]+' '+fmt(c.close,c.close<1?6:2)+' '+labels[5]+' '+pct(change);}
 }
-function homeChartLoad(){
- if(!tideHomeChart.chart)return;if(tideHomeChart.controller){try{tideHomeChart.controller.abort();}catch(e){}}
- var ctl=new AbortController();tideHomeChart.controller=ctl;var req=++tideHomeChart.requestId,period=tideHomeChart.period;homeChartStatus(t('homeLoadingPeriod').replace('{period}',period));
- klineFetch(300,'BTC',period,ctl.signal).then(function(rows){if(req!==tideHomeChart.requestId||!tideHomeChart.chart)return;tideHomeChart.data=rows;tideHomeChart.chart.applyNewData(rows);homeChartStatus(t('homeLoaded').replace('{n}',rows.length).replace('{time}',new Date().toLocaleTimeString(currentLang==='zh'?'zh-CN':'en-US',{hour12:false})));var last=rows[rows.length-1];if(last){var e=$('home-btc-price');if(e)e.textContent='$'+fmt(last.close,2);}}).catch(function(e){if(e.name!=='AbortError'&&req===tideHomeChart.requestId)homeChartStatus(t('homeLoadError')+e.message,true);});
+function homeChartLoad(force){
+ if(!tideHomeChart.chart)return;
+ if(tideHomeChart.loading&&!force)return;
+ if(tideHomeChart.controller){try{tideHomeChart.controller.abort();}catch(e){}}
+ var ctl=new AbortController();tideHomeChart.controller=ctl;var req=++tideHomeChart.requestId,period=tideHomeChart.period;tideHomeChart.loading=true;homeChartStatus(t('homeLoadingPeriod').replace('{period}',period));
+ var task;
+ if(tideHomeChart.historyLoaded){
+  task=klineFetch(300,'BTC',period,ctl.signal).then(function(recent){
+   if(req!==tideHomeChart.requestId||!tideHomeChart.chart)return [];
+   var byTime={};tideHomeChart.data.concat(recent).forEach(function(c){byTime[c.timestamp]=c;});
+   return Object.keys(byTime).map(function(k){return byTime[k];}).sort(function(a,b){return a.timestamp-b.timestamp;}).slice(-TIDE_KLINE_MAX_CACHE);
+  });
+ }else{
+  task=klineFetchInitial('BTC',period,ctl.signal,function(recent){
+   if(req!==tideHomeChart.requestId||!tideHomeChart.chart)return;
+   tideHomeChart.data=recent;tideHomeChart.chart.applyNewData(recent);
+   homeChartStatus(currentLang==='zh'?'已显示最新 '+recent.length+' 根K线，正在后台补齐至少 3,000 根历史…':'Showing latest '+recent.length+' candles; backfilling at least 3,000 candles…');
+  });
+ }
+ task.then(function(rows){
+  if(req!==tideHomeChart.requestId||!tideHomeChart.chart||!rows.length)return;
+  tideHomeChart.data=rows;tideHomeChart.historyLoaded=!rows.historyError;tideHomeChart.chart.applyNewData(rows);
+  if(rows.historyError)homeChartStatus((currentLang==='zh'?'已显示 ':'Showing ')+rows.length+(currentLang==='zh'?' 根K线；历史补齐暂停：':' candles; history backfill paused: ')+rows.historyError,true);
+  else homeChartStatus(t('homeLoaded').replace('{n}',rows.length).replace('{time}',new Date().toLocaleTimeString(currentLang==='zh'?'zh-CN':'en-US',{hour12:false})));
+  var last=rows[rows.length-1];if(last){var e=$('home-btc-price');if(e)e.textContent='$'+fmt(last.close,2);}
+ }).catch(function(e){if(e.name!=='AbortError'&&req===tideHomeChart.requestId)homeChartStatus(t('homeLoadError')+e.message,true);}).then(function(){
+  if(req===tideHomeChart.requestId){tideHomeChart.loading=false;tideHomeChart.controller=null;}
+ });
 }
-function homeChartChangePeriod(p){if(tideKlinePeriods.indexOf(p)<0||p===tideHomeChart.period)return;tideHomeChart.period=p;homeChartRenderPeriods();homeChartLoad();}
+function homeChartChangePeriod(p){if(tideKlinePeriods.indexOf(p)<0||p===tideHomeChart.period)return;tideHomeChart.period=p;tideHomeChart.historyLoaded=false;homeChartRenderPeriods();homeChartLoad(true);}
 function homeChartInit(){
  if(tideHomeChart.chart)return;var host=$('tide-home-kline-canvas');if(!host){homeChartStatus(currentLang==='zh'?'图表容器未找到':'Chart container not found',true);return;}klineEnsureScript().then(function(lib){if(tideHomeChart.chart||!$('tide-home-kline-canvas'))return;
  var chart=lib&&typeof lib.init==='function'?lib.init('tide-home-kline-canvas',{locale:currentLang==='zh'?'zh-CN':'en-US',timezone:'Asia/Singapore',styles:klineThemeStyles('light',currentLang)}):null;
@@ -1691,7 +1715,7 @@ function homeChartInit(){
 }
 
 /* ---------------- KLineChart: OKX public candles ---------------- */
-var tideKline={chart:null,anomalyEvents:[],selectedAnomaly:null,eventRequestId:0,candleClickHandler:null,symbol:'BTC',period:'15m',timer:null,scriptLoading:null,controller:null,ws:null,wsRetry:null,wsHeartbeat:null,wsGeneration:0,olderLoading:false,hasMoreHistory:true,indicators:{MA:true,EMA:false,VOL:true,MACD:true,RSI:false},indicatorParams:{MA:[5,10,30,60],EMA:[6,12,20],VOL:[5,10,20],MACD:[12,26,9],RSI:[6,12,24]},indicatorLocations:{MA:'main',EMA:'main'},data:[],htfData:[],htfFetchedAt:0,htfRequestedAt:0,dailyData:[],dailyFetchedAt:0,dailyRequestedAt:0,loading:false,requestId:0,drawMode:'cursor',tdxEnabled:true,tdxParams:{penPeriod:7,halfPercent:50,atrSwing:1.2,confirmBars:2,timePeriod:1}};
+var tideKline={chart:null,anomalyEvents:[],selectedAnomaly:null,eventRequestId:0,candleClickHandler:null,symbol:'BTC',period:'15m',timer:null,scriptLoading:null,controller:null,olderController:null,historyGeneration:0,ws:null,wsRetry:null,wsHeartbeat:null,wsGeneration:0,olderLoading:false,hasMoreHistory:true,indicators:{MA:true,EMA:false,VOL:true,MACD:true,RSI:false},indicatorParams:{MA:[5,10,30,60],EMA:[6,12,20],VOL:[5,10,20],MACD:[12,26,9],RSI:[6,12,24]},indicatorLocations:{MA:'main',EMA:'main'},data:[],htfData:[],htfFetchedAt:0,htfRequestedAt:0,dailyData:[],dailyFetchedAt:0,dailyRequestedAt:0,loading:false,requestId:0,drawMode:'cursor',tdxEnabled:true,tdxParams:{penPeriod:7,halfPercent:50,atrSwing:1.2,confirmBars:2,timePeriod:1}};
 var tideKlinePeriods=['1m','5m','15m','1H','4H','1D'];
 try{var _savedTdx=JSON.parse(localStorage.getItem('tide_tdx_params')||'null');if(_savedTdx&&typeof _savedTdx==='object')tideKline.tdxParams=Object.assign({penPeriod:7,halfPercent:50,atrSwing:1.2,confirmBars:2,timePeriod:1},_savedTdx);}catch(e){}
 var TIDE_KLINE_CACHE='tide_kline_cache_v3';
@@ -1746,14 +1770,15 @@ function klineCacheKey(symbol,period){return TIDE_KLINE_CACHE+':'+symbol+':'+per
 function klineReadCache(symbol,period){try{var x=JSON.parse(localStorage.getItem(klineCacheKey(symbol,period))||'null');if(x&&Array.isArray(x.data))return x;}catch(e){}return null;}
 function klineWriteCache(){try{localStorage.setItem(klineCacheKey(tideKline.symbol,tideKline.period),JSON.stringify({version:3,ts:Date.now(),data:tideKline.data.slice(-TIDE_KLINE_MAX_CACHE)}));}catch(e){klineSetStatus('本地缓存空间不足；当前行情仍可正常使用');}}
 function klineRowsToData(rows){return (rows||[]).map(function(x){return {timestamp:+x[0],open:+x[1],high:+x[2],low:+x[3],close:+x[4],volume:+x[5]||0,turnover:+x[7]||0};}).filter(function(x){return Number.isFinite(x.timestamp)&&x.timestamp>0&&Number.isFinite(x.open)&&Number.isFinite(x.high)&&Number.isFinite(x.low)&&Number.isFinite(x.close)&&x.open>0&&x.high>0&&x.low>0&&x.close>0&&x.high>=Math.max(x.open,x.close,x.low)&&x.low<=Math.min(x.open,x.close,x.high)&&x.volume>=0&&x.turnover>=0;}).sort(function(a,b){return a.timestamp-b.timestamp;});}
-function klineFetch(limit,symbol,period,signal,before){
+function klineFetch(limit,symbol,period,signal,olderThan){
  var inst=(symbol||tideKline.symbol)+'-USDT-SWAP',bar=klinePeriodType(period||tideKline.period);
- var endpoint=before?'/api/v5/market/history-candles':'/api/v5/market/candles';
- var path=endpoint+'?instId='+encodeURIComponent(inst)+'&bar='+encodeURIComponent(bar)+'&limit='+Math.min(before?100:300,limit)+(before?'&after='+encodeURIComponent(before):'');
+ var hasOlderCursor=olderThan!==undefined&&olderThan!==null&&olderThan!=='';
+ var endpoint=hasOlderCursor?'/api/v5/market/history-candles':'/api/v5/market/candles';
+ var path=endpoint+'?instId='+encodeURIComponent(inst)+'&bar='+encodeURIComponent(bar)+'&limit='+Math.min(hasOlderCursor?100:300,limit)+(hasOlderCursor?'&after='+encodeURIComponent(olderThan):'');
  function request(attempt){
   if(signal&&signal.aborted)return Promise.reject(new DOMException('Aborted','AbortError'));
   return okxRequest(path,signal).then(function(j){
-   var data=klineRowsToData(j.data);if(!data.length)throw new Error('OKX 返回空 K 线数据');return data;
+   var data=klineRowsToData(j.data);if(!data.length&&!hasOlderCursor)throw new Error('OKX 返回空 K 线数据');return data;
   }).catch(function(e){
    var limited=/too many requests|rate limit|429|50011/i.test(e.message||'');
    if(!limited||attempt>=2||(signal&&signal.aborted))throw e;
@@ -1783,12 +1808,38 @@ function klineWsStart(){
  ws.onclose=function(){if(generation!==tideKline.wsGeneration)return;tideKline.wsRetry=setTimeout(function(){var modal=$('tide-kline-modal');if(tideKline.chart&&modal&&modal.style.display!=='none')klineWsStart();},3000);};
  ws.onerror=function(){try{ws.close();}catch(e){}};
 }
+function klineCancelOlderHistory(){
+ tideKline.historyGeneration++;var active=tideKline.olderController;tideKline.olderController=null;tideKline.olderLoading=false;
+ if(active){try{active.abort();}catch(e){}}
+}
 function klineLoadOlder(){
- if(tideKline.olderLoading||!tideKline.data.length||!tideKline.hasMoreHistory)return;
- tideKline.olderLoading=true;var symbol=tideKline.symbol,period=tideKline.period,oldest=tideKline.data[0].timestamp,controller=new AbortController(),collected=[],pages=0;
- klineSetStatus('正在分页加载更早历史K线…');
- function page(){if(pages>=10)return Promise.resolve();return klineFetch(100,symbol,period,controller.signal,oldest).then(function(rows){var older=rows.filter(function(c){return c.timestamp<oldest;});if(!older.length){tideKline.hasMoreHistory=false;return;}pages++;collected=older.concat(collected);oldest=older[0].timestamp;if(pages<10)return klineDelay(700).then(page);});}
- page().then(function(){if(!collected.length){klineSetStatus('没有更早的历史K线了');return;}var by={};collected.concat(tideKline.data).forEach(function(c){by[c.timestamp]=c;});var merged=Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){return a.timestamp-b.timestamp;}).slice(-TIDE_KLINE_MAX_CACHE);var older=merged.filter(function(c){return c.timestamp<tideKline.data[0].timestamp;});tideKline.data=merged;if(tideKline.chart){try{tideKline.chart.applyMoreData(older,true);}catch(e){tideKline.chart.applyNewData(merged);}}klineWriteCache();klineRenderTdx();klineSetStatus('已向前加载 '+older.length+' 根历史K线 · 总计 '+merged.length+' 根');}).catch(function(e){if(e.name!=='AbortError')klineSetStatus('历史分页失败：'+e.message);}).then(function(){tideKline.olderLoading=false;});
+ if(tideKline.olderLoading||tideKline.loading||!tideKline.data.length||!tideKline.hasMoreHistory)return;
+ tideKline.olderLoading=true;var symbol=tideKline.symbol,period=tideKline.period,oldest=tideKline.data[0].timestamp,controller=new AbortController(),collected=[],pages=0,generation=tideKline.historyGeneration;
+ tideKline.olderController=controller;klineSetStatus('正在分页加载更早历史K线…');
+ function isCurrent(){var modal=$('tide-kline-modal');return generation===tideKline.historyGeneration&&symbol===tideKline.symbol&&period===tideKline.period&&!!tideKline.chart&&!!modal&&modal.style.display!=='none'&&!controller.signal.aborted;}
+ function page(){
+  if(!isCurrent())return Promise.reject(new DOMException('Aborted','AbortError'));
+  if(pages>=10)return Promise.resolve();
+  return klineFetch(100,symbol,period,controller.signal,oldest).then(function(rows){
+   if(!isCurrent())throw new DOMException('Aborted','AbortError');
+   var older=rows.filter(function(c){return c.timestamp<oldest;});
+   if(!older.length){tideKline.hasMoreHistory=false;return;}
+   pages++;collected=older.concat(collected);oldest=older[0].timestamp;
+   if(pages<10)return klineDelay(700).then(page);
+  });
+ }
+ page().then(function(){
+  if(!isCurrent())return;
+  if(!collected.length){klineSetStatus('没有更早的历史K线了');return;}
+  var previousOldest=tideKline.data[0].timestamp,by={};collected.concat(tideKline.data).forEach(function(c){by[c.timestamp]=c;});
+  var merged=Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){return a.timestamp-b.timestamp;}).slice(-TIDE_KLINE_MAX_CACHE);
+  var older=merged.filter(function(c){return c.timestamp<previousOldest;});
+  if(!older.length){tideKline.hasMoreHistory=false;klineSetStatus('历史缓存已达到 '+TIDE_KLINE_MAX_CACHE+' 根上限');return;}
+  tideKline.data=merged;if(tideKline.chart){try{tideKline.chart.applyMoreData(older,true);}catch(e){tideKline.chart.applyNewData(merged);}}
+  klineWriteCache();klineRenderTdx();klineSetStatus('已向前加载 '+older.length+' 根历史K线 · 总计 '+merged.length+' 根');
+ }).catch(function(e){if(e.name!=='AbortError'&&isCurrent())klineSetStatus('历史分页失败：'+e.message);}).then(function(){
+  if(tideKline.olderController===controller){tideKline.olderLoading=false;tideKline.olderController=null;}
+ });
 }
 var tideIndicatorDefaults={MA:[5,10,30,60],EMA:[6,12,20],VOL:[5,10,20],MACD:[12,26,9],RSI:[6,12,24]};
 var tideIndicatorPanes={};
@@ -2179,7 +2230,7 @@ function klineLoad(force){
  });
 }
 function openKlineChart(symbol){
- tideKlineLang=currentLang;try{localStorage.setItem('tide_kline_lang',tideKlineLang);}catch(e){}
+ klineCancelOlderHistory();tideKlineLang=currentLang;try{localStorage.setItem('tide_kline_lang',tideKlineLang);}catch(e){}
  tideKline.symbol=String(symbol||'BTC').toUpperCase().replace(/[^A-Z0-9]/g,'');klineWsStop();tideKline.hasMoreHistory=true;
  tideKline.htfData=[];tideKline.htfFetchedAt=0;tideKline.htfRequestedAt=0;tideKline.dailyData=[];tideKline.dailyFetchedAt=0;tideKline.dailyRequestedAt=0;
  var modal=klineModal();modal.style.display='flex';
@@ -2196,7 +2247,7 @@ function openKlineChart(symbol){
 }
 function changeKlinePeriod(p){
  if(tideKlinePeriods.indexOf(p)<0||p===tideKline.period)return;
- tideKline.period=p;klineWsStop();tideKline.hasMoreHistory=true;
+ klineCancelOlderHistory();tideKline.period=p;klineWsStop();tideKline.hasMoreHistory=true;
  // Cancel the previous timeframe immediately; its finally handler is no
  // longer allowed to keep the new timeframe in a permanent loading state.
  if(tideKline.controller){try{tideKline.controller.abort();}catch(e){}}
@@ -2233,7 +2284,7 @@ function klineDeleteSelected(){
 }
 function klineClearDrawings(){if(!tideKline.chart)return;try{tideKline.chart.removeOverlay();klineSetStatus('已清除全部绘图');}catch(e){klineSetStatus('清除绘图失败：'+e.message);}}
 function closeKlineChart(){
- var modal=$('tide-kline-modal');if(modal)modal.style.display='none';
+ var modal=$('tide-kline-modal');if(modal)modal.style.display='none';klineCancelOlderHistory();
  if(tideKline.timer){clearInterval(tideKline.timer);tideKline.timer=null;}
  klineWsStop();tideKline.requestId++;tideKline.loading=false;
  if(tideKline.controller){try{tideKline.controller.abort();}catch(e){}tideKline.controller=null;}
