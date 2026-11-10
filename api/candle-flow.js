@@ -47,14 +47,20 @@ module.exports = async function handler(req, res) {
     ts: Number(x[0]), sell: Number(x[1]), buy: Number(x[2])
   })).filter(x => Number.isFinite(x.ts) && Number.isFinite(x.buy) && Number.isFinite(x.sell)).sort((a,b) => a.ts-b.ts) : [];
 
+  const oiError = oiResult.status === 'rejected' ? String(oiResult.reason && oiResult.reason.message || oiResult.reason) : null;
+  const takerError = takerResult.status === 'rejected' ? String(takerResult.reason && takerResult.reason.message || takerResult.reason) : null;
+  const oiAvailable = oiResult.status === 'fulfilled';
+  const takerAvailable = takerResult.status === 'fulfilled';
   const result = {
-    name: 'OKX', ok: true, error: null, rows: [], sampledRows: 0, matchedRows: 0,
+    name: 'OKX', ok: oiAvailable || takerAvailable,
+    status: oiAvailable && takerAvailable ? 'complete' : oiAvailable || takerAvailable ? 'partial' : 'unavailable',
+    error: !oiAvailable && !takerAvailable ? 'Both OKX aggregate series failed. OI: ' + oiError + '; taker: ' + takerError : null,
+    rows: [], sampledRows: 0, matchedRows: 0,
     pages: 0, capped: false, complete: false, tradeCoverage: 'aggregate-only',
     sampleFrom: null, sampleTo: null, coverageStart: null, coverageEnd: null,
     campaign: {
       period, periodMs, oi, taker, takerUnit: 'U',
-      oiError: oiResult.status === 'rejected' ? String(oiResult.reason && oiResult.reason.message || oiResult.reason) : null,
-      takerError: takerResult.status === 'rejected' ? String(takerResult.reason && takerResult.reason.message || takerResult.reason) : null
+      oiError, takerError, oiAvailable, takerAvailable
     },
     source: 'OKX contract open interest + taker-volume aggregate'
   };
