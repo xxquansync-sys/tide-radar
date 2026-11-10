@@ -25,7 +25,8 @@ if (!html.includes('klineCancelOlderHistory();tideKline.period=p;')) throw new E
 if (!html.includes('if(tideKline.olderController===controller)')) throw new Error('Older-history completion must not mutate a newer request');
 if (!html.includes("chart.getDom('candle_pane','yAxis')")) throw new Error('Countdown must attach to the chart right price axis');
 if (!html.includes("chart.convertToPixel({value:Number(latest.close)},{paneId:'candle_pane',absolute:true})")) throw new Error('Countdown must use the latest close price axis coordinate');
-if (!html.includes('tideUpdateCandleCountdowns();if(!window.tideCandleCountdownTimer)')) throw new Error('Countdown must render immediately, not wait for the first timer tick');
+if (!html.includes("if(typeof tideHomeChart!=='undefined'&&tideHomeChart&&tideHomeChart.chart)")) throw new Error('Countdown must wait until homepage chart state is initialized');
+if (!html.includes('if(!window.tideCandleCountdownTimer)window.tideCandleCountdownTimer=setInterval(tideUpdateCandleCountdowns,1000)')) throw new Error('Countdown timer must be installed without eager pre-initialization access');
 if (!html.includes('tdxEnabled:false')) throw new Error('Unstable structure overlay must remain disabled by default');
 if (!html.includes('pixel.y-axisSize.top+16')) throw new Error('Countdown must sit immediately below the live price label');
 if (!html.includes("['onDataReady','onZoom','onScroll','onVisibleRangeChange','onPaneDrag']")) throw new Error('Countdown must track chart redraw, zoom, scroll and pane resize');
