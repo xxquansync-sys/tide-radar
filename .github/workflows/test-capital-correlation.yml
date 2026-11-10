@@ -23,3 +23,5 @@ jobs:
           node-version: 22
       - name: Validate inline JavaScript and K-line history invariants
         run: node scripts/test-index-inline-syntax.mjs
+      - name: Test candle-flow aggregate availability and partial failures
+        run: node scripts/test-candle-flow.mjs
